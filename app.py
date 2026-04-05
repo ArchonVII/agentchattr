@@ -41,6 +41,7 @@ agents: AgentTrigger | None = None
 registry: RuntimeRegistry | None = None
 session_store: SessionStore | None = None
 session_engine: SessionEngine | None = None
+process_manager = None  # ProcessManager, set by run.py
 config: dict = {}
 ws_clients: set[WebSocket] = set()
 
@@ -78,6 +79,7 @@ room_settings: dict = {
     "history_limit": "all",
     "contrast": "normal",
     "custom_roles": [],
+    "default_cwd": "",
 }
 
 # Channel validation
@@ -1136,6 +1138,14 @@ async def websocket_endpoint(websocket: WebSocket):
 
     # Send schedules
     await websocket.send_text(json.dumps({"type": "schedules", "data": schedules.list_all()}))
+
+    # Send managed agent processes
+    if process_manager:
+        await websocket.send_text(json.dumps({"type": "agent_processes", "data": process_manager.list_managed()}))
+        # Send restore state if any
+        restore = process_manager.get_restore_state()
+        if restore:
+            await websocket.send_text(json.dumps({"type": "session_restore", "data": restore}))
 
     # Send pending instances (so late-connecting browsers still see the naming lightbox)
     if registry:
@@ -2701,3 +2711,139 @@ async def serve_upload(filename: str):
     if filepath.exists():
         return FileResponse(filepath)
     return JSONResponse({"error": "not found"}, status_code=404)
+
+
+# --- Agent Launcher API ---
+
+@app.get("/api/agent-definitions")
+async def list_agent_definitions():
+    """List all agent definitions (config.toml + user-defined)."""
+    from config_loader import load_agent_definitions
+    from process_manager import AGENT_FLAG_PRESETS
+    data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
+    defs = load_agent_definitions(data_dir, config.get("agents", {}))
+    return JSONResponse({"definitions": defs, "flag_presets": AGENT_FLAG_PRESETS})
+
+
+@app.post("/api/agent-definitions")
+async def add_agent_definition(request: Request):
+    """Add a new user-defined agent."""
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    name = body.get("name", "").strip().lower()
+    if not name or not _re.match(r'^[a-z0-9]+$', name):
+        return JSONResponse({"error": "name must be alphanumeric lowercase"}, status_code=400)
+    definition = {
+        "command": body.get("command", name),
+        "color": body.get("color", "#888888"),
+        "label": body.get("label", name.capitalize()),
+        "cwd": body.get("cwd", ".."),
+    }
+    from config_loader import save_agent_definition
+    data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
+    save_agent_definition(data_dir, name, definition)
+    return JSONResponse({"ok": True})
+
+
+@app.delete("/api/agent-definitions/{name}")
+async def remove_agent_definition(name: str):
+    """Remove a user-defined agent."""
+    from config_loader import delete_agent_definition
+    data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
+    delete_agent_definition(data_dir, name)
+    return JSONResponse({"ok": True})
+
+
+@app.get("/api/agents/managed")
+async def list_managed_agents():
+    """List all server-managed agent processes."""
+    if not process_manager:
+        return JSONResponse({"data": []})
+    return JSONResponse({"data": process_manager.list_managed()})
+
+
+@app.get("/api/agents/restore")
+async def get_restore_state():
+    """Get previous session's agents for restore prompt."""
+    if not process_manager:
+        return JSONResponse({"data": []})
+    return JSONResponse({"data": process_manager.get_restore_state()})
+
+
+@app.post("/api/agents/restore/dismiss")
+async def dismiss_restore():
+    """Dismiss the session restore prompt."""
+    if process_manager:
+        process_manager.clear_restore_state()
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/agents/{base}/launch")
+async def launch_agent(base: str, request: Request):
+    """Launch a wrapper.py subprocess for the given agent."""
+    if not process_manager:
+        return JSONResponse({"error": "process manager not initialised"}, status_code=500)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    flags = body.get("flags", [])
+    extra_args = body.get("extra_args", [])
+    cwd = body.get("cwd") or room_settings.get("default_cwd") or "."
+    instance_label = body.get("instance_label")
+
+    from config_loader import load_agent_definitions
+    data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
+    all_agents = load_agent_definitions(data_dir, config.get("agents", {}))
+    agent_def = all_agents.get(base)
+    if not agent_def:
+        return JSONResponse({"error": f"unknown agent: {base}"}, status_code=400)
+
+    command = agent_def.get("command", base)
+
+    # Build wrapper.py command
+    import sys as _sys
+    wrapper_cmd = [_sys.executable, str(Path(__file__).parent / "wrapper.py"), base, "--no-restart"]
+    if instance_label:
+        wrapper_cmd.extend(["--label", instance_label])
+    if flags or extra_args:
+        wrapper_cmd.append("--")
+        wrapper_cmd.extend(flags)
+        wrapper_cmd.extend(extra_args)
+
+    result = process_manager.launch(
+        base=base,
+        command=wrapper_cmd[0],
+        flags=flags,
+        extra_args=wrapper_cmd[1:],
+        cwd=cwd,
+        instance_label=instance_label,
+    )
+    if result.get("ok") and _event_loop:
+        managed = process_manager.list_managed()
+        event_data = json.dumps({"type": "agent_processes", "data": managed})
+        asyncio.run_coroutine_threadsafe(_broadcast(event_data), _event_loop)
+    return JSONResponse(result)
+
+
+@app.post("/api/agents/{name}/stop")
+async def stop_agent(name: str):
+    """Stop a managed wrapper subprocess."""
+    if not process_manager:
+        return JSONResponse({"error": "process manager not initialised"}, status_code=500)
+    result = process_manager.stop(name)
+    if result.get("ok") and _event_loop:
+        managed = process_manager.list_managed()
+        event_data = json.dumps({"type": "agent_processes", "data": managed})
+        asyncio.run_coroutine_threadsafe(_broadcast(event_data), _event_loop)
+    return JSONResponse(result)
+
+
+@app.get("/api/agents/{name}/logs")
+async def get_agent_logs(name: str):
+    """Return the last 100 log lines for a managed agent."""
+    if not process_manager:
+        return JSONResponse({"error": "process manager not initialised"}, status_code=500)
+    return JSONResponse({"lines": process_manager.get_logs(name)})

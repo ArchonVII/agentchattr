@@ -1,6 +1,7 @@
 """Entry point — starts MCP server (port 8200) + web UI (port 8300)."""
 
 import asyncio
+import json
 import secrets
 import sys
 import threading
@@ -54,6 +55,22 @@ def main():
     mcp_bridge._load_cursors()
     mcp_bridge._ROLES_FILE = data_dir / "roles.json"
     mcp_bridge._load_roles()
+
+    # Create process manager for UI-launched agents
+    from process_manager import ProcessManager
+    import app as _app_module
+
+    def _on_agent_log(name: str, line: str):
+        loop = getattr(_app_module, '_event_loop', None)
+        if loop:
+            event = json.dumps({"type": "agent_log", "data": {"name": name, "line": line}})
+            asyncio.run_coroutine_threadsafe(_app_module._broadcast(event), loop)
+
+    _app_module.process_manager = ProcessManager(
+        data_dir=data_dir,
+        server_port=config.get("server", {}).get("port", 8300),
+        on_log=_on_agent_log,
+    )
 
     # Start MCP servers in background threads
     http_port = config.get("mcp", {}).get("http_port", 8200)
