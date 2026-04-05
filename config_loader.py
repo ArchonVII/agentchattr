@@ -4,6 +4,7 @@ Used by run.py, wrapper.py, and wrapper_api.py so the server and all
 wrappers see the same agent definitions.
 """
 
+import json
 import tomllib
 from pathlib import Path
 
@@ -40,3 +41,48 @@ def load_config(root: Path | None = None) -> dict:
                 print(f"  Warning: Ignoring local agent '{name}' (already defined in config.toml)")
 
     return config
+
+
+def load_agent_definitions(data_dir: Path, config_agents: dict) -> dict:
+    """Merge config.toml agents with user-defined agents from agent_definitions.json.
+
+    config.toml agents win on name conflicts (same protection as config.local.toml).
+    """
+    merged = dict(config_agents)
+    defs_path = data_dir / "agent_definitions.json"
+    if defs_path.exists():
+        try:
+            user_defs = json.loads(defs_path.read_text("utf-8"))
+            for name, agent_cfg in user_defs.items():
+                if name not in merged:
+                    merged[name] = agent_cfg
+        except Exception:
+            pass
+    return merged
+
+
+def save_agent_definition(data_dir: Path, name: str, definition: dict):
+    """Save or update a user-defined agent definition."""
+    defs_path = data_dir / "agent_definitions.json"
+    defs_path.parent.mkdir(parents=True, exist_ok=True)
+    existing = {}
+    if defs_path.exists():
+        try:
+            existing = json.loads(defs_path.read_text("utf-8"))
+        except Exception:
+            pass
+    existing[name] = definition
+    defs_path.write_text(json.dumps(existing, indent=2), "utf-8")
+
+
+def delete_agent_definition(data_dir: Path, name: str):
+    """Remove a user-defined agent definition."""
+    defs_path = data_dir / "agent_definitions.json"
+    if not defs_path.exists():
+        return
+    try:
+        existing = json.loads(defs_path.read_text("utf-8"))
+        existing.pop(name, None)
+        defs_path.write_text(json.dumps(existing, indent=2), "utf-8")
+    except Exception:
+        pass
