@@ -10,6 +10,17 @@ Agents and humans talk in a shared chat room with multiple channels — when any
 
 ![screenshot](screenshot.png)
 
+## Fork Workflow Policy
+
+This fork is maintained as a fork-only codebase.
+
+- `origin` is the only writable remote for normal work.
+- `main` on `ArchonVII/agentchattr` is the authoritative branch for this fork.
+- `upstream` may be fetched for reference only.
+- Do not open upstream PRs from this fork.
+- Do not merge this fork's work into `bcurts/agentchattr`.
+- Do not treat upstream mergeability as part of the workflow for this repo.
+
 ## Quickstart (Windows)
 
 **1. Open the `windows` folder and double-click a launcher:**
