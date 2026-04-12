@@ -65,6 +65,22 @@ function normalizeAgentLogEvent(event) {
   };
 }
 
+function partitionLauncherInstances(instances) {
+  var active = [];
+  var crashed = [];
+
+  for (var ii = 0; ii < instances.length; ii++) {
+    var instance = instances[ii];
+    if (instance.state === "running" || instance.state === "starting") {
+      active.push(instance);
+    } else if (instance.state === "crashed") {
+      crashed.push(instance);
+    }
+  }
+
+  return { active: active, crashed: crashed };
+}
+
 function buildRestoreLaunchBody(agent) {
   var body = {
     flags: Array.isArray(agent && agent.flags) ? agent.flags : [],
@@ -196,13 +212,10 @@ function buildAgentCard(base, def, instances) {
   const el = document.createElement("div");
   el.className = "launcher-card";
 
-  const running = instances.filter(function (p) {
-    return p.state === "running";
-  });
-  const crashed = instances.filter(function (p) {
-    return p.state === "crashed";
-  });
-  const hasRunning = running.length > 0;
+  const partitions = partitionLauncherInstances(instances);
+  const active = partitions.active;
+  const crashed = partitions.crashed;
+  const hasRunning = active.length > 0;
   const hasCrashed = crashed.length > 0;
 
   // Header: dot + info + badge
@@ -250,8 +263,8 @@ function buildAgentCard(base, def, instances) {
   el.appendChild(header);
 
   // Running instances
-  for (var ri = 0; ri < running.length; ri++) {
-    var p = running[ri];
+  for (var ri = 0; ri < active.length; ri++) {
+    var p = active[ri];
     var inst = document.createElement("div");
     inst.className = "launcher-instance";
     var iName = document.createElement("span");
@@ -917,5 +930,6 @@ if (typeof module !== "undefined" && module.exports) {
     normalizeAgentLogEvent,
     normalizeManagedAgentsPayload,
     normalizeRestoreAgentsPayload,
+    partitionLauncherInstances,
   };
 }

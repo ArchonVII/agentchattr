@@ -6,6 +6,7 @@ const {
   normalizeAgentLogEvent,
   normalizeManagedAgentsPayload,
   normalizeRestoreAgentsPayload,
+  partitionLauncherInstances,
 } = require("../static/launcher.js");
 
 test("normalizeManagedAgentsPayload reads backend data shape", () => {
@@ -72,5 +73,22 @@ test("buildRestoreLaunchBody preserves relaunch config", () => {
       extra_args: [],
       instance_label: "bot-2",
     },
+  );
+});
+
+test("partitionLauncherInstances keeps starting agents in the active bucket", () => {
+  const partitions = partitionLauncherInstances([
+    { name: "booting-bot", state: "starting" },
+    { name: "live-bot", state: "running" },
+    { name: "dead-bot", state: "crashed" },
+  ]);
+
+  assert.deepEqual(
+    partitions.active.map((item) => item.name),
+    ["booting-bot", "live-bot"],
+  );
+  assert.deepEqual(
+    partitions.crashed.map((item) => item.name),
+    ["dead-bot"],
   );
 });

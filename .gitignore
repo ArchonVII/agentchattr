@@ -18,7 +18,11 @@ build/
 .claude/
 tests/
 agents_lineup.svg
-docs/
+docs/*
+!docs/superpowers/
+docs/superpowers/*
+!docs/superpowers/qa/
+!docs/superpowers/qa/**
 goals.py
 pr-reviews/
 agentchattr-*.zip

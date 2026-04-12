@@ -2832,7 +2832,13 @@ async def launch_agent(base: str, request: Request):
 
     # Build wrapper.py command
     import sys as _sys
-    wrapper_cmd = [_sys.executable, str(Path(__file__).parent / "wrapper.py"), base, "--no-restart"]
+    wrapper_cmd = [
+        _sys.executable,
+        "-u",
+        str(Path(__file__).parent / "wrapper.py"),
+        base,
+        "--no-restart",
+    ]
     if instance_label:
         wrapper_cmd.extend(["--label", instance_label])
     if flags or extra_args:

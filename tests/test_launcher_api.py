@@ -194,6 +194,7 @@ def test_launch_endpoint_keeps_agent_flags_after_wrapper_and_tokenizes_extra_arg
     assert call["command"] == sys.executable
     assert call["flags"] == []
     assert call["extra_args"] == [
+        "-u",
         wrapper_path,
         "testbot",
         "--no-restart",

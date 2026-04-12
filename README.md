@@ -38,6 +38,37 @@ On first launch, the script auto-creates a virtual environment, installs Python 
 
 > **Tip:** To manually prompt an agent to check chat, type `mcp read #general` in their terminal.
 
+## Desktop Shell (Windows)
+
+The Electron shell wraps the same local server in a native Windows window with tray support, notifications, deep links, and a live Ports tab.
+
+```powershell
+npm --prefix electron install
+npm --prefix electron start
+```
+
+Notes:
+
+- The desktop shell starts `run.py` for you and expects to own port `8300`.
+- Do not leave `windows\start.bat`, `python run.py`, or another Electron instance running when you launch it.
+- Closing the main window hides the app to the system tray. Use the tray menu's `Quit` action when you want to fully stop the shell and its embedded server.
+- The browser launchers still open the web UI directly. Electron is a Windows desktop wrapper around that same agentchattr server, not a separate backend.
+
+### Desktop QA (Windows)
+
+```powershell
+.venv\Scripts\python -m pytest tests -q
+node --test tests/launcher_helpers.test.cjs
+npm --prefix electron test
+node --check static/launcher.js
+node --check electron/main.js
+node --check electron/renderer/renderer.js
+npm --prefix electron run smoke:launcher
+npm --prefix electron run smoke:desktop
+```
+
+For the manual tray, notification, deep-link, restore, and shutdown checklist, see `docs/superpowers/qa/desktop-shell-checklist.md`.
+
 ## Quickstart (Mac / Linux)
 
 **1. Make sure tmux is installed:**

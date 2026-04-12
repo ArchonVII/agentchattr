@@ -141,5 +141,7 @@ function setupDeepLinks(app, mainWindow) {
 }
 
 module.exports = {
+  extractDeepLinkUrl,
+  parseDeepLink,
   setupDeepLinks,
 };
