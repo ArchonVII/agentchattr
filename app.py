@@ -2722,7 +2722,7 @@ async def list_agent_definitions():
     from config_loader import load_agent_definitions
     from process_manager import AGENT_FLAG_PRESETS
     data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
-    defs = load_agent_definitions(data_dir, config.get("agents", {}))
+    defs = load_agent_definitions(data_dir, config.get("_base_agents", config.get("agents", {})))
     return JSONResponse({"definitions": defs, "flag_presets": AGENT_FLAG_PRESETS})
 
 
@@ -2745,6 +2745,9 @@ async def add_agent_definition(request: Request):
     from config_loader import save_agent_definition
     data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
     save_agent_definition(data_dir, name, definition)
+    config.setdefault("agents", {})[name] = dict(definition)
+    if registry:
+        registry.upsert_base(name, definition)
     return JSONResponse({"ok": True})
 
 
@@ -2753,7 +2756,18 @@ async def remove_agent_definition(name: str):
     """Remove a user-defined agent."""
     from config_loader import delete_agent_definition
     data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
+    base_agents = config.get("_base_agents", {})
+    is_builtin = name in base_agents
+    if registry and registry.get_instances_for(name):
+        return JSONResponse(
+            {"error": f"cannot delete running agent definition: {name}"},
+            status_code=409,
+        )
     delete_agent_definition(data_dir, name)
+    if not is_builtin:
+        config.get("agents", {}).pop(name, None)
+        if registry:
+            registry.remove_base(name)
     return JSONResponse({"ok": True})
 
 
@@ -2808,7 +2822,10 @@ async def launch_agent(base: str, request: Request):
 
     from config_loader import load_agent_definitions
     data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
-    all_agents = load_agent_definitions(data_dir, config.get("agents", {}))
+    all_agents = load_agent_definitions(
+        data_dir,
+        config.get("_base_agents", config.get("agents", {})),
+    )
     agent_def = all_agents.get(base)
     if not agent_def:
         return JSONResponse({"error": f"unknown agent: {base}"}, status_code=400)

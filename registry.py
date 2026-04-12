@@ -52,6 +52,26 @@ class RuntimeRegistry:
             for name, cfg in agents_config.items():
                 self._bases[name] = dict(cfg)
 
+    def upsert_base(self, name: str, cfg: dict):
+        """Add or update a base template at runtime."""
+        with self._lock:
+            self._bases[name] = dict(cfg)
+        self._notify()
+
+    def remove_base(self, name: str) -> bool:
+        """Remove a base template if no live instances still depend on it."""
+        removed = False
+        with self._lock:
+            has_instances = any(inst.base == name for inst in self._instances.values())
+            if has_instances:
+                return False
+            if name in self._bases:
+                del self._bases[name]
+                removed = True
+        if removed:
+            self._notify()
+        return removed
+
     def on_change(self, cb):
         """Register a callback fired after any registry mutation."""
         self._on_change_cbs.append(cb)

@@ -41,10 +41,11 @@ def load_config(root: Path | None = None) -> dict:
                 print(f"  Warning: Ignoring local agent '{name}' (already defined in config.toml)")
 
     config_agents = config.setdefault("agents", {})
+    config["_base_agents"] = dict(config_agents)
     data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
     if not data_dir.is_absolute():
         data_dir = root / data_dir
-    config["agents"] = load_agent_definitions(data_dir, config_agents)
+    config["agents"] = load_agent_definitions(data_dir, config["_base_agents"])
 
     return config
 

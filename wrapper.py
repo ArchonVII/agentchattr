@@ -350,6 +350,13 @@ def _build_provider_launch(
     return launch_args, launch_env, inject_env, settings_path
 
 
+def _normalize_passthrough_args(extra: list[str]) -> list[str]:
+    """Strip the argparse ``--`` separator before forwarding child args."""
+    if extra and extra[0] == "--":
+        return extra[1:]
+    return list(extra)
+
+
 def _register_instance(server_port: int, base: str, label: str | None = None) -> dict:
     import urllib.request
 
@@ -555,6 +562,7 @@ def main():
     parser.add_argument("--no-restart", action="store_true", help="Do not restart on exit")
     parser.add_argument("--label", type=str, default=None, help="Custom display label")
     args, extra = parser.parse_known_args()
+    extra = _normalize_passthrough_args(extra)
 
     agent = args.agent
     agent_cfg = config.get("agents", {}).get(agent, {})

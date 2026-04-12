@@ -13,6 +13,7 @@ from app import app, configure
 import app as app_module
 from process_manager import ProcessManager
 from starlette.testclient import TestClient
+from wrapper import _normalize_passthrough_args
 
 _tmpdir: str = ""
 client: TestClient
@@ -130,6 +131,34 @@ def test_add_and_delete_definition():
     assert "mybot" not in defs
 
 
+def test_custom_definition_updates_runtime_registry():
+    new_agent = {
+        "name": "regbot",
+        "command": "python",
+        "label": "RegBot",
+        "color": "#00ff00",
+    }
+
+    resp = client.post("/api/agent-definitions", json=new_agent, cookies=COOKIES)
+    assert resp.status_code == 200
+    runtime_cfg = app_module.registry.get_base_config("regbot")
+    assert runtime_cfg is not None
+    assert runtime_cfg["command"] == "python"
+
+    app_module.registry.register("regbot")
+
+    delete_resp = client.delete("/api/agent-definitions/regbot", cookies=COOKIES)
+    assert delete_resp.status_code == 409
+    assert delete_resp.json()["error"] == "cannot delete running agent definition: regbot"
+
+    app_module.registry.deregister("regbot")
+
+    delete_resp = client.delete("/api/agent-definitions/regbot", cookies=COOKIES)
+    assert delete_resp.status_code == 200
+
+    assert app_module.registry.get_base_config("regbot") is None
+
+
 def test_list_managed_empty():
     """GET /api/agents/managed returns empty list when no agents are launched."""
     resp = client.get("/api/agents/managed", cookies=COOKIES)
@@ -196,3 +225,16 @@ def test_websocket_continue_resumes_requested_channel():
 
     assert app_module.router.is_paused("planning") is False
     assert app_module.router._get_ch("planning")["hop_count"] == 0
+
+
+def test_wrapper_passthrough_args_strip_argparse_separator():
+    assert _normalize_passthrough_args(["--", "-u", "-c", "print('ok')"]) == [
+        "-u",
+        "-c",
+        "print('ok')",
+    ]
+    assert _normalize_passthrough_args(["--model", "claude sonnet", "--json"]) == [
+        "--model",
+        "claude sonnet",
+        "--json",
+    ]
