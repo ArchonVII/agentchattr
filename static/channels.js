@@ -8,6 +8,7 @@
 // ---------------------------------------------------------------------------
 
 const _channelScrollMsg = {};  // channel name -> message ID at top of viewport
+const _ROOM_COLLAPSE_KEY = 'agentchattr-room-collapsed';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -24,6 +25,28 @@ function _getTopVisibleMsgId() {
         if (elRect.bottom > rect.top) return el.dataset.id;
     }
     return null;
+}
+
+function _isRoomCollapsed() {
+    return localStorage.getItem(_ROOM_COLLAPSE_KEY) === '1';
+}
+
+function _setRoomCollapsed(collapsed) {
+    localStorage.setItem(_ROOM_COLLAPSE_KEY, collapsed ? '1' : '0');
+}
+
+function _getRoomTitle() {
+    const el = document.getElementById('room-title');
+    const text = el ? el.textContent.trim() : '';
+    return text || document.title || 'Current project';
+}
+
+function _getRoomMeta() {
+    const subtitle = document.getElementById('room-subtitle');
+    const summary = subtitle ? subtitle.textContent.trim() : '';
+    const channelCount = window.channelList.length;
+    const countLabel = channelCount === 1 ? '1 channel' : `${channelCount} channels`;
+    return summary ? `${countLabel} · ${summary}` : `${countLabel} · Current project`;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,6 +126,103 @@ function renderChannelTabs() {
     if (addBtn) {
         addBtn.classList.toggle('disabled', window.channelList.length >= 8);
     }
+
+    renderRoomSidebar();
+}
+
+function renderRoomSidebar() {
+    const container = document.getElementById('room-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const collapsed = _isRoomCollapsed();
+    const room = document.createElement('section');
+    room.className = 'room-nav-item' + (collapsed ? '' : ' expanded');
+
+    const toggle = document.createElement('button');
+    toggle.className = 'room-nav-toggle';
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    toggle.onclick = () => {
+        _setRoomCollapsed(!collapsed);
+        renderRoomSidebar();
+    };
+
+    const icon = document.createElement('span');
+    icon.className = 'room-nav-icon';
+    icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4.5A1.5 1.5 0 014 3h2.2c.4 0 .7.15.97.42l.41.41c.19.19.45.3.72.3H12A1.5 1.5 0 0113.5 5.6v5.9A1.5 1.5 0 0112 13H4a1.5 1.5 0 01-1.5-1.5v-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>';
+    toggle.appendChild(icon);
+
+    const details = document.createElement('span');
+    details.className = 'room-nav-details';
+
+    const label = document.createElement('span');
+    label.className = 'room-nav-label';
+    label.textContent = _getRoomTitle();
+    details.appendChild(label);
+
+    const meta = document.createElement('span');
+    meta.className = 'room-nav-meta';
+    meta.textContent = _getRoomMeta();
+    details.appendChild(meta);
+
+    toggle.appendChild(details);
+
+    const caret = document.createElement('span');
+    caret.className = 'room-nav-caret';
+    caret.textContent = '›';
+    toggle.appendChild(caret);
+
+    room.appendChild(toggle);
+
+    const channelList = document.createElement('div');
+    channelList.id = 'room-channel-list';
+    channelList.hidden = collapsed;
+
+    for (const name of window.channelList) {
+        const btn = document.createElement('button');
+        btn.className = 'room-channel-item' + (name === window.activeChannel ? ' active' : '');
+        btn.type = 'button';
+        btn.dataset.channel = name;
+        btn.setAttribute('aria-current', name === window.activeChannel ? 'page' : 'false');
+        btn.onclick = () => switchChannel(name);
+
+        const info = document.createElement('span');
+        info.className = 'room-channel-info';
+
+        const hash = document.createElement('span');
+        hash.className = 'room-channel-hash';
+        hash.textContent = '#';
+        info.appendChild(hash);
+
+        const text = document.createElement('span');
+        text.className = 'room-channel-label-text';
+        text.textContent = name;
+        info.appendChild(text);
+
+        btn.appendChild(info);
+
+        const unread = window.channelUnread[name] || 0;
+        if (unread > 0 && name !== window.activeChannel) {
+            const badge = document.createElement('span');
+            badge.className = 'room-channel-unread';
+            badge.textContent = unread > 99 ? '99+' : unread;
+            btn.appendChild(badge);
+        }
+
+        channelList.appendChild(btn);
+    }
+
+    const addChannel = document.createElement('button');
+    addChannel.className = 'room-channel-item room-channel-add';
+    addChannel.type = 'button';
+    addChannel.onclick = () => showChannelCreateDialog();
+    addChannel.innerHTML = '<span class="room-channel-info"><span class="room-channel-hash">+</span><span class="room-channel-label-text">Add channel</span></span>';
+    channelList.appendChild(addChannel);
+
+    room.appendChild(channelList);
+    container.appendChild(room);
 }
 
 // ---------------------------------------------------------------------------
@@ -136,6 +256,10 @@ function filterMessagesByChannel() {
     for (const el of container.children) {
         const ch = el.dataset.channel || 'general';
         el.style.display = ch === window.activeChannel ? '' : 'none';
+    }
+
+    if (window.renderChannelRoster) {
+        window.renderChannelRoster();
     }
 }
 
@@ -348,8 +472,8 @@ function deleteChannel(name) {
 // ---------------------------------------------------------------------------
 
 function _channelsInit() {
-    // Nothing to do yet -- channel rendering is driven by chat.js calling
-    // renderChannelTabs() and filterMessagesByChannel() at the right times.
+    renderChannelTabs();
+    filterMessagesByChannel();
 }
 
 // ---------------------------------------------------------------------------
@@ -360,6 +484,7 @@ window.showChannelCreateDialog = showChannelCreateDialog;
 window.switchChannel = switchChannel;
 window.filterMessagesByChannel = filterMessagesByChannel;
 window.renderChannelTabs = renderChannelTabs;
+window.renderRoomSidebar = renderRoomSidebar;
 window.deleteChannel = deleteChannel;
 window.showChannelRenameDialog = showChannelRenameDialog;
 window.Channels = { init: _channelsInit };

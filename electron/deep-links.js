@@ -121,18 +121,21 @@ function setupDeepLinks(app, mainWindow) {
 
   secondInstanceListener = (_event, argv) => {
     const urlString = extractDeepLinkUrl(argv);
+    const window = resolveMainWindow(mainWindow);
 
     if (!urlString) {
+      showAndFocusWindow(window);
       return;
     }
 
     const payload = parseDeepLink(urlString);
 
     if (!payload) {
+      showAndFocusWindow(window);
       return;
     }
 
-    dispatchDeepLink(mainWindow, payload);
+    dispatchDeepLink(window, payload);
   };
 
   app.on('second-instance', secondInstanceListener);

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>agentchattr</title>
-    <link rel="stylesheet" href="/static/style.css?v=249" />
+    <link rel="stylesheet" href="/static/style.css?v=252" />
     <link rel="stylesheet" href="/static/sessions.css?v=223" />
     <link rel="stylesheet" href="/static/jobs.css?v=223" />
     <link rel="icon" href="/static/favicon.ico" />
@@ -368,6 +368,42 @@
       </div>
 
       <div id="content-area">
+        <aside id="room-sidebar" aria-label="Rooms and channels">
+          <div class="room-sidebar-header">
+            <div class="room-sidebar-title-wrap">
+              <span class="room-sidebar-label">Rooms</span>
+              <span class="room-sidebar-copy">Projects and channels</span>
+            </div>
+            <button
+              id="room-sidebar-toggle"
+              class="sidebar-collapse-btn"
+              type="button"
+              onclick="toggleRoomSidebar()"
+              title="Collapse rooms sidebar"
+              aria-label="Collapse rooms sidebar"
+              aria-expanded="true"
+            >
+              <svg
+                class="sidebar-collapse-icon"
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+              >
+                <path
+                  d="M10 3L5 8L10 13"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <div id="room-list">
+            <div id="room-channel-list" hidden></div>
+          </div>
+        </aside>
         <main id="timeline">
           <div id="loading-indicator">
             <div class="loading-spinner"></div>
@@ -378,6 +414,45 @@
             <span class="typing-name"></span> is thinking...
           </div>
         </main>
+        <aside id="presence-panel" aria-label="Active channel participants">
+          <div class="presence-header">
+            <div class="presence-title-wrap">
+              <span class="presence-title">Here</span>
+              <span class="presence-channel" id="presence-channel-label"
+                >#general</span
+              >
+            </div>
+            <div class="presence-header-actions">
+              <span class="presence-count" id="presence-count">0</span>
+              <button
+                id="presence-panel-toggle"
+                class="sidebar-collapse-btn"
+                type="button"
+                onclick="togglePresenceSidebar()"
+                title="Collapse channel roster"
+                aria-label="Collapse channel roster"
+                aria-expanded="true"
+              >
+                <svg
+                  class="sidebar-collapse-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                >
+                  <path
+                    d="M6 3L11 8L6 13"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div id="presence-list"></div>
+        </aside>
         <aside id="jobs-panel" class="hidden">
           <div class="jobs-grip" id="jobs-grip"></div>
           <div id="jobs-list-view">
@@ -734,9 +809,9 @@
     <script src="/static/store.js?v=223"></script>
     <script src="/static/sessions.js?v=223"></script>
     <script src="/static/jobs.js?v=224"></script>
-    <script src="/static/channels.js?v=224"></script>
+    <script src="/static/channels.js?v=226"></script>
     <script src="/static/rules-panel.js?v=223"></script>
     <script src="/static/launcher.js?v=100"></script>
-    <script src="/static/chat.js?v=266"></script>
+    <script src="/static/chat.js?v=269"></script>
   </body>
 </html>

@@ -10,6 +10,7 @@ let autoScroll = true;
 let reconnectTimer = null;
 let username = "user";
 let agentConfig = {}; // { name: { color, label } } — registered instances (used for pills)
+let agentStatus = {}; // { name: { available, busy, label, color, role } }
 let baseColors = {}; // { name: { color, label } } — base agent colors (for message coloring)
 let todos = {}; // { msg_id: "todo" | "done" }
 let rules = []; // array of rule objects from server
@@ -28,6 +29,9 @@ let colorOverrides = JSON.parse(
   localStorage.getItem("agentchattr-color-overrides") || "{}",
 );
 let schedulesList = []; // array of schedule objects from server
+
+const ROOM_SIDEBAR_COLLAPSE_KEY = "agentchattr-room-sidebar-collapsed";
+const PRESENCE_SIDEBAR_COLLAPSE_KEY = "agentchattr-presence-sidebar-collapsed";
 
 // Expose globals that extracted modules (sessions.js, jobs.js) read via window.*
 // Using defineProperty so live values are always returned.
@@ -303,6 +307,65 @@ function dismissUpdate(e, version) {
   if (pill) pill.classList.add("hidden");
 }
 
+function setSidebarCollapsed(storageKey, elementId, buttonId, collapsed) {
+  localStorage.setItem(storageKey, collapsed ? "1" : "0");
+
+  const el = document.getElementById(elementId);
+  if (el) {
+    el.classList.toggle("collapsed", collapsed);
+  }
+
+  const button = document.getElementById(buttonId);
+  if (button) {
+    button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    const isRoom = buttonId === "room-sidebar-toggle";
+    const noun = isRoom ? "rooms sidebar" : "channel roster";
+    const label = `${collapsed ? "Expand" : "Collapse"} ${noun}`;
+    button.title = label;
+    button.setAttribute("aria-label", label);
+  }
+
+  requestAnimationFrame(() => {
+    repositionScrollAnchor();
+  });
+}
+
+function applySidebarCollapseState() {
+  setSidebarCollapsed(
+    ROOM_SIDEBAR_COLLAPSE_KEY,
+    "room-sidebar",
+    "room-sidebar-toggle",
+    localStorage.getItem(ROOM_SIDEBAR_COLLAPSE_KEY) === "1",
+  );
+  setSidebarCollapsed(
+    PRESENCE_SIDEBAR_COLLAPSE_KEY,
+    "presence-panel",
+    "presence-panel-toggle",
+    localStorage.getItem(PRESENCE_SIDEBAR_COLLAPSE_KEY) === "1",
+  );
+}
+
+function toggleRoomSidebar() {
+  const collapsed = localStorage.getItem(ROOM_SIDEBAR_COLLAPSE_KEY) === "1";
+  setSidebarCollapsed(
+    ROOM_SIDEBAR_COLLAPSE_KEY,
+    "room-sidebar",
+    "room-sidebar-toggle",
+    !collapsed,
+  );
+}
+
+function togglePresenceSidebar() {
+  const collapsed =
+    localStorage.getItem(PRESENCE_SIDEBAR_COLLAPSE_KEY) === "1";
+  setSidebarCollapsed(
+    PRESENCE_SIDEBAR_COLLAPSE_KEY,
+    "presence-panel",
+    "presence-panel-toggle",
+    !collapsed,
+  );
+}
+
 // --- Init ---
 
 function init() {
@@ -321,6 +384,7 @@ function init() {
   setupScroll();
   setupSettingsKeys();
   setupKeyboardShortcuts();
+  applySidebarCollapseState();
   RulesPanel.init();
   Jobs.init();
   Sessions.init();
@@ -532,6 +596,9 @@ function connectWebSocket() {
       ).toLowerCase();
       const newHat = agentHats[newAgentKey] || "";
       document.querySelectorAll("#messages .message").forEach((el) => {
+        if ((el.dataset.sender || "") === event.old_name) {
+          el.dataset.sender = event.new_name;
+        }
         // Regular chat messages
         const senderEl = el.querySelector(".msg-sender");
         if (senderEl && senderEl.textContent === event.old_name) {
@@ -573,10 +640,12 @@ function connectWebSocket() {
           if (joinDot) joinDot.style.background = newColor;
         }
       });
+      renderChannelRoster();
     } else if (event.type === "agents") {
       applyAgentConfig(event.data);
     } else if (event.type === "base_colors") {
       baseColors = event.data || {};
+      renderChannelRoster();
     } else if (event.type === "todos") {
       todos = {};
       for (const [id, status] of Object.entries(event.data)) {
@@ -708,6 +777,7 @@ function connectWebSocket() {
         document.getElementById("messages").innerHTML = "";
         lastMessageDate = null;
         lastMessageDates = {};
+        renderChannelRoster();
       }
       requestAnimationFrame(() => {
         const _clearDbgAfter = _clearDbgList
@@ -813,6 +883,7 @@ function appendMessage(msg) {
   el.dataset.id = msg.id;
   const msgChannel = msg.channel || "general";
   el.dataset.channel = msgChannel;
+  el.dataset.sender = msg.sender || "";
 
   if (msg.type === "join" || msg.type === "leave") {
     el.classList.add("join-msg");
@@ -1016,6 +1087,8 @@ function appendMessage(msg) {
     window._collapseJobBreadcrumbs(container, el);
   }
 
+  renderChannelRoster();
+
   if (msgChannel !== activeChannel) return; // don't scroll for hidden messages
 
   if (autoScroll) {
@@ -1125,12 +1198,19 @@ function applyAgentConfig(data) {
   for (const [name, cfg] of Object.entries(data)) {
     agentConfig[name.toLowerCase()] = cfg;
   }
+  agentStatus = Object.fromEntries(
+    Object.entries(agentConfig).map(([name, cfg]) => [
+      name,
+      { ...(agentStatus[name] || {}), label: cfg.label, color: cfg.color },
+    ]),
+  );
   buildStatusPills();
   buildMentionToggles();
   buildSoundSettings();
   // Re-color any messages already rendered (e.g. from a reconnect)
   recolorMessages();
   updateJobReplyTargetUI();
+  renderChannelRoster();
 }
 
 function recolorMessages() {
@@ -1359,6 +1439,137 @@ function buildStatusPills() {
     container.appendChild(pill);
   }
   enableDragScroll(container);
+}
+
+function getChannelRosterEntries(channel = activeChannel) {
+  const participants = new Map();
+  const container = document.getElementById("messages");
+  const userKey = username.toLowerCase();
+
+  const upsertParticipant = (rawName) => {
+    const name = (rawName || "").trim();
+    if (!name) return;
+
+    const key = name.toLowerCase();
+    if (key === "system") return;
+
+    const resolved = resolveAgent(key);
+    const base = key.replace(/-\d+$/, "");
+    const statusKey = resolved || key;
+    const statusInfo = agentStatus[statusKey] || {};
+    const isAgent =
+      !!resolved || key in agentConfig || key in baseColors || base in baseColors;
+    const isSelf = key === userKey;
+    const displayName =
+      isSelf
+        ? name
+        : isAgent
+          ? statusInfo.label ||
+            agentConfig[statusKey]?.label ||
+            agentConfig[resolved || ""]?.label ||
+            name
+          : name;
+    const meta = [];
+
+    if (isSelf) {
+      meta.push("You");
+    } else if (isAgent) {
+      meta.push("Agent");
+      if (displayName !== name) meta.push(`@${name}`);
+    } else {
+      meta.push("User");
+    }
+
+    if (isAgent) {
+      meta.push(
+        statusInfo.available
+          ? statusInfo.busy
+            ? "working"
+            : "online"
+          : "offline",
+      );
+    }
+
+    participants.set(key, {
+      key,
+      name,
+      displayName,
+      isSelf,
+      isAgent,
+      available: !!statusInfo.available,
+      busy: !!statusInfo.busy,
+      role: isAgent ? statusInfo.role || _agentRoles[name] || "" : "",
+      color: getColor(name),
+      meta: meta.join(" · "),
+    });
+  };
+
+  upsertParticipant(username);
+
+  if (container) {
+    for (const el of container.children) {
+      if ((el.dataset.channel || "general") !== channel) continue;
+      upsertParticipant(el.dataset.sender || "");
+    }
+  }
+
+  return [...participants.values()].sort((a, b) => {
+    if (a.isSelf !== b.isSelf) return a.isSelf ? -1 : 1;
+    if (a.isAgent !== b.isAgent) return a.isAgent ? -1 : 1;
+
+    const aState = a.busy ? 0 : a.available ? 1 : 2;
+    const bState = b.busy ? 0 : b.available ? 1 : 2;
+    if (aState !== bState) return aState - bState;
+
+    return a.displayName.localeCompare(b.displayName);
+  });
+}
+
+function renderChannelRoster() {
+  const list = document.getElementById("presence-list");
+  const channelLabel = document.getElementById("presence-channel-label");
+  const count = document.getElementById("presence-count");
+  if (!list || !channelLabel || !count) return;
+
+  channelLabel.textContent = "#" + activeChannel;
+  const participants = getChannelRosterEntries(activeChannel);
+  count.textContent = String(participants.length);
+  list.innerHTML = "";
+
+  if (participants.length === 0) {
+    list.innerHTML =
+      '<div class="presence-empty">No one has posted in this channel yet.</div>';
+    return;
+  }
+
+  for (const entry of participants) {
+    const item = document.createElement("div");
+    item.className = "presence-item";
+    if (entry.isSelf) item.classList.add("self");
+    if (entry.available) item.classList.add("available");
+    if (entry.busy) item.classList.add("working");
+    if (entry.isAgent && !entry.available) item.classList.add("offline");
+
+    const roleHtml = entry.role
+      ? `<span class="presence-role">${escapeHtml(entry.role)}</span>`
+      : "";
+
+    item.innerHTML = `
+      <div class="presence-avatar-wrap">
+        <div class="presence-avatar" style="--bubble-color: ${entry.color}; background-color: ${entry.color}">
+          ${getAvatarSvg(entry.name)}
+        </div>
+        <span class="presence-state-dot"></span>
+      </div>
+      <div class="presence-body">
+        <div class="presence-name-row">
+          <span class="presence-name">${escapeHtml(entry.displayName)}</span>
+          ${roleHtml}
+        </div>
+        <div class="presence-meta">${escapeHtml(entry.meta)}</div>
+      </div>`;
+    list.appendChild(item);
+  }
 }
 
 // --- Role presets (shared by pill popover + bubble picker) ---
@@ -2026,6 +2237,8 @@ const _ROLE_EMOJI = {
 function updateStatus(data) {
   for (const [name, info] of Object.entries(data)) {
     if (name === "paused") continue;
+    const key = name.toLowerCase();
+    agentStatus[key] = { ...(agentStatus[key] || {}), ...info };
     const pill = document.getElementById(`status-${name}`);
     if (!pill) continue;
 
@@ -2050,6 +2263,8 @@ function updateStatus(data) {
       _syncBubbleRolePills(name);
     }
   }
+
+  renderChannelRoster();
 }
 
 function updateTyping(agent, active) {
@@ -2119,6 +2334,10 @@ function applySettings(data) {
       switchChannel(name);
     }
   }
+  if (window.renderRoomSidebar) {
+    window.renderRoomSidebar();
+  }
+  renderChannelRoster();
 }
 
 function toggleSettings() {
@@ -2913,7 +3132,7 @@ function setupScroll() {
 
   // Reposition scroll-anchor when window resizes or sidebars toggle
   window.addEventListener("resize", repositionScrollAnchor);
-  const contentArea = document.querySelector(".content-area");
+  const contentArea = document.querySelector("#content-area");
   if (contentArea) {
     new ResizeObserver(repositionScrollAnchor).observe(contentArea);
   }
@@ -3280,6 +3499,7 @@ function handleDeleteBroadcast(ids) {
   // Refresh todos panel if open
   const panel = document.getElementById("pins-panel");
   if (panel && !panel.classList.contains("hidden")) renderTodosPanel();
+  renderChannelRoster();
 }
 
 function togglePinsPanel() {
@@ -4246,20 +4466,20 @@ function _helpCardDefs() {
     },
     {
       id: "hg-channels",
-      anchor: "#channel-tabs",
+      anchor: "#room-sidebar",
       row: "middle",
       light: true,
       wide: true,
       html:
-        '<div class="hg-module-title">Channels <span class="hg-loc">top bar</span></div>' +
-        '<p class="hg-module-desc">Split conversations by topic. Each channel has its own message history.</p>' +
+        '<div class="hg-module-title">Channels <span class="hg-loc">left rail</span></div>' +
+        '<p class="hg-module-desc">Rooms group the project, and channels split the work by topic. Each channel keeps its own history.</p>' +
         '<div class="hg-mock-channels">' +
         '<span class="hg-mock-ch active"># general</span>' +
         '<span class="hg-mock-ch"># design</span>' +
         '<span class="hg-mock-ch"># backend</span>' +
         '<span class="hg-mock-ch-add">+</span>' +
         "</div>" +
-        '<p class="hg-module-tip">Click <strong>+</strong> to create a new channel. Agents can be mentioned in any channel.</p>',
+        '<p class="hg-module-tip">Open the room on the left to switch channels quickly. The top bar still exposes rename and delete controls.</p>',
     },
     {
       id: "hg-mentions",
@@ -4694,6 +4914,9 @@ function _helpKeyHandler(e) {
 
 window.toggleHelp = toggleHelp;
 window.closeHelp = closeHelp;
+window.renderChannelRoster = renderChannelRoster;
+window.toggleRoomSidebar = toggleRoomSidebar;
+window.togglePresenceSidebar = togglePresenceSidebar;
 
 // Auto-show on first visit
 function initHelpTour() {
