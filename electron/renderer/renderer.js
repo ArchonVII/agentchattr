@@ -403,6 +403,14 @@ function bindEvents() {
   window.electronAPI?.onDeepLink?.((url) => {
     handleDeepLink(url);
   });
+
+  window.electronAPI?.onFocusChannel?.((channel) => {
+    activateTab("chat");
+    if (channel) {
+      state.pendingChannel = channel;
+      void synchronisePendingChannel();
+    }
+  });
 }
 
 function init() {

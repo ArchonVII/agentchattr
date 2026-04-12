@@ -35,6 +35,52 @@ const COLOUR_SWATCHES = [
   "#8b5cf6",
 ];
 
+function normalizeManagedAgentsPayload(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  if (payload && Array.isArray(payload.processes)) return payload.processes;
+  return [];
+}
+
+function normalizeRestoreAgentsPayload(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  if (payload && Array.isArray(payload.agents)) return payload.agents;
+  return [];
+}
+
+function normalizeAgentLogEvent(event) {
+  var source =
+    event &&
+    event.data &&
+    typeof event.data === "object" &&
+    !Array.isArray(event.data)
+      ? event.data
+      : event || {};
+
+  return {
+    name: source.name || "",
+    line: typeof source.line === "string" ? source.line : "",
+    lines: Array.isArray(source.lines) ? source.lines : [],
+  };
+}
+
+function buildRestoreLaunchBody(agent) {
+  var body = {
+    flags: Array.isArray(agent && agent.flags) ? agent.flags : [],
+    extra_args: Array.isArray(agent && agent.extra_args) ? agent.extra_args : [],
+  };
+
+  if (agent && agent.cwd) body.cwd = agent.cwd;
+  if (agent && agent.instance_label) {
+    body.instance_label = agent.instance_label;
+  } else if (agent && agent.name && agent.base && agent.name !== agent.base) {
+    body.instance_label = agent.name;
+  }
+
+  return body;
+}
+
 // ---------------------------------------------------------------------------
 // Data fetching
 // ---------------------------------------------------------------------------
@@ -57,7 +103,7 @@ async function fetchManagedAgents() {
     const res = await fetch("/api/agents/managed");
     if (!res.ok) return;
     const data = await res.json();
-    launcherProcesses = data.processes || [];
+    launcherProcesses = normalizeManagedAgentsPayload(data);
     renderLauncherPanel();
   } catch (e) {
     console.error("[launcher] fetchManagedAgents error:", e);
@@ -687,8 +733,9 @@ async function fetchRestoreAgents() {
     var res = await fetch("/api/agents/restore");
     if (!res.ok) return;
     var data = await res.json();
-    if (data.agents && data.agents.length > 0) {
-      showRestoreBanner(data.agents);
+    var agents = normalizeRestoreAgentsPayload(data);
+    if (agents.length > 0) {
+      showRestoreBanner(agents);
     }
   } catch (e) {
     console.error("[launcher] fetchRestoreAgents error:", e);
@@ -722,6 +769,7 @@ function showRestoreBanner(agents) {
     cb.checked = true;
     cb.value = agent.name || agent.base || "";
     cb.setAttribute("data-base", agent.base || "");
+    cb.setAttribute("data-launch-body", JSON.stringify(buildRestoreLaunchBody(agent)));
     item.appendChild(cb);
     var span = document.createElement("span");
     span.textContent = agent.label || agent.name || agent.base;
@@ -755,21 +803,28 @@ async function relaunchSelected() {
   var launches = [];
   checkboxes.forEach(function (cb) {
     var base = cb.getAttribute("data-base") || cb.value;
-    if (base) launches.push(base);
+    if (!base) return;
+    var body = {};
+    try {
+      body = JSON.parse(cb.getAttribute("data-launch-body") || "{}");
+    } catch (_err) {
+      body = {};
+    }
+    launches.push({ base: base, body: body });
   });
 
   for (var li = 0; li < launches.length; li++) {
     try {
       await fetch(
-        "/api/agents/" + encodeURIComponent(launches[li]) + "/launch",
+        "/api/agents/" + encodeURIComponent(launches[li].base) + "/launch",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify(launches[li].body),
         },
       );
     } catch (e) {
-      console.error("[launcher] relaunch error for", launches[li], e);
+      console.error("[launcher] relaunch error for", launches[li].base, e);
     }
   }
 
@@ -792,59 +847,75 @@ async function dismissRestore() {
 // Hub event subscriptions
 // ---------------------------------------------------------------------------
 
-Hub.on("agent_processes", function (event) {
-  launcherProcesses = event.processes || event.data || [];
-  renderLauncherPanel();
-});
+if (typeof Hub !== "undefined") {
+  Hub.on("agent_processes", function (event) {
+    launcherProcesses = normalizeManagedAgentsPayload(event);
+    renderLauncherPanel();
+  });
 
-Hub.on("agent_log", function (event) {
-  var name = event.name;
-  if (!name) return;
-  if (!launcherLogs[name]) launcherLogs[name] = [];
-  if (event.line) {
-    launcherLogs[name].push(event.line);
-    // Cap at 500 lines
-    if (launcherLogs[name].length > 500) {
-      launcherLogs[name] = launcherLogs[name].slice(-500);
+  Hub.on("agent_log", function (event) {
+    var logEvent = normalizeAgentLogEvent(event);
+    var name = logEvent.name;
+    if (!name) return;
+    if (!launcherLogs[name]) launcherLogs[name] = [];
+    if (logEvent.line) {
+      launcherLogs[name].push(logEvent.line);
+      // Cap at 500 lines
+      if (launcherLogs[name].length > 500) {
+        launcherLogs[name] = launcherLogs[name].slice(-500);
+      }
     }
-  }
-  if (event.lines) {
-    launcherLogs[name] = launcherLogs[name].concat(event.lines);
-    if (launcherLogs[name].length > 500) {
-      launcherLogs[name] = launcherLogs[name].slice(-500);
+    if (logEvent.lines.length > 0) {
+      launcherLogs[name] = launcherLogs[name].concat(logEvent.lines);
+      if (launcherLogs[name].length > 500) {
+        launcherLogs[name] = launcherLogs[name].slice(-500);
+      }
     }
-  }
-  if (launcherLogsOpen[name]) {
-    renderAgentLogs(name);
-  }
-});
+    if (launcherLogsOpen[name]) {
+      renderAgentLogs(name);
+    }
+  });
 
-Hub.on("session_restore", function (event) {
-  var agents = event.agents || (event.data && event.data.agents) || [];
-  if (agents.length > 0) {
-    showRestoreBanner(agents);
-  }
-});
+  Hub.on("session_restore", function (event) {
+    var agents = normalizeRestoreAgentsPayload(event);
+    if (agents.length > 0) {
+      showRestoreBanner(agents);
+    }
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Init: fetch restore agents on load
 // ---------------------------------------------------------------------------
 
-document.addEventListener("DOMContentLoaded", function () {
-  fetchRestoreAgents();
-});
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", function () {
+    fetchRestoreAgents();
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Window exports (for onclick handlers)
 // ---------------------------------------------------------------------------
 
-window.toggleLauncherPanel = toggleLauncherPanel;
-window.toggleAddAgentForm = toggleAddAgentForm;
-window.launchAgent = launchAgent;
-window.stopAgent = stopAgent;
-window.toggleLaunchConfig = toggleLaunchConfig;
-window.toggleAgentLogs = toggleAgentLogs;
-window.selectColourSwatch = selectColourSwatch;
-window.saveNewAgent = saveNewAgent;
-window.relaunchSelected = relaunchSelected;
-window.dismissRestore = dismissRestore;
+if (typeof window !== "undefined") {
+  window.toggleLauncherPanel = toggleLauncherPanel;
+  window.toggleAddAgentForm = toggleAddAgentForm;
+  window.launchAgent = launchAgent;
+  window.stopAgent = stopAgent;
+  window.toggleLaunchConfig = toggleLaunchConfig;
+  window.toggleAgentLogs = toggleAgentLogs;
+  window.selectColourSwatch = selectColourSwatch;
+  window.saveNewAgent = saveNewAgent;
+  window.relaunchSelected = relaunchSelected;
+  window.dismissRestore = dismissRestore;
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    buildRestoreLaunchBody,
+    normalizeAgentLogEvent,
+    normalizeManagedAgentsPayload,
+    normalizeRestoreAgentsPayload,
+  };
+}

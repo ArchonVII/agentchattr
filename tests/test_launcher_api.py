@@ -1,5 +1,6 @@
 """Integration tests for the Agent Launcher REST API endpoints."""
 
+import json
 import sys
 import tempfile
 from pathlib import Path
@@ -17,6 +18,30 @@ _tmpdir: str = ""
 client: TestClient
 
 COOKIES = {"session": "test-token"}
+
+
+class CaptureProcessManager:
+    def __init__(self):
+        self.launch_calls = []
+
+    def launch(self, **kwargs):
+        self.launch_calls.append(kwargs)
+        return {"ok": True, "name": kwargs["base"], "pid": 4242}
+
+    def list_managed(self):
+        return []
+
+    def get_restore_state(self):
+        return []
+
+    def clear_restore_state(self):
+        return None
+
+    def stop(self, name: str):
+        return {"ok": True, "name": name}
+
+    def get_logs(self, name: str):
+        return []
 
 
 def setup_module():
@@ -110,3 +135,64 @@ def test_list_managed_empty():
     resp = client.get("/api/agents/managed", cookies=COOKIES)
     assert resp.status_code == 200
     assert resp.json() == {"data": []}
+
+
+def test_launch_endpoint_keeps_agent_flags_after_wrapper_and_tokenizes_extra_args():
+    original_pm = app_module.process_manager
+    capture_pm = CaptureProcessManager()
+    app_module.process_manager = capture_pm
+
+    try:
+        resp = client.post(
+            "/api/agents/testbot/launch",
+            json={
+                "cwd": ".",
+                "flags": ["--dangerously-skip-permissions"],
+                "extra_args": '--model "claude sonnet" --json',
+                "instance_label": "review-bot",
+            },
+            cookies=COOKIES,
+        )
+    finally:
+        app_module.process_manager = original_pm
+
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
+    assert len(capture_pm.launch_calls) == 1
+
+    call = capture_pm.launch_calls[0]
+    wrapper_path = str(ROOT / "wrapper.py")
+    assert call["command"] == sys.executable
+    assert call["flags"] == []
+    assert call["extra_args"] == [
+        wrapper_path,
+        "testbot",
+        "--no-restart",
+        "--label",
+        "review-bot",
+        "--",
+        "--dangerously-skip-permissions",
+        "--model",
+        "claude sonnet",
+        "--json",
+    ]
+
+
+def test_websocket_continue_resumes_requested_channel():
+    app_module.router._get_ch("planning")["paused"] = True
+    app_module.router._get_ch("planning")["hop_count"] = 99
+
+    with client.websocket_connect("/ws", cookies=COOKIES) as ws:
+        ws.send_text(
+            json.dumps(
+                {
+                    "type": "message",
+                    "sender": "user",
+                    "text": "/continue",
+                    "channel": "planning",
+                }
+            )
+        )
+
+    assert app_module.router.is_paused("planning") is False
+    assert app_module.router._get_ch("planning")["hop_count"] == 0

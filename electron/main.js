@@ -257,10 +257,6 @@ function startServer(pythonPath) {
 function wireModules() {
   if (!mainWindow) return;
 
-  // Preferences (H-1 fix: this replaces the duplicate handlers from registerIpcHandlers)
-  const { createPreferences } = require("./preferences");
-  preferences = createPreferences();
-
   // Dialogs
   const { setupDialogs } = require("./dialogs");
   setupDialogs(mainWindow);
@@ -291,6 +287,11 @@ function wireModules() {
 
 app.whenReady().then(() => {
   registerIpcHandlers();
+
+  if (!preferences) {
+    const { createPreferences } = require("./preferences");
+    preferences = createPreferences();
+  }
 
   const pythonPath = findPythonPath();
   if (!pythonPath) {

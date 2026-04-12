@@ -11,6 +11,7 @@ import json
 import logging
 import subprocess
 import threading
+import time
 from collections import deque
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -50,16 +51,19 @@ class ManagedAgent:
 
     def __init__(
         self,
+        base: str,
         name: str,
         proc: subprocess.Popen,
         command: str,
         flags: list[str],
         extra_args: list[str],
         cwd: str,
+        instance_label: str | None = None,
         *,
         on_log: Optional[Callable[[str, str], None]] = None,
         on_state_change: Optional[Callable[[str, str, str], None]] = None,
     ):
+        self.base = base
         self.name = name
         self.proc = proc
         self.command = command
@@ -67,6 +71,8 @@ class ManagedAgent:
         self.extra_args = list(extra_args)
         self.cwd = cwd
         self.pid = proc.pid
+        self.instance_label = instance_label
+        self.started_at = time.time()
         self.log_buffer: deque[str] = deque(maxlen=100)
         self._state = "starting"
         self._on_log = on_log
@@ -154,6 +160,7 @@ class ManagedAgent:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "base": self.base,
             "name": self.name,
             "pid": self.pid,
             "state": self.state,
@@ -161,7 +168,32 @@ class ManagedAgent:
             "flags": self.flags,
             "extra_args": self.extra_args,
             "cwd": self.cwd,
+            "instance_label": self.instance_label,
+            "started_at": self.started_at,
             "log_lines": len(self.log_buffer),
+        }
+
+    def to_restore_dict(self) -> dict[str, Any]:
+        restore_flags = list(self.flags)
+        restore_extra_args = list(self.extra_args)
+
+        if restore_extra_args:
+            first_arg = Path(str(restore_extra_args[0])).name.lower()
+            if first_arg == "wrapper.py":
+                if "--" in restore_extra_args:
+                    restore_extra_args = restore_extra_args[restore_extra_args.index("--") + 1 :]
+                else:
+                    restore_extra_args = []
+                restore_flags = []
+
+        return {
+            "base": self.base,
+            "name": self.name,
+            "flags": restore_flags,
+            "extra_args": restore_extra_args,
+            "cwd": self.cwd,
+            "instance_label": self.instance_label,
+            "started_at": self.started_at,
         }
 
 
@@ -211,13 +243,7 @@ class ProcessManager:
         entries = []
         for agent in self._agents.values():
             if agent.state in ("starting", "running"):
-                entries.append({
-                    "name": agent.name,
-                    "command": agent.command,
-                    "flags": agent.flags,
-                    "extra_args": agent.extra_args,
-                    "cwd": agent.cwd,
-                })
+                entries.append(agent.to_restore_dict())
         try:
             self._state_file.write_text(
                 json.dumps(entries, indent=2), encoding="utf-8"
@@ -277,12 +303,14 @@ class ProcessManager:
             return {"ok": False, "error": str(exc)}
 
         agent = ManagedAgent(
+            base=base,
             name=name,
             proc=proc,
             command=command,
             flags=flags,
             extra_args=extra_args,
             cwd=str(cwd_path),
+            instance_label=instance_label,
             on_log=self._on_log,
             on_state_change=self._on_state_change,
         )

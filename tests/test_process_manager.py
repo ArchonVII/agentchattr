@@ -51,3 +51,83 @@ def test_launch_duplicate_base_gets_suffix():
     pm.shutdown()
     import shutil
     shutil.rmtree("./test_data", ignore_errors=True)
+
+
+def test_managed_and_restore_state_include_base_metadata():
+    """Managed agents and restore state preserve the originating base name."""
+    pm = ProcessManager(data_dir=Path("./test_data"), server_port=8300)
+    pm.launch(
+        base="bot",
+        command=sys.executable,
+        flags=[],
+        extra_args=["-c", "import time; time.sleep(2)"],
+        cwd=".",
+    )
+    pm.launch(
+        base="bot",
+        command=sys.executable,
+        flags=[],
+        extra_args=["-c", "import time; time.sleep(2)"],
+        cwd=".",
+        instance_label="review-bot",
+    )
+
+    managed = sorted(pm.list_managed(), key=lambda item: item["name"])
+    assert managed[0]["base"] == "bot"
+    assert managed[1]["base"] == "bot"
+    assert managed[0]["started_at"] > 0
+    assert managed[1]["started_at"] > 0
+
+    restore = sorted(pm.get_restore_state(), key=lambda item: item["name"])
+    assert restore[0]["base"] == "bot"
+    assert restore[1]["base"] == "bot"
+    assert restore[0]["started_at"] > 0
+    assert restore[1]["started_at"] > 0
+
+    pm.stop("bot")
+    pm.stop("review-bot")
+    pm.shutdown()
+    import shutil
+    shutil.rmtree("./test_data", ignore_errors=True)
+
+
+def test_restore_state_keeps_relaunchable_user_args_from_wrapper_invocation():
+    """Restore state should keep the user-facing args, not the raw wrapper invocation."""
+    pm = ProcessManager(data_dir=Path("./test_data"), server_port=8300)
+    wrapper_path = str(ROOT / "wrapper.py")
+    pm.launch(
+        base="bot",
+        command=sys.executable,
+        flags=[],
+        extra_args=[
+            wrapper_path,
+            "bot",
+            "--no-restart",
+            "--label",
+            "review-bot",
+            "--",
+            "--dangerously-skip-permissions",
+            "--model",
+            "claude sonnet",
+            "--json",
+        ],
+        cwd=".",
+        instance_label="review-bot",
+    )
+
+    restore = pm.get_restore_state()
+    assert len(restore) == 1
+    assert restore[0]["base"] == "bot"
+    assert restore[0]["instance_label"] == "review-bot"
+    assert restore[0]["flags"] == []
+    assert restore[0]["extra_args"] == [
+        "--dangerously-skip-permissions",
+        "--model",
+        "claude sonnet",
+        "--json",
+    ]
+
+    pm.stop("review-bot")
+    pm.shutdown()
+    import shutil
+    shutil.rmtree("./test_data", ignore_errors=True)

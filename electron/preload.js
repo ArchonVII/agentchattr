@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onDeepLink(callback) {
     ipcRenderer.on("deep-link", (_event, url) => callback(url));
   },
+  onFocusChannel(callback) {
+    ipcRenderer.on("focus-channel", (_event, channel) => callback(channel));
+  },
   // H-2 fix: forward webview notifications to main process
   sendNotification(payload) {
     ipcRenderer.send("send-notification", payload);

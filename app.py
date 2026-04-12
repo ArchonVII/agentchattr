@@ -3,6 +3,7 @@
 import asyncio
 import json
 import re as _re
+import shlex
 import sys
 import threading
 import time as _time
@@ -1199,7 +1200,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         await broadcast_clear(channel=channel)
                         continue
                     if cmd == "/continue":
-                        router.continue_routing()
+                        router.continue_routing(channel)
                         store.add("system", "Resuming agent conversation...", msg_type="system", channel=channel)
                         await broadcast_status()
                         continue
@@ -2789,8 +2790,19 @@ async def launch_agent(base: str, request: Request):
         body = await request.json()
     except Exception:
         body = {}
-    flags = body.get("flags", [])
-    extra_args = body.get("extra_args", [])
+    raw_flags = body.get("flags", [])
+    if isinstance(raw_flags, list):
+        flags = [str(flag) for flag in raw_flags if str(flag).strip()]
+    else:
+        flags = []
+
+    raw_extra_args = body.get("extra_args", [])
+    if isinstance(raw_extra_args, str):
+        extra_args = shlex.split(raw_extra_args)
+    elif isinstance(raw_extra_args, list):
+        extra_args = [str(arg) for arg in raw_extra_args if str(arg).strip()]
+    else:
+        extra_args = []
     cwd = body.get("cwd") or room_settings.get("default_cwd") or "."
     instance_label = body.get("instance_label")
 
@@ -2800,8 +2812,6 @@ async def launch_agent(base: str, request: Request):
     agent_def = all_agents.get(base)
     if not agent_def:
         return JSONResponse({"error": f"unknown agent: {base}"}, status_code=400)
-
-    command = agent_def.get("command", base)
 
     # Build wrapper.py command
     import sys as _sys
@@ -2816,7 +2826,7 @@ async def launch_agent(base: str, request: Request):
     result = process_manager.launch(
         base=base,
         command=wrapper_cmd[0],
-        flags=flags,
+        flags=[],
         extra_args=wrapper_cmd[1:],
         cwd=cwd,
         instance_label=instance_label,
