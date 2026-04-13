@@ -2722,8 +2722,15 @@ async def list_agent_definitions():
     from config_loader import load_agent_definitions
     from process_manager import AGENT_FLAG_PRESETS
     data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
-    defs = load_agent_definitions(data_dir, config.get("_base_agents", config.get("agents", {})))
-    return JSONResponse({"definitions": defs, "flag_presets": AGENT_FLAG_PRESETS})
+    base_agents = config.get("_base_agents", config.get("agents", {}))
+    defs = load_agent_definitions(data_dir, base_agents)
+    return JSONResponse(
+        {
+            "definitions": defs,
+            "flag_presets": AGENT_FLAG_PRESETS,
+            "builtin_names": sorted(base_agents.keys()),
+        }
+    )
 
 
 @app.post("/api/agent-definitions")
@@ -2867,6 +2874,30 @@ async def stop_agent(name: str):
     if not process_manager:
         return JSONResponse({"error": "process manager not initialised"}, status_code=500)
     result = process_manager.stop(name)
+    if result.get("ok") and registry:
+        target_name = name
+        deregistered = registry.deregister(target_name)
+        if not deregistered:
+            resolved_name = registry.resolve_name(name)
+            if resolved_name != name:
+                target_name = resolved_name
+                deregistered = registry.deregister(target_name)
+        if deregistered:
+            import mcp_bridge
+
+            mcp_bridge.purge_identity(target_name)
+            registry.clean_renames_for(target_name)
+            renamed = deregistered.pop("_renamed_back", None)
+            if renamed:
+                mcp_bridge.migrate_identity(renamed["old"], renamed["new"])
+                store.rename_sender(renamed["old"], renamed["new"])
+                if _event_loop:
+                    rename_event = json.dumps({
+                        "type": "agent_renamed",
+                        "old_name": renamed["old"],
+                        "new_name": renamed["new"],
+                    })
+                    asyncio.run_coroutine_threadsafe(_broadcast(rename_event), _event_loop)
     if result.get("ok") and _event_loop:
         managed = process_manager.list_managed()
         event_data = json.dumps({"type": "agent_processes", "data": managed})

@@ -3,6 +3,7 @@
 import json
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -87,13 +88,16 @@ def test_list_definitions():
     body = resp.json()
     assert "definitions" in body
     assert "flag_presets" in body
+    assert "builtin_names" in body
     assert isinstance(body["definitions"], dict)
     assert isinstance(body["flag_presets"], dict)
+    assert isinstance(body["builtin_names"], list)
 
     # The testbot from config.toml must appear
     assert "testbot" in body["definitions"]
     assert body["definitions"]["testbot"]["command"] == "echo"
     assert body["definitions"]["testbot"]["label"] == "TestBot"
+    assert "testbot" in body["builtin_names"]
 
 
 def test_add_and_delete_definition():
@@ -113,11 +117,13 @@ def test_add_and_delete_definition():
     # Verify it appears in GET
     resp = client.get("/api/agent-definitions", cookies=COOKIES)
     assert resp.status_code == 200
-    defs = resp.json()["definitions"]
+    body = resp.json()
+    defs = body["definitions"]
     assert "mybot" in defs
     assert defs["mybot"]["command"] == "python"
     assert defs["mybot"]["label"] == "MyBot"
     assert defs["mybot"]["color"] == "#ff0000"
+    assert "mybot" not in body["builtin_names"]
 
     # Delete
     resp = client.delete("/api/agent-definitions/mybot", cookies=COOKIES)
@@ -157,6 +163,36 @@ def test_custom_definition_updates_runtime_registry():
     assert delete_resp.status_code == 200
 
     assert app_module.registry.get_base_config("regbot") is None
+
+
+def test_stop_endpoint_deregisters_runtime_instance_for_followup_delete():
+    new_agent = {
+        "name": "stopbot",
+        "command": "python",
+        "label": "StopBot",
+        "color": "#ffaa00",
+    }
+
+    resp = client.post("/api/agent-definitions", json=new_agent, cookies=COOKIES)
+    assert resp.status_code == 200
+
+    app_module.registry.register("stopbot")
+
+    original_pm = app_module.process_manager
+    capture_pm = CaptureProcessManager()
+    app_module.process_manager = capture_pm
+
+    try:
+        stop_resp = client.post("/api/agents/stopbot/stop", cookies=COOKIES)
+    finally:
+        app_module.process_manager = original_pm
+
+    assert stop_resp.status_code == 200
+    assert stop_resp.json()["ok"] is True
+
+    delete_resp = client.delete("/api/agent-definitions/stopbot", cookies=COOKIES)
+    assert delete_resp.status_code == 200
+    assert app_module.registry.get_base_config("stopbot") is None
 
 
 def test_list_managed_empty():
@@ -223,6 +259,9 @@ def test_websocket_continue_resumes_requested_channel():
                 }
             )
         )
+        deadline = time.time() + 1.0
+        while time.time() < deadline and app_module.router.is_paused("planning"):
+            time.sleep(0.05)
 
     assert app_module.router.is_paused("planning") is False
     assert app_module.router._get_ch("planning")["hop_count"] == 0

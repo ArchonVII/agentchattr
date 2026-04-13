@@ -372,6 +372,41 @@ async function runLauncherSmoke() {
 
     cookieHeader = toCookieHeader(await context.cookies(BASE_URL));
 
+    await page.click("#launcher-toggle");
+    await assertLauncherPanelOpen(page);
+
+    for (const instanceName of [firstInstanceName, secondInstanceName]) {
+      await waitFor(
+        () =>
+          page
+            .locator(`button.launcher-btn.danger[data-name="${instanceName}"]`)
+            .count(),
+        `stop control for ${instanceName}`,
+      );
+      await page
+        .locator(`button.launcher-btn.danger[data-name="${instanceName}"]`)
+        .click();
+      await waitFor(async () => {
+        const payload = await page.evaluate(() =>
+          fetch("/api/agents/managed").then((response) => response.json()),
+        );
+        const instance = payload.data.find((item) => item.name === instanceName);
+        return (
+          !instance ||
+          (instance.state !== "running" && instance.state !== "starting")
+        );
+      }, `${instanceName} to stop`);
+    }
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await card.getByRole("button", { name: "Delete", exact: true }).click();
+    await waitFor(async () => {
+      const payload = await page.evaluate(() =>
+        fetch("/api/agent-definitions").then((response) => response.json()),
+      );
+      return !payload.definitions[definition.name];
+    }, `${definition.name} definition to delete`);
+
     console.log(
       `Launcher smoke passed for ${definition.name} and ${secondInstanceName}.`,
     );

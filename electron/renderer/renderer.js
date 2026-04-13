@@ -6,12 +6,23 @@ const state = {
   notice: null,
   pendingChannel: null,
   webviewReady: false,
+  browserPane: window.BrowserPaneState.createBrowserPaneState(),
 };
+
+const CHANNEL_SYNC_RETRY_MS = 250;
+const CHANNEL_SYNC_MAX_ATTEMPTS = 40;
 
 const elements = {
   tabButtons: Array.from(document.querySelectorAll(".tab-button")),
   popOutButtons: Array.from(document.querySelectorAll(".pop-out-button")),
+  chatShell: document.getElementById("chat-shell"),
   chatWebview: document.getElementById("chat-webview"),
+  browserPane: document.getElementById("browser-pane"),
+  browserWebview: document.getElementById("browser-webview"),
+  browserPaneMeta: document.getElementById("browser-pane-meta"),
+  browserPaneUrl: document.getElementById("browser-pane-url"),
+  browserPanePopout: document.getElementById("browser-pane-popout"),
+  browserPaneClose: document.getElementById("browser-pane-close"),
   portsContainer: document.getElementById("ports-container"),
 };
 
@@ -52,7 +63,7 @@ function activateTab(tabName) {
     button.setAttribute("aria-selected", String(isActive));
   }
 
-  elements.chatWebview.hidden = tabName !== "chat";
+  elements.chatShell.hidden = tabName !== "chat";
   elements.portsContainer.hidden = tabName !== "ports";
 }
 
@@ -246,6 +257,56 @@ function renderPorts() {
   container.appendChild(shell);
 }
 
+async function handleDesktopCommand(payload) {
+  const result = window.BrowserPaneState.reduceBrowserCommand(
+    state.browserPane,
+    payload,
+  );
+  if (result.error) {
+    return;
+  }
+
+  state.browserPane = result.state;
+  renderBrowserPane();
+
+  if (payload?.target !== "window") {
+    activateTab("chat");
+  }
+
+  if (result.effect) {
+    await runBrowserPaneEffect(result.effect);
+  }
+}
+
+async function runBrowserPaneEffect(effect) {
+  if (!effect || effect.type !== "popout" || !effect.url) {
+    return;
+  }
+
+  try {
+    await window.electronAPI?.openBrowserUrl?.(effect.url);
+  } catch (error) {
+    console.error("Unable to open browser url:", error);
+  }
+}
+
+function renderBrowserPane() {
+  const pane = state.browserPane;
+  const visible = !!pane.visible && !!pane.url;
+
+  elements.browserPane.hidden = !visible;
+  elements.browserPaneMeta.textContent = pane.requestedBy
+    ? `Requested by ${pane.requestedBy}`
+    : "No page open";
+  elements.browserPaneUrl.textContent = pane.url || "about:blank";
+  elements.browserPanePopout.disabled = !pane.url;
+  elements.browserPaneClose.disabled = !visible;
+
+  if (pane.url && elements.browserWebview.getAttribute("src") !== pane.url) {
+    elements.browserWebview.setAttribute("src", pane.url);
+  }
+}
+
 function parseDeepLink(rawUrl) {
   try {
     const url = new URL(rawUrl);
@@ -317,16 +378,26 @@ async function synchronisePendingChannel(attempt = 0) {
   try {
     const result = await elements.chatWebview.executeJavaScript(script, true);
 
-    if (result === "switched" || attempt >= 10) {
+    if (result === "switched" || attempt >= CHANNEL_SYNC_MAX_ATTEMPTS) {
       state.pendingChannel = null;
       return;
     }
 
     setTimeout(() => {
       void synchronisePendingChannel(attempt + 1);
-    }, 250);
+    }, CHANNEL_SYNC_RETRY_MS);
   } catch (error) {
-    console.error("Unable to switch channel in chat webview:", error);
+    if (attempt >= CHANNEL_SYNC_MAX_ATTEMPTS) {
+      console.error("Unable to switch channel in chat webview:", error);
+      state.pendingChannel = null;
+      return;
+    }
+
+    // The webview can still be navigating when deep-link/focus events land.
+    // Retry instead of dropping the pending channel on the first transient error.
+    setTimeout(() => {
+      void synchronisePendingChannel(attempt + 1);
+    }, CHANNEL_SYNC_RETRY_MS);
   }
 }
 
@@ -381,10 +452,28 @@ function bindEvents() {
     void synchronisePendingChannel();
   });
 
+  elements.browserPanePopout.addEventListener("click", () => {
+    const result = window.BrowserPaneState.popoutBrowserPane(state.browserPane);
+    state.browserPane = result.state;
+    renderBrowserPane();
+    if (result.effect) {
+      void runBrowserPaneEffect(result.effect);
+    }
+  });
+
+  elements.browserPaneClose.addEventListener("click", () => {
+    state.browserPane = window.BrowserPaneState.closeBrowserPane(
+      state.browserPane,
+    );
+    renderBrowserPane();
+  });
+
   // H-2 fix: bridge webview ipc-message to main process for notifications
   elements.chatWebview.addEventListener("ipc-message", (event) => {
     if (event.channel === "send-notification") {
       window.electronAPI?.sendNotification?.(event.args[0]);
+    } else if (event.channel === "desktop-command") {
+      void handleDesktopCommand(event.args[0]);
     }
   });
 
@@ -417,6 +506,7 @@ function init() {
   configureWebview();
   bindEvents();
   activateTab("chat");
+  renderBrowserPane();
   renderPorts();
 }
 

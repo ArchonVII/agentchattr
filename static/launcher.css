@@ -203,6 +203,11 @@
   border-color: var(--text-dim);
 }
 
+.launcher-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .launcher-btn.primary {
   border-color: var(--accent);
   color: var(--accent);

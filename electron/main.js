@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const net = require("net");
 const { pathToFileURL } = require("url");
+const { openBrowserWindow } = require("./browser-window");
 
 // --- Constants (CASK: Constants first) ---
 const REPO_ROOT = path.resolve(__dirname, "..");
@@ -60,6 +61,10 @@ function registerIpcHandlers() {
         error: error instanceof Error ? error.message : String(error),
       };
     }
+  });
+
+  ipcMain.handle("open-browser-url", async (_event, url) => {
+    return openBrowserWindow(url, mainWindow);
   });
 
   // H-1 fix: Do NOT register get-preference, set-preference, or show-open-dialog here.

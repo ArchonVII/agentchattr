@@ -20,6 +20,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   requestPopOut(view) {
     ipcRenderer.send("pop-out", view);
   },
+  openBrowserUrl(url) {
+    return ipcRenderer.invoke("open-browser-url", url);
+  },
   killProcess(pid) {
     return ipcRenderer.invoke("kill-process", pid);
   },

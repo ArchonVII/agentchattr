@@ -10,6 +10,13 @@
 
 **Spec:** `docs/superpowers/specs/2026-04-05-agent-launcher-panel-design.md`
 
+## Status Snapshot (2026-04-12)
+
+- Implementation landed across `93d32b6`, `141c9ed`, `686088d`, `0d776af`, `6589d2b`, `3f6c8b3`, and `0a6dec0`.
+- Automated Windows QA is now recorded in `docs/superpowers/qa/desktop-shell-checklist.md`.
+- No blocking automation gaps remain. Optional native-desktop spot-checks can still be done before a release.
+- Implementation drift from the original plan: launcher styles ship in `static/launcher.css`, linked from `static/index.html`, instead of staying inline in `static/index.html`.
+
 ---
 
 ## File Structure
@@ -18,9 +25,10 @@
 |------|--------|---------------|
 | `process_manager.py` | Create | Spawn/stop wrappers, capture logs, persist launch state |
 | `static/launcher.js` | Create | Launcher panel UI, agent cards, log viewer, forms |
+| `static/launcher.css` | Create | Launcher panel styling, status badges, logs, and restore banner |
 | `app.py` | Modify | REST endpoints, WS events, wire ProcessManager |
 | `run.py` | Modify | Create ProcessManager, load restore state |
-| `static/index.html` | Modify | Add launcher button, panel container, script tag, CSS |
+| `static/index.html` | Modify | Add launcher button, panel container, and launcher asset links |
 | `static/chat.js` | Modify | Wire launcher panel toggle, handle new WS events |
 | `config_loader.py` | Modify | Merge agent_definitions.json into config |
 | `tests/test_process_manager.py` | Create | Unit tests for ProcessManager |
@@ -35,7 +43,7 @@
 - Create: `process_manager.py`
 - Create: `tests/test_process_manager.py`
 
-- [ ] **Step 1: Write the failing test for launch and state tracking**
+- [x] **Step 1: Write the failing test for launch and state tracking**
 
 ```python
 # tests/test_process_manager.py
@@ -94,12 +102,12 @@ def test_launch_duplicate_base_gets_suffix():
     shutil.rmtree("./test_data", ignore_errors=True)
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd C:\AI\JAgentchattr && .venv\Scripts\python -m pytest tests/test_process_manager.py -v`
 Expected: FAIL with "No module named 'process_manager'"
 
-- [ ] **Step 3: Write ProcessManager implementation**
+- [x] **Step 3: Write ProcessManager implementation**
 
 Create `process_manager.py` with:
 - `ManagedAgent` class: holds subprocess, ring buffer (deque maxlen=100), state machine (starting/running/crashed/stopped), reader thread for stdout, waiter thread for exit detection
@@ -114,12 +122,12 @@ Key implementation details:
 - Name assignment: first instance gets base name, subsequent get base-2, base-3, etc.
 - `on_log` callback (optional) called from reader thread for each line — used for WebSocket broadcast
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd C:\AI\JAgentchattr && .venv\Scripts\python -m pytest tests/test_process_manager.py -v`
 Expected: 2 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add process_manager.py tests/test_process_manager.py
@@ -134,7 +142,7 @@ git commit -m "feat(launcher): add ProcessManager for server-managed agent subpr
 - Modify: `config_loader.py`
 - Create: `tests/test_agent_definitions.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_agent_definitions.py
@@ -173,24 +181,24 @@ def test_save_and_delete_definition(tmp_path):
     assert "newbot" not in defs
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd C:\AI\JAgentchattr && .venv\Scripts\python -m pytest tests/test_agent_definitions.py -v`
 Expected: FAIL with "cannot import name 'load_agent_definitions'"
 
-- [ ] **Step 3: Add functions to config_loader.py**
+- [x] **Step 3: Add functions to config_loader.py**
 
 Add `import json` at the top, then add three functions at the end:
 - `load_agent_definitions(data_dir, config_agents)` — merges config.toml agents with `data/agent_definitions.json` (config.toml wins on conflicts)
 - `save_agent_definition(data_dir, name, definition)` — upsert to JSON file
 - `delete_agent_definition(data_dir, name)` — remove from JSON file
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd C:\AI\JAgentchattr && .venv\Scripts\python -m pytest tests/test_agent_definitions.py -v`
 Expected: 2 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add config_loader.py tests/test_agent_definitions.py
@@ -205,7 +213,7 @@ git commit -m "feat(launcher): add agent definitions CRUD to config_loader"
 - Modify: `app.py` (add global at line ~42, add `default_cwd` to room_settings at line ~50, add WS init data at line ~1138, add endpoints after line ~2695)
 - Modify: `run.py` (create ProcessManager after configure() call at line ~36)
 
-- [ ] **Step 1: Add ProcessManager global to app.py**
+- [x] **Step 1: Add ProcessManager global to app.py**
 
 After `session_engine` global (line 42), add:
 ```python
@@ -214,11 +222,11 @@ process_manager = None  # set by run.py
 
 Add `"default_cwd": ""` to `room_settings` dict (line ~50).
 
-- [ ] **Step 2: Wire ProcessManager creation in run.py**
+- [x] **Step 2: Wire ProcessManager creation in run.py**
 
 After `configure()` call and data_dir setup, create ProcessManager with `on_log` callback that broadcasts via WebSocket.
 
-- [ ] **Step 3: Add REST endpoints to app.py**
+- [x] **Step 3: Add REST endpoints to app.py**
 
 Add after the last endpoint (~line 2695):
 - `POST /api/agents/{base}/launch` — spawn wrapper subprocess via ProcessManager
@@ -233,16 +241,16 @@ Add after the last endpoint (~line 2695):
 
 All endpoints use session token auth (existing middleware handles this).
 
-- [ ] **Step 4: Send managed agent state and restore data on WS connect**
+- [x] **Step 4: Send managed agent state and restore data on WS connect**
 
 In the WebSocket handler, after sending schedules (~line 1138), add sends for `agent_processes` and `session_restore` events.
 
-- [ ] **Step 5: Verify syntax**
+- [x] **Step 5: Verify syntax**
 
 Run: `cd C:\AI\JAgentchattr && .venv\Scripts\python -c "import ast; ast.parse(open('app.py').read()); ast.parse(open('run.py').read()); print('OK')"`
 Expected: OK
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app.py run.py
@@ -254,22 +262,23 @@ git commit -m "feat(launcher): add REST endpoints and ProcessManager wiring"
 ### Task 4: Frontend — Launcher Panel HTML, JS, and CSS
 
 **Files:**
-- Modify: `static/index.html` (header button at line ~25, panel container before line ~126, script tag after line ~327, CSS in style block)
+- Modify: `static/index.html` (header button, panel container, launcher asset links)
 - Create: `static/launcher.js`
+- Create: `static/launcher.css`
 
-- [ ] **Step 1: Add launcher button to header in index.html**
+- [x] **Step 1: Add launcher button to header in index.html**
 
 After the `agent-status` div (line 25), before `jobs-toggle` button (line 26), add a new button with a lattice/terminal icon and id `launcher-toggle`.
 
-- [ ] **Step 2: Add panel container in index.html**
+- [x] **Step 2: Add panel container in index.html**
 
 Before `pins-panel` (line 126), add `<aside id="launcher-panel" class="hidden">` with header, list div, and add-agent form div.
 
-- [ ] **Step 3: Add script tag**
+- [x] **Step 3: Add script tag**
 
 After `rules-panel.js` (line 327): `<script src="/static/launcher.js?v=100"></script>`
 
-- [ ] **Step 4: Create launcher.js**
+- [x] **Step 4: Create launcher.js**
 
 Module pattern matching jobs.js:
 - State: `launcherDefinitions`, `launcherFlagPresets`, `launcherProcesses`, `launcherLogs`, `launcherLogsOpen`, `launcherConfigOpen`
@@ -282,11 +291,11 @@ Module pattern matching jobs.js:
 
 Note on XSS: All dynamic content inserted via innerHTML uses `escapeHtml()` for user-provided strings (agent names, flags, paths). This follows the existing pattern used by jobs.js and sessions.js in this codebase.
 
-- [ ] **Step 5: Add CSS styles to index.html**
+- [x] **Step 5: Add CSS styles in `static/launcher.css` and link them from `static/index.html`**
 
 Add launcher panel styles matching the mockup: panel positioning, card layout, dot indicators, status badges, launch config form, flag toggles, log viewer, add-agent form, colour picker, restore banner.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add static/index.html static/launcher.js
@@ -300,7 +309,7 @@ git commit -m "feat(launcher): add launcher panel UI with agent cards, logs, and
 **Files:**
 - Modify: `static/chat.js` (ws.onmessage handler, around lines 487-630)
 
-- [ ] **Step 1: Add event routing**
+- [x] **Step 1: Add event routing**
 
 After the `schedule` case (line ~628), add:
 ```javascript
@@ -312,7 +321,7 @@ After the `schedule` case (line ~628), add:
       Hub.emit("session_restore", event);
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add static/chat.js
@@ -326,7 +335,7 @@ git commit -m "feat(launcher): route launcher WS events through Hub"
 **Files:**
 - Create: `tests/test_launcher_api.py`
 
-- [ ] **Step 1: Write integration tests**
+- [x] **Step 1: Write integration tests**
 
 Tests using Starlette TestClient:
 - `test_list_definitions` — GET /api/agent-definitions returns definitions and flag_presets
@@ -335,12 +344,12 @@ Tests using Starlette TestClient:
 
 All requests use cookie auth: `cookies={"session": "test-token"}`
 
-- [ ] **Step 2: Run tests**
+- [x] **Step 2: Run tests**
 
 Run: `cd C:\AI\JAgentchattr && .venv\Scripts\python -m pytest tests/test_launcher_api.py -v`
 Expected: 3 passed
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add tests/test_launcher_api.py
@@ -350,6 +359,8 @@ git commit -m "test(launcher): add integration tests for launcher API endpoints"
 ---
 
 ### Task 7: Manual Testing and Polish
+
+**Status note (2026-04-12):** The automated Windows QA gate has been recorded, the launcher smoke now covers explicit custom-agent stop/delete cleanup, and a startup race in `electron/renderer/renderer.js` was fixed during that run. These checklist items are now optional native-desktop spot checks rather than release blockers.
 
 - [ ] **Step 1: Start the server and open browser**
 
