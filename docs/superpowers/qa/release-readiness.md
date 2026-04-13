@@ -31,6 +31,7 @@ This repo is in a good shipping posture for local and internal use. The launcher
 - Tray show/hide/quit behavior
 - Release of port `8300` on Electron shutdown
 - Ports tab render and desktop wrapper startup
+- Agent-requested browser URLs opening in the desktop shell and pop-out window flow
 
 ## Remaining Manual Signoff
 

@@ -26,6 +26,10 @@ docs/*
 docs/superpowers/*
 !docs/superpowers/qa/
 !docs/superpowers/qa/**
+!docs/archive/
+docs/archive/*
+!docs/archive/shipped/
+!docs/archive/shipped/**
 !docs/project-status.md
 goals.py
 pr-reviews/

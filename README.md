@@ -64,6 +64,7 @@ Notes:
 - Do not leave `windows\start.bat`, `python run.py`, or another Electron instance running when you launch it.
 - Closing the main window hides the app to the system tray. Use the tray menu's `Quit` action when you want to fully stop the shell and its embedded server.
 - The browser launchers still open the web UI directly. Electron is a Windows desktop wrapper around that same agentchattr server, not a separate backend.
+- Agents can now request browser URLs inside the desktop shell: URLs open in a docked in-app browser pane by default, and can also be popped out into a separate native Electron window.
 
 ### Desktop QA (Windows)
 

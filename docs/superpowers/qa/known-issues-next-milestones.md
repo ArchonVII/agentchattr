@@ -8,7 +8,6 @@ Last updated: 2026-04-12
 | Multi-instance rename + `/resume` | Known rough edge | If agents are relaunched in a different order, an instance can reclaim the wrong prior name | Launch instances in the same order when possible, or correct names via the status pills |
 | Native tray + toast validation | No known failing bug, but not fully human-signed-off | Automation is strong, but native Windows behavior still benefits from a real desktop check | Run the manual checks in `desktop-shell-checklist.md` before a broader release |
 | Windows desktop smoke in CI | Not implemented | Regressions rely on local QA discipline instead of CI catching them | Decide whether to keep smoke local-only or add Windows CI coverage |
-| Launcher implementation plan | Functionally superseded, still present as a full build plan | Creates doc drift and can make the current workstream look larger than it is | Archive or shrink `docs/superpowers/plans/2026-04-05-agent-launcher-panel.md` |
 | Electron ownership of port `8300` | Intentional constraint, easy to violate during local testing | Parallel local launches can create confusing startup or shutdown conflicts | Keep Electron as the sole owner of the embedded server during desktop-shell validation |
 
 ## What Is Stable
@@ -17,6 +16,7 @@ Last updated: 2026-04-12
 - Launcher lifecycle behavior is implemented and smoke-covered
 - Desktop shell deep links, tray logic, notifications, and shutdown cleanup have automated coverage
 - Custom-agent stop/delete cleanup now has explicit launcher-facing coverage
+- Agents can open HTTP(S) URLs inside the Electron shell through a docked browser pane or a pop-out browser window
 
 ## Next Milestones
 
@@ -28,7 +28,6 @@ Last updated: 2026-04-12
 
 ### 2. Launcher Maintenance Cleanup
 
-- Archive or shrink the launcher implementation plan
 - Keep the launcher smoke coverage focused on lifecycle behavior rather than reopening implementation scope
 
 ### 3. QA Process Decision
@@ -46,4 +45,4 @@ Last updated: 2026-04-12
 - `README.md`
 - `docs/project-status.md`
 - `docs/superpowers/qa/desktop-shell-checklist.md`
-- `docs/superpowers/plans/2026-04-05-agent-launcher-panel.md`
+- `docs/archive/shipped/2026-04-05-agent-launcher-panel.md`
