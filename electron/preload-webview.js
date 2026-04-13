@@ -1,13 +1,22 @@
 'use strict';
 
 const { ipcRenderer } = require('electron');
+const { handleDesktopCommand } = require('./desktop-command-bridge');
 
 function sendNotification(payload) {
   ipcRenderer.sendToHost('send-notification', payload);
 }
 
+function sendDesktopCommand(_channel, payload) {
+  ipcRenderer.sendToHost('desktop-command', payload);
+}
+
 function checkForNotification(data) {
   if (!data || typeof data !== 'object') {
+    return;
+  }
+
+  if (handleDesktopCommand(data, sendDesktopCommand)) {
     return;
   }
 

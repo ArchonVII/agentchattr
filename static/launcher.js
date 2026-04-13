@@ -18,6 +18,7 @@
 
 let launcherDefinitions = {}; // { name: { command, color, label, cwd } }
 let launcherFlagPresets = {}; // { base: [{ label, flag }] }
+let launcherBuiltinNames = {}; // { name: true }
 let launcherProcesses = []; // [{ name, base, state, pid, flags, cwd, started_at }]
 let launcherLogs = {}; // { name: ["line1", ...] }
 let launcherLogsOpen = {}; // { name: bool }
@@ -108,6 +109,10 @@ async function fetchDefinitions() {
     const data = await res.json();
     launcherDefinitions = data.definitions || {};
     launcherFlagPresets = data.flag_presets || {};
+    launcherBuiltinNames = {};
+    (data.builtin_names || []).forEach(function (name) {
+      launcherBuiltinNames[name] = true;
+    });
     renderLauncherPanel();
   } catch (e) {
     console.error("[launcher] fetchDefinitions error:", e);
@@ -159,6 +164,7 @@ function renderLauncherPanel() {
   // Group processes by base
   const procsByBase = {};
   for (const p of launcherProcesses) {
+    if (p.state === "stopped") continue;
     const base = p.base || p.name;
     if (!procsByBase[base]) procsByBase[base] = [];
     procsByBase[base].push(p);
@@ -217,6 +223,7 @@ function buildAgentCard(base, def, instances) {
   const crashed = partitions.crashed;
   const hasRunning = active.length > 0;
   const hasCrashed = crashed.length > 0;
+  const isBuiltin = !!launcherBuiltinNames[base];
 
   // Header: dot + info + badge
   var header = document.createElement("div");
@@ -381,6 +388,16 @@ function buildAgentCard(base, def, instances) {
     window.toggleLaunchConfig(this.getAttribute("data-base"));
   };
   mainActs.appendChild(launchBtn);
+  if (!isBuiltin && instances.length === 0) {
+    var deleteBtn = document.createElement("button");
+    deleteBtn.className = "launcher-btn danger";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.setAttribute("data-base", base);
+    deleteBtn.onclick = function () {
+      window.deleteAgentDefinition(this.getAttribute("data-base"));
+    };
+    mainActs.appendChild(deleteBtn);
+  }
   el.appendChild(mainActs);
 
   // Launch config (if open)
@@ -529,6 +546,31 @@ async function stopAgent(name) {
     await fetchManagedAgents();
   } catch (e) {
     console.error("[launcher] stopAgent error:", e);
+  }
+}
+
+async function deleteAgentDefinition(base) {
+  if (!base) return;
+  if (!window.confirm("Delete custom agent '" + base + "'?")) return;
+
+  try {
+    var res = await fetch(
+      "/api/agent-definitions/" + encodeURIComponent(base),
+      {
+        method: "DELETE",
+      },
+    );
+    if (!res.ok) {
+      var err = await res.json().catch(function () {
+        return {};
+      });
+      console.error("[launcher] delete failed:", err);
+      return;
+    }
+    await fetchDefinitions();
+    await fetchManagedAgents();
+  } catch (e) {
+    console.error("[launcher] deleteAgentDefinition error:", e);
   }
 }
 
@@ -916,6 +958,7 @@ if (typeof window !== "undefined") {
   window.toggleAddAgentForm = toggleAddAgentForm;
   window.launchAgent = launchAgent;
   window.stopAgent = stopAgent;
+  window.deleteAgentDefinition = deleteAgentDefinition;
   window.toggleLaunchConfig = toggleLaunchConfig;
   window.toggleAgentLogs = toggleAgentLogs;
   window.selectColourSwatch = selectColourSwatch;

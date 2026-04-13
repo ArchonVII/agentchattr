@@ -93,12 +93,111 @@
         background: #12121e;
       }
 
-      webview {
-        position: absolute;
-        inset: 0;
+      .chat-shell {
+        display: flex;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .chat-primary {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      #chat-webview,
+      #browser-webview {
         width: 100%;
         height: 100%;
         border: none;
+      }
+
+      .browser-pane {
+        width: min(44vw, 540px);
+        min-width: 320px;
+        max-width: 50%;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        background: #171726;
+        border-left: 1px solid #2a2a3a;
+      }
+
+      .browser-pane[hidden] {
+        display: none;
+      }
+
+      .browser-pane-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-bottom: 1px solid #2a2a3a;
+        background: #161624;
+      }
+
+      .browser-pane-copy {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .browser-pane-title {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #e0e0e0;
+      }
+
+      .browser-pane-meta,
+      .browser-pane-url {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .browser-pane-meta {
+        margin-top: 2px;
+        font-size: 11px;
+        color: #888;
+      }
+
+      .browser-pane-url {
+        margin-top: 4px;
+        font-size: 11px;
+        color: #b4b4c3;
+        font-family: Consolas, "Courier New", monospace;
+      }
+
+      .browser-pane-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .browser-pane-button {
+        padding: 6px 10px;
+        border: 1px solid #2a2a3a;
+        border-radius: 6px;
+        background: #1f1f31;
+        color: #d6d6e3;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .browser-pane-button:hover:not(:disabled) {
+        border-color: #da7756;
+        color: #fff2eb;
+      }
+
+      .browser-pane-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .browser-pane-surface {
+        flex: 1;
+        min-height: 0;
       }
 
       #ports-container {
@@ -286,17 +385,57 @@
       </div>
 
       <div class="content-area">
-        <webview
-          id="chat-webview"
-          src="http://127.0.0.1:8300"
-          allowpopups
-          partition="persist:agentchattr"
-          preload=""
-        ></webview>
+        <div id="chat-shell" class="chat-shell">
+          <div class="chat-primary">
+            <webview
+              id="chat-webview"
+              src="http://127.0.0.1:8300"
+              allowpopups
+              partition="persist:agentchattr"
+              preload=""
+            ></webview>
+          </div>
+          <aside id="browser-pane" class="browser-pane" hidden>
+            <div class="browser-pane-header">
+              <div class="browser-pane-copy">
+                <span class="browser-pane-title">Browser</span>
+                <span id="browser-pane-meta" class="browser-pane-meta">No page open</span>
+                <span id="browser-pane-url" class="browser-pane-url">about:blank</span>
+              </div>
+              <div class="browser-pane-actions">
+                <button
+                  id="browser-pane-popout"
+                  type="button"
+                  class="browser-pane-button"
+                  aria-label="Pop out browser pane"
+                >
+                  Pop out
+                </button>
+                <button
+                  id="browser-pane-close"
+                  type="button"
+                  class="browser-pane-button"
+                  aria-label="Close browser pane"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div class="browser-pane-surface">
+              <webview
+                id="browser-webview"
+                src="about:blank"
+                allowpopups
+                partition="persist:agentchattr-browser"
+              ></webview>
+            </div>
+          </aside>
+        </div>
         <div id="ports-container" hidden></div>
       </div>
     </div>
 
+    <script src="./browser-pane-state.js"></script>
     <script src="./renderer.js"></script>
   </body>
 </html>

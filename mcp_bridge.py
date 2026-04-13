@@ -5,12 +5,14 @@ Serves two transports for compatibility:
   - SSE on port 8201 (Gemini)
 """
 
+import asyncio
 import json
 import os
 import time
 import logging
 import threading
 from pathlib import Path
+from urllib.parse import urlparse
 
 from mcp.server.fastmcp import Context, FastMCP
 
@@ -886,9 +888,75 @@ def chat_summary(
     return f"Unknown action: {action}. Valid actions: read, write."
 
 
+def _emit_desktop_command(payload: dict) -> bool:
+    """Broadcast a desktop-only command to connected Electron webviews."""
+    try:
+        import app as _app
+
+        loop = getattr(_app, "_event_loop", None)
+        if not loop:
+            return False
+        raw = json.dumps({"type": "desktop_command", "data": payload})
+        asyncio.run_coroutine_threadsafe(_app._broadcast(raw), loop)
+        return True
+    except Exception:
+        log.exception("Failed to emit desktop command")
+        return False
+
+
+def browser_open(
+    sender: str,
+    url: str,
+    target: str = "docked",
+    ctx: Context | None = None,
+) -> str:
+    """Open an HTTP(S) URL in the Electron desktop app, docked or in a window."""
+    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=True)
+    if err:
+        return err
+
+    raw_url = (url or "").strip()
+    if not raw_url:
+        return "Error: url is required."
+
+    target_mode = (target or "docked").strip().lower()
+    if target_mode not in ("docked", "window"):
+        return "Error: target must be 'docked' or 'window'"
+
+    parsed = urlparse(raw_url)
+    if parsed.scheme not in ("http", "https"):
+        return "Error: url must start with http:// or https://"
+    if not parsed.netloc:
+        return "Error: url must include a host."
+
+    payload = {
+        "command": "browser_open",
+        "url": raw_url,
+        "target": target_mode,
+        "requested_by": sender,
+    }
+    if not _emit_desktop_command(payload):
+        return "Error: desktop command bridge unavailable."
+
+    _touch_presence(sender)
+    if target_mode == "window":
+        return f"Requested browser pop-out: {raw_url}"
+    return f"Requested docked browser open: {raw_url}"
+
+
+def browser_popout(
+    sender: str,
+    url: str,
+    ctx: Context | None = None,
+) -> str:
+    """Open an HTTP(S) URL in a separate Electron browser window."""
+    return browser_open(sender=sender, url=url, target="window", ctx=ctx)
+
+
 _ALL_TOOLS = [
     chat_send, chat_read, chat_resync, chat_join, chat_who, chat_rules, chat_decision,
     chat_channels, chat_set_hat, chat_claim, chat_summary, chat_propose_job,
+    browser_open, browser_popout,
 ]
 
 

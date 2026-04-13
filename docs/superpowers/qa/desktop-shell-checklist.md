@@ -2,6 +2,14 @@
 
 Use this when validating the launcher and Electron desktop workflow on Windows after changes to `static/launcher.js`, `app.py`, or anything under `electron/`.
 
+## Latest Recorded Run
+
+- **Date:** 2026-04-12
+- **Automated gate:** Passed end-to-end. Verified `.venv`, Electron install, and an open port `8300`; then ran `.venv\Scripts\python -m pytest tests -q`, `node --test tests/launcher_helpers.test.cjs`, `npm --prefix electron test`, `node --check static/launcher.js`, `node --check electron/main.js`, `node --check electron/renderer/renderer.js`, `npm --prefix electron run smoke:launcher`, and `npm --prefix electron run smoke:desktop`.
+- **Regression fixed during the run:** `electron/renderer/renderer.js` could drop early `focus-channel` events when `webview.executeJavaScript()` threw during startup. The retry path now treats those startup errors as transient instead of abandoning the pending channel sync.
+- **Automated coverage now includes:** Ports tab render, channel-focus propagation into the embedded chat webview, duplicate launcher instances, restore banner after reload, explicit custom-agent stop/delete via the launcher UI, release of port `8300` on Electron shutdown, notification badge/click handling, tray show-hide/quit logic, and second-instance deep-link dispatch.
+- **Manual follow-up:** No blocking QA gaps remain for repository validation. Native tray icon behavior and Windows toast presentation can still be spot-checked on a real desktop session before a release if desired.
+
 ## Preconditions
 
 - [ ] `.venv` exists at the repo root.
