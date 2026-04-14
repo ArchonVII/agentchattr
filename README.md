@@ -65,6 +65,11 @@ Notes:
 - Closing the main window hides the app to the system tray. Use the tray menu's `Quit` action when you want to fully stop the shell and its embedded server.
 - The browser launchers still open the web UI directly. Electron is a Windows desktop wrapper around that same agentchattr server, not a separate backend.
 - Agents can now request browser URLs inside the desktop shell: URLs open in a docked in-app browser pane by default, and can also be popped out into a separate native Electron window.
+- **Integrated Terminals:** A dedicated "Terminals" tab provides unlimited concurrent embedded terminal sessions via `xterm.js`.
+  - **Multi-Layout:** Toggle between Tabs, Grid, or Floating window modes.
+  - **Quick Launch:** Save up to 5 project folders and one-click launch Claude, Codex, or Gemini with automated permission bypass support.
+  - **Command Arsenal:** Sidebar for quick-injecting common commands and CLI skills.
+  - **Macros & Themes:** Per-terminal macro buttons and instant theme switching (Cyberpunk, Dracula, etc.).
 
 ### Desktop QA (Windows)
 

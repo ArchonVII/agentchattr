@@ -103,6 +103,14 @@ function registerIpcHandlers() {
     const tm = require("./terminal-manager");
     return tm.detectShells();
   });
+
+  ipcMain.handle("select-folder", async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ["openDirectory"],
+    });
+    if (result.canceled) return null;
+    return result.filePaths[0];
+  });
 }
 
 function createWindow() {

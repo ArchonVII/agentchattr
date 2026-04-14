@@ -38,6 +38,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   showOpenDialog(options) {
     return ipcRenderer.invoke("show-open-dialog", options);
   },
+  selectFolder() {
+    return ipcRenderer.invoke("select-folder");
+  },
   // Terminal manager (Phase B — embedded terminals)
   createTerminal(opts) {
     return ipcRenderer.invoke("terminal:create", opts);

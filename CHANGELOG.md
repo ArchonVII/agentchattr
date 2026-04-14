@@ -4,8 +4,14 @@
 
 ### Added
 
-- Custom Terminal Wrapper & Toolbar: Added a dedicated toolbar for terminal sessions with "Explain Output", "Restart", "Clear", and "Copy All" buttons.
-- AI Terminal Integration: "Explain Output" button captures terminal context and sends it to the chat agent for instant analysis or troubleshooting.
+- Multi-Layout Terminal View: Introduced dynamic Tabs, Grid, and Floating layout modes for concurrent terminal sessions.
+- Floating Window Manager: Implemented draggable, resizable, and overlapping terminal windows with intelligent stacking (z-index) and focus management.
+- Command Arsenal Sidebar: Added a collapsible right-hand sidebar for quick-injecting CLI skills and categorized project commands.
+- Terminal Macro Bar: Per-instance toolbar for user-defined command macros (e.g., Git Status, NPM Start) with color coding.
+- Theming Engine: Integrated on-the-fly theme switching for terminal instances, including "Cyberpunk", "Matrix", and "Dracula" presets.
+- Quick Launch Bar: Added a compact workflow bar for saved repository shortcuts and one-click agent launching (Claude, Codex, Gemini).
+- Permissions Control: "Skip Permissions" toggle in Quick Launch bar to automatically route agents through elevation/bypass scripts.
+- Terminal-to-Agent Bridge: "Explain Output" button captures terminal context and sends it to the chat agent for instant analysis or troubleshooting.
 - Session Metadata: Real-time PID display in the terminal toolbar for each session.
 - UI Enhancements: Professionally styled terminal instance wrappers with active highlighting and optimized font settings (13px).
 - Terminal process scanning: detects external terminal sessions (pwsh, powershell, cmd, bash, wsl, git-bash) via PowerShell WMI with Windows Terminal tab enrichment.

@@ -222,6 +222,72 @@
         background: #12121e;
       }
 
+      /* --- Quick Launch Bar --- */
+      #quick-launch-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        background: #101018;
+        border-bottom: 1px solid #2a2a3a;
+        flex-shrink: 0;
+      }
+      .quick-launch-folder {
+        padding: 3px 10px;
+        font-size: 11px;
+        background: #2a2a3a;
+        color: #aaa;
+        border: 1px solid #333;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: inherit;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+        transition: all 0.2s;
+      }
+      .quick-launch-folder:hover {
+        background: #3a3a4e;
+        color: #fff;
+      }
+      .quick-launch-folder.active {
+        color: #fff;
+        background: #da7756;
+        border-color: #da7756;
+      }
+      .quick-launch-agent-btn {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        font-size: 12px;
+        font-weight: 700;
+        background: #2a2a3a;
+        color: #e0e0e0;
+        border: 1px solid #333;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .quick-launch-agent-btn:hover {
+        background: #3a3a4e;
+        border-color: #da7756;
+      }
+      .quick-launch-divider {
+        width: 1px;
+        height: 20px;
+        background: #3a3a4e;
+        margin: 0 4px;
+      }
+      .quick-launch-perms {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: #aaa;
+        cursor: pointer;
+      }
+
       .terminals-wrapper {
         flex: 1;
         min-height: 0;
@@ -251,6 +317,158 @@
         border-color: #da7756;
         z-index: 10;
       }
+
+      /* --- Floating Mode --- */
+      .terminals-wrapper.float-layout .terminal-instance-wrapper {
+        position: absolute;
+        box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+        border: 1px solid #2a2a3a;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        display: flex !important; /* Override other display styles */
+        flex-direction: column;
+      }
+      .terminals-wrapper.float-layout .terminal-instance-wrapper.active {
+        border-color: #da7756;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+        z-index: 100 !important; /* Ensure active is on top */
+      }
+      .terminals-wrapper.float-layout .terminal-toolbar {
+        cursor: move;
+      }
+      .terminals-wrapper.float-layout .macro-bar,
+      .terminals-wrapper.float-layout .terminal-surface {
+        display: flex !important;
+      }
+      
+      .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: transparent;
+        z-index: 101;
+      }
+      .resize-handle.bottom-right {
+        bottom: 0;
+        right: 0;
+        cursor: nwse-resize;
+      }
+
+      /* --- Macro Bar --- */
+      .terminal-macro-bar {
+        display: flex;
+        gap: 6px;
+        padding: 4px 8px;
+        background: #1a1a2e;
+        border-bottom: 1px solid #2a2a3a;
+        flex-shrink: 0;
+      }
+
+      .macro-btn {
+        padding: 2px 8px;
+        font-size: 11px;
+        background: #2a2a3a;
+        color: #e0e0e0;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.2s;
+      }
+
+      .macro-btn:hover {
+        background: #3a3a4e;
+        border-color: #da7756;
+      }
+
+      .macro-btn.blue { border-left: 2px solid #60a5fa; }
+      .macro-btn.green { border-left: 2px solid #4ade80; }
+      .macro-btn.red { border-left: 2px solid #ff6b6b; }
+
+      /* --- Command Arsenal Sidebar --- */
+      .terminals-main {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+
+      .arsenal-sidebar {
+        width: 180px;
+        background: #171726;
+        border-left: 1px solid #2a2a3a;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: width 0.3s;
+      }
+
+      .arsenal-sidebar.collapsed {
+        width: 0;
+        border-left: none;
+      }
+
+      .arsenal-header {
+        padding: 8px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #a7a7b7;
+        background: #1f1f31;
+        border-bottom: 1px solid #2a2a3a;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .arsenal-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 0;
+      }
+
+      .arsenal-category {
+        margin-bottom: 12px;
+      }
+
+      .arsenal-cat-title {
+        padding: 4px 12px;
+        font-size: 10px;
+        color: #666;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+      }
+
+      .arsenal-item {
+        display: block;
+        width: 100%;
+        padding: 6px 12px;
+        text-align: left;
+        background: transparent;
+        border: none;
+        color: #e0e0e0;
+        font-size: 12px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      .arsenal-item:hover {
+        background: rgba(218, 119, 86, 0.15);
+        color: #fff;
+      }
+
+      .terminal-settings-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        background: transparent;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .terminal-settings-toggle:hover { color: #da7756; }
+      .terminal-settings-toggle.active { color: #da7756; }
 
       .terminals-tab-strip {
         display: flex;
@@ -949,12 +1167,15 @@
           </aside>
         </div>
         <div id="ports-container" hidden></div>
-        <div id="terminals-container" hidden></div>
+        <div id="terminals-container" hidden>
+          <div id="quick-launch-bar"></div>
+        </div>
       </div>
     </div>
 
     <script src="./browser-pane-state.js"></script>
     <script src="./terminal-presence.js"></script>
+    <script src="./terminal-config.js"></script>
     <script src="./terminals.bundle.js"></script>
     <script src="./renderer.js"></script>
   </body>

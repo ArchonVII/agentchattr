@@ -45,6 +45,7 @@ Last updated: 2026-04-14 by Manager
 
 ## Recently Completed
 
+- [2026-04-14] Implemented Grid/Floating terminal layouts, Command Arsenal, and Quick Launch bar — `feat(terminals)`
 - [2026-04-14] Fixed terminals.js bundling for context-isolated renderer — `9fec225`
 - [2026-04-14] Added terminal scanner unit tests (15) and Electron smoke test — `1844cab`
 - [2026-04-14] Cleaned up stale `fix/security-hardening` branch (local + remote)

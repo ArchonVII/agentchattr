@@ -12,7 +12,6 @@ const { WebLinksAddon } = require("@xterm/addon-web-links");
 // ---------------------------------------------------------------------------
 
 // xterm.js theme matching the agentchattr dark palette.
-// Source: colours from electron/renderer/index.html style block.
 const XTERM_THEME = {
   background: "#12121e",
   foreground: "#e0e0e0",
@@ -41,10 +40,241 @@ const XTERM_THEME = {
 // State
 // ---------------------------------------------------------------------------
 
-const terminalInstances = new Map(); // id -> { terminal, fitAddon, wrapper, surface, name, shell, exited, exitCode, pid }
+const terminalInstances = new Map(); // id -> { ..., x, y, width, height, zIndex }
 let activeTerminalId = null;
 let availableShells = [];
-let layoutMode = "tabs"; // "tabs" or "grid"
+let layoutMode = "tabs"; // "tabs", "grid", or "float"
+let arsenalVisible = true;
+let highestZ = 1; // z-index counter for floating mode
+
+// Quick Launch state
+let quickLaunchFolders = [];
+let selectedLaunchFolder = null;
+let skipPermissions = true;
+
+// Drag/Resize state
+let actionState = {
+  isDragging: false,
+  isResizing: false,
+  targetId: null,
+  startX: 0,
+  startY: 0,
+  startLeft: 0,
+  startTop: 0,
+  startWidth: 0,
+  startHeight: 0,
+};
+
+// ---------------------------------------------------------------------------
+// Quick Launch Logic
+// ---------------------------------------------------------------------------
+
+function renderQuickLaunchBar() {
+  const bar = document.getElementById("quick-launch-bar");
+  if (!bar) return;
+
+  bar.innerHTML = "";
+
+  // Folder shortcuts
+  quickLaunchFolders.forEach((folder) => {
+    const btn = document.createElement("button");
+    btn.className = "quick-launch-folder" + (selectedLaunchFolder === folder ? " active" : "");
+    btn.textContent = folder.split(/[\\/]/).pop();
+    btn.title = folder;
+    btn.onclick = () => {
+      selectedLaunchFolder = folder;
+      renderQuickLaunchBar();
+    };
+    bar.appendChild(btn);
+  });
+
+  // Add folder button
+  if (quickLaunchFolders.length < 5) {
+    const addBtn = document.createElement("button");
+    addBtn.className = "quick-launch-folder";
+    addBtn.textContent = "+ Folder";
+    addBtn.onclick = async () => {
+      const folder = await window.electronAPI.selectFolder();
+      if (folder && !quickLaunchFolders.includes(folder)) {
+        quickLaunchFolders.push(folder);
+        selectedLaunchFolder = folder;
+        renderQuickLaunchBar();
+      }
+    };
+    bar.appendChild(addBtn);
+  }
+
+  const divider = document.createElement("div");
+  divider.className = "quick-launch-divider";
+  bar.appendChild(divider);
+
+  // Agent buttons
+  const agents = [
+    { id: "claude", label: "C" },
+    { id: "codex", label: "D" },
+    { id: "gemini", label: "G" },
+  ];
+
+  agents.forEach((agent) => {
+    const btn = document.createElement("button");
+    btn.className = "quick-launch-agent-btn";
+    btn.textContent = agent.label;
+    btn.title = `Launch ${agent.id.charAt(0).toUpperCase() + agent.id.slice(1)}`;
+    btn.onclick = () => launchAgentTerminal(agent.id);
+    bar.appendChild(btn);
+  });
+
+  bar.appendChild(divider.cloneNode());
+
+  // Permissions checkbox
+  const permsLabel = document.createElement("label");
+  permsLabel.className = "quick-launch-perms";
+  const permsCheck = document.createElement("input");
+  permsCheck.type = "checkbox";
+  permsCheck.checked = skipPermissions;
+  permsCheck.onchange = (e) => {
+    skipPermissions = e.target.checked;
+  };
+  permsLabel.appendChild(permsCheck);
+  permsLabel.appendChild(document.createTextNode("Skip Permissions"));
+  bar.appendChild(permsLabel);
+}
+
+function launchAgentTerminal(agentId) {
+  if (!selectedLaunchFolder) {
+    alert("Please select or add a project folder first.");
+    return;
+  }
+
+  const isWin = navigator.userAgent.includes("Windows");
+  const ext = isWin ? ".bat" : ".sh";
+  let scriptName = `start_${agentId}`;
+
+  if (skipPermissions) {
+    if (agentId === "claude") scriptName = "start_claude_skip-permissions";
+    if (agentId === "codex") scriptName = "start_codex_bypass";
+    if (agentId === "gemini") scriptName = "start_gemini_yolo";
+  }
+
+  const command = `${isWin ? "windows\\" : "macos-linux/"}${scriptName}${ext}`;
+  
+  void requestNewTerminal(null, {
+    cwd: selectedLaunchFolder,
+    command: command,
+    name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Window Action Handlers (Drag, Resize, Focus)
+// ---------------------------------------------------------------------------
+
+function initDrag(e, id) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const inst = terminalInstances.get(id);
+  if (!inst) return;
+
+  bringToFront(id);
+
+  actionState = {
+    isDragging: true,
+    isResizing: false,
+    targetId: id,
+    startX: e.clientX,
+    startY: e.clientY,
+    startLeft: inst.x,
+    startTop: inst.y,
+  };
+
+  window.addEventListener("mousemove", performDrag);
+  window.addEventListener("mouseup", endDrag);
+}
+
+function performDrag(e) {
+  if (!actionState.isDragging || !actionState.targetId) return;
+  e.preventDefault();
+
+  const inst = terminalInstances.get(actionState.targetId);
+  if (!inst) return;
+
+  const dx = e.clientX - actionState.startX;
+  const dy = e.clientY - actionState.startY;
+
+  inst.x = actionState.startLeft + dx;
+  inst.y = actionState.startTop + dy;
+
+  inst.wrapper.style.left = inst.x + "px";
+  inst.wrapper.style.top = inst.y + "px";
+}
+
+function endDrag() {
+  actionState.isDragging = false;
+  actionState.targetId = null;
+  window.removeEventListener("mousemove", performDrag);
+  window.removeEventListener("mouseup", endDrag);
+}
+
+function initResize(e, id) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const inst = terminalInstances.get(id);
+  if (!inst) return;
+
+  bringToFront(id);
+
+  actionState = {
+    isDragging: false,
+    isResizing: true,
+    targetId: id,
+    startX: e.clientX,
+    startY: e.clientY,
+    startWidth: inst.width,
+    startHeight: inst.height,
+  };
+
+  window.addEventListener("mousemove", performResize);
+  window.addEventListener("mouseup", endResize);
+}
+
+function performResize(e) {
+  if (!actionState.isResizing || !actionState.targetId) return;
+  e.preventDefault();
+
+  const inst = terminalInstances.get(actionState.targetId);
+  if (!inst) return;
+
+  const dx = e.clientX - actionState.startX;
+  const dy = e.clientY - actionState.startY;
+
+  inst.width = Math.max(300, actionState.startWidth + dx);
+  inst.height = Math.max(200, actionState.startHeight + dy);
+
+  inst.wrapper.style.width = inst.width + "px";
+  inst.wrapper.style.height = inst.height + "px";
+  
+  if (inst.fitTimeout) clearTimeout(inst.fitTimeout);
+  inst.fitTimeout = setTimeout(() => inst.fitAddon.fit(), 50);
+}
+
+function endResize() {
+  actionState.isResizing = false;
+  actionState.targetId = null;
+  window.removeEventListener("mousemove", performResize);
+  window.removeEventListener("mouseup", endResize);
+}
+
+function bringToFront(id) {
+  if (!terminalInstances.has(id)) return;
+
+  const inst = terminalInstances.get(id);
+  highestZ++;
+  inst.zIndex = highestZ;
+
+  focusTerminal(id);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -54,17 +284,156 @@ function getContainer() {
   return document.getElementById("terminals-container");
 }
 
-function getWrapper() {
+function getTerminalsMain() {
   const container = getContainer();
   if (!container) return null;
 
-  let wrapper = container.querySelector(".terminals-wrapper");
+  let main = container.querySelector(".terminals-main");
+  if (!main) {
+    main = document.createElement("div");
+    main.className = "terminals-main";
+    container.appendChild(main);
+  }
+  return main;
+}
+
+function getWrapper() {
+  const main = getTerminalsMain();
+  if (!main) return null;
+
+  let wrapper = main.querySelector(".terminals-wrapper");
   if (!wrapper) {
     wrapper = document.createElement("div");
     wrapper.className = "terminals-wrapper";
-    container.appendChild(wrapper);
+    main.appendChild(wrapper);
   }
   return wrapper;
+}
+
+function getArsenal() {
+  const main = getTerminalsMain();
+  if (!main) return null;
+
+  let arsenal = main.querySelector(".arsenal-sidebar");
+  if (!arsenal) {
+    arsenal = document.createElement("aside");
+    arsenal.className = "arsenal-sidebar";
+    if (!arsenalVisible) arsenal.classList.add("collapsed");
+    main.appendChild(arsenal);
+    renderArsenal();
+  }
+  return arsenal;
+}
+
+// ---------------------------------------------------------------------------
+// Arsenal Sidebar
+// ---------------------------------------------------------------------------
+
+function toggleArsenal() {
+  arsenalVisible = !arsenalVisible;
+  const arsenal = getArsenal();
+  if (arsenal) {
+    arsenal.classList.toggle("collapsed", !arsenalVisible);
+  }
+  renderTabStrip();
+
+  for (const inst of terminalInstances.values()) {
+    if (layoutMode === "grid" || inst.id === activeTerminalId) {
+      setTimeout(() => inst.fitAddon.fit(), 50);
+    }
+  }
+}
+
+function renderArsenal() {
+  const main = getTerminalsMain();
+  if (!main) return;
+
+  const arsenal = main.querySelector(".arsenal-sidebar");
+  if (!arsenal) return;
+
+  arsenal.innerHTML = `
+    <div class="arsenal-header">
+      <span>Arsenal</span>
+      <button class="terminal-settings-toggle" title="Close Arsenal" onclick="window.Terminals.toggleArsenal()">\u00d7</button>
+    </div>
+    <div class="arsenal-content"></div>
+  `;
+
+  const content = arsenal.querySelector(".arsenal-content");
+  const config = window.TerminalConfig || { commands: [] };
+
+  for (const cat of config.commands) {
+    const catDiv = document.createElement("div");
+    catDiv.className = "arsenal-category";
+    catDiv.innerHTML = `<div class="arsenal-cat-title">${cat.category}</div>`;
+
+    for (const item of cat.items) {
+      const btn = document.createElement("button");
+      btn.className = "arsenal-item";
+      btn.textContent = item.name;
+      btn.addEventListener("click", () => {
+        if (activeTerminalId) {
+          window.electronAPI?.sendTerminalInput(activeTerminalId, item.cmd);
+        }
+      });
+      catDiv.appendChild(btn);
+    }
+    content.appendChild(catDiv);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Macro Bar
+// ---------------------------------------------------------------------------
+
+function createMacroBar(id) {
+  const bar = document.createElement("div");
+  bar.className = "terminal-macro-bar";
+
+  const config = window.TerminalConfig || { macros: [] };
+
+  for (const macro of config.macros) {
+    const btn = document.createElement("button");
+    btn.className = `macro-btn ${macro.color || ""}`;
+    btn.textContent = macro.label;
+    btn.addEventListener("click", () => {
+      window.electronAPI?.sendTerminalInput(id, macro.command);
+    });
+    bar.appendChild(btn);
+  }
+
+  const themeSelect = document.createElement("select");
+  themeSelect.className = "macro-btn";
+  themeSelect.style.marginLeft = "auto";
+  themeSelect.innerHTML = `
+    <option value="default">Default Theme</option>
+    <option value="cyberpunk">Cyberpunk</option>
+    <option value="matrix">Matrix</option>
+    <option value="dracula">Dracula</option>
+  `;
+  themeSelect.addEventListener("change", (e) => {
+    toggleTheme(id, e.target.value);
+  });
+  bar.appendChild(themeSelect);
+
+  return bar;
+}
+
+function toggleTheme(id, themeName) {
+  const inst = terminalInstances.get(id);
+  if (!inst) return;
+
+  const themes = window.TerminalConfig?.themes || {};
+  const theme = themes[themeName] || themes.default;
+  if (!theme) return;
+
+  inst.terminal.options.theme = {
+    background: theme.background,
+    foreground: theme.foreground,
+    cursor: theme.cursor,
+    selectionBackground: "rgba(218, 119, 86, 0.3)",
+  };
+  inst.theme = themeName;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,16 +441,15 @@ function getWrapper() {
 // ---------------------------------------------------------------------------
 
 function toggleLayout() {
-  layoutMode = layoutMode === "tabs" ? "grid" : "tabs";
+  const modes = ["tabs", "grid", "float"];
+  const currentIndex = modes.indexOf(layoutMode);
+  layoutMode = modes[(currentIndex + 1) % modes.length];
+  
   renderLayout();
   renderTabStrip();
 
-  // Refit all visible terminals
   for (const inst of terminalInstances.values()) {
-    if (layoutMode === "grid" || inst.id === activeTerminalId) {
-      // Small delay to let CSS transition/layout settle
-      setTimeout(() => inst.fitAddon.fit(), 50);
-    }
+    setTimeout(() => inst.fitAddon.fit(), 50);
   }
 }
 
@@ -90,19 +458,36 @@ function renderLayout() {
   if (!wrapper) return;
 
   wrapper.classList.toggle("grid-layout", layoutMode === "grid");
+  wrapper.classList.toggle("float-layout", layoutMode === "float");
 
   for (const [id, inst] of terminalInstances) {
     const isActive = id === activeTerminalId;
     inst.wrapper.classList.toggle("active", isActive);
 
-    if (layoutMode === "grid") {
-      inst.wrapper.style.display = "";
-    } else {
+    inst.wrapper.style.display = "";
+    inst.wrapper.style.position = "";
+    inst.wrapper.style.top = "";
+    inst.wrapper.style.left = "";
+    inst.wrapper.style.width = "";
+    inst.wrapper.style.height = "";
+    inst.wrapper.style.zIndex = "";
+    if (inst.macroBar) inst.macroBar.style.display = "flex";
+    
+    if (layoutMode === "tabs") {
       inst.wrapper.style.display = isActive ? "" : "none";
+    } else if (layoutMode === "grid") {
+      if (inst.macroBar) inst.macroBar.style.display = "none";
+      if (inst.toolbar) inst.toolbar.style.display = "none";
+    } else if (layoutMode === "float") {
+      inst.wrapper.style.position = "absolute";
+      inst.wrapper.style.left = inst.x + "px";
+      inst.wrapper.style.top = inst.y + "px";
+      inst.wrapper.style.width = inst.width + "px";
+      inst.wrapper.style.height = inst.height + "px";
+      inst.wrapper.style.zIndex = inst.zIndex;
+      if (inst.toolbar) inst.toolbar.style.display = "flex";
     }
   }
-
-  renderExitedBanner();
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +515,6 @@ function renderTabStrip() {
     label.textContent = inst.name || id.slice(0, 8);
     tab.appendChild(label);
 
-    // Double-click to rename
     label.addEventListener("dblclick", (e) => {
       e.stopPropagation();
       const input = document.createElement("input");
@@ -169,7 +553,6 @@ function renderTabStrip() {
     strip.appendChild(tab);
   }
 
-  // [+] button
   const addBtn = document.createElement("button");
   addBtn.type = "button";
   addBtn.className = "terminal-tab-add";
@@ -181,7 +564,17 @@ function renderTabStrip() {
   });
   strip.appendChild(addBtn);
 
-  // Layout toggle button
+  const arsenalBtn = document.createElement("button");
+  arsenalBtn.type = "button";
+  arsenalBtn.className = "terminal-settings-toggle" + (arsenalVisible ? " active" : "");
+  arsenalBtn.title = "Toggle Arsenal Sidebar";
+  arsenalBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1z"/></svg>';
+  arsenalBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleArsenal();
+  });
+  strip.appendChild(arsenalBtn);
+
   const layoutBtn = document.createElement("button");
   layoutBtn.type = "button";
   layoutBtn.className = "terminal-layout-toggle";
@@ -234,14 +627,12 @@ function toggleShellMenu(anchor) {
     }
   }
 
-  // Position relative to anchor
   const rect = anchor.getBoundingClientRect();
   const containerRect = container.getBoundingClientRect();
   menu.style.left = rect.left - containerRect.left + "px";
 
   container.appendChild(menu);
 
-  // Close on outside click
   const closeMenu = (e) => {
     if (!menu.contains(e.target) && e.target !== anchor) {
       menu.remove();
@@ -255,11 +646,12 @@ function toggleShellMenu(anchor) {
 // Terminal lifecycle
 // ---------------------------------------------------------------------------
 
-async function requestNewTerminal(shellId) {
+async function requestNewTerminal(shellId, opts = {}) {
   if (!window.electronAPI?.createTerminal) return;
 
   const result = await window.electronAPI.createTerminal({
     shell: shellId || undefined,
+    ...opts
   });
 
   if (result?.error) {
@@ -268,7 +660,7 @@ async function requestNewTerminal(shellId) {
   }
 
   if (result?.id) {
-    createXtermInstance(result.id, result.name, result.shell);
+    createXtermInstance(result.id, result.name, result.shell, result.pid);
     focusTerminal(result.id);
   }
 }
@@ -287,173 +679,73 @@ function createXtermInstance(id, name, shell, pid) {
   terminal.loadAddon(fitAddon);
   terminal.loadAddon(new WebLinksAddon());
 
-  // Create Wrapper
   const wrapper = document.createElement("div");
   wrapper.className = "terminal-instance-wrapper";
   wrapper.dataset.terminalId = id;
+  wrapper.addEventListener("mousedown", () => bringToFront(id), true);
 
-  // Create Toolbar
   const toolbar = document.createElement("div");
   toolbar.className = "terminal-toolbar";
+  toolbar.addEventListener("mousedown", (e) => initDrag(e, id));
+  
+  const resizeHandle = document.createElement("div");
+  resizeHandle.className = "resize-handle bottom-right";
+  resizeHandle.addEventListener("mousedown", (e) => initResize(e, id));
+  wrapper.appendChild(resizeHandle);
+  
+  const macroBar = createMacroBar(id);
+  wrapper.appendChild(macroBar);
 
-  // Toolbar Content
-  const nameLabel = document.createElement("div");
-  nameLabel.className = "terminal-status";
-  nameLabel.style.marginRight = "12px";
-  nameLabel.textContent = name || shell;
-  toolbar.appendChild(nameLabel);
-
-  // Clear Button
-  const clearBtn = createToolbarBtn("Clear", () => terminal.clear());
-  toolbar.appendChild(clearBtn);
-
-  // Restart Button
-  const restartBtn = createToolbarBtn("Restart", () => {
-    destroyTerminal(id);
-    void requestNewTerminal(shell);
-  });
-  toolbar.appendChild(restartBtn);
-
-  // Copy All Button
-  const copyBtn = createToolbarBtn("Copy All", () => {
-    const text = getTerminalText(terminal);
-    if (text) {
-      navigator.clipboard.writeText(text);
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => (copyBtn.textContent = "Copy All"), 2000);
-    }
-  });
-  toolbar.appendChild(copyBtn);
-
-  // Explain Button (AI Integration)
-  const explainBtn = createToolbarBtn("Explain Output", () => {
-    const text = getTerminalText(terminal, 100); // Last 100 lines
-    if (text) explainTerminalOutput(text, name || shell);
-  });
-  explainBtn.style.color = "#da7756";
-  explainBtn.style.borderColor = "rgba(218, 119, 86, 0.4)";
-  toolbar.appendChild(explainBtn);
-
-  toolbar.appendChild(document.createElement("div")).className =
-    "terminal-toolbar-spacer";
-
-  if (pid) {
-    const pidLabel = document.createElement("div");
-    pidLabel.className = "terminal-status";
-    pidLabel.textContent = `PID: ${pid}`;
-    toolbar.appendChild(pidLabel);
-  }
-
-  wrapper.appendChild(toolbar);
-
-  // Create Surface
   const surface = document.createElement("div");
   surface.className = "terminal-surface";
   wrapper.appendChild(surface);
-
-  // Respect layout mode for initial display
-  if (layoutMode === "grid") {
-    wrapper.style.display = "";
-  } else {
-    wrapper.style.display = "none";
-  }
-
+  
   const mainWrapper = getWrapper();
   if (mainWrapper) mainWrapper.appendChild(wrapper);
 
   terminal.open(surface);
   fitAddon.fit();
 
-  // Send keystrokes to the pty
   terminal.onData((data) => {
     window.electronAPI?.sendTerminalInput(id, data);
   });
 
-  // Notify pty of resize
   terminal.onResize(({ cols, rows }) => {
     window.electronAPI?.resizeTerminal(id, cols, rows);
   });
-
-  terminalInstances.set(id, {
+  
+  const numInstances = terminalInstances.size;
+  const newInstance = {
     terminal,
     fitAddon,
     wrapper,
+    toolbar,
     surface,
+    macroBar,
     name: name || shell || id.slice(0, 8),
     shell,
     pid,
     exited: false,
     exitCode: null,
-  });
+    x: 20 + numInstances * 25,
+    y: 20 + numInstances * 25,
+    width: 600,
+    height: 400,
+    zIndex: highestZ++,
+    fitTimeout: null,
+  };
+  
+  terminalInstances.set(id, newInstance);
 
+  renderLayout();
   renderTabStrip();
   renderEmptyState();
-}
-
-function createToolbarBtn(text, onClick) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "terminal-toolbar-btn";
-  btn.textContent = text;
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    onClick();
-  });
-  return btn;
-}
-
-function getTerminalText(terminal, maxLines = null) {
-  const buffer = terminal.buffer.active;
-  let text = "";
-  const start = maxLines ? Math.max(0, buffer.length - maxLines) : 0;
-  for (let i = start; i < buffer.length; i++) {
-    const line = buffer.getLine(i);
-    if (line) text += line.translateToString(true) + "\n";
-  }
-  return text.trim();
-}
-
-function explainTerminalOutput(text, context) {
-  // Use the global function defined in renderer.js or terminal-presence.js
-  // to send a message to the chat agent.
-  const chatWebview = document.getElementById("chat-webview");
-  if (!chatWebview) return;
-
-  const prompt = `I need help explaining the following output from my ${context} terminal:\n\n\`\`\`\n${text}\n\`\`\``;
-
-  // We use a custom event or direct execution to send this to the agent
-  const script = `
-    (() => {
-      if (window.ChatApp && typeof window.ChatApp.appendSystemMessage === 'function') {
-         window.ChatApp.appendSystemMessage('Asking agent to explain terminal output...');
-      }
-      // Simulate user input
-      const input = document.querySelector('textarea') || document.querySelector('input[type="text"]');
-      if (input) {
-        input.value = ${JSON.stringify(prompt)};
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        // Try to find and click submit button
-        const submit = document.querySelector('button[type="submit"]') || document.querySelector('.send-button');
-        if (submit) submit.click();
-      }
-    })();
-  `;
-
-  try {
-    chatWebview.executeJavaScript(script);
-    // Switch to chat tab
-    if (typeof activateTab === "function") activateTab("chat");
-  } catch (e) {
-    console.error("Failed to send terminal output to chat:", e);
-  }
 }
 
 function focusTerminal(id) {
   if (!terminalInstances.has(id)) return;
 
   activeTerminalId = id;
-
-  // Update visibility based on layout mode
   renderLayout();
 
   const active = terminalInstances.get(id);
@@ -489,10 +781,6 @@ function destroyTerminal(id) {
   renderTabStrip();
   renderEmptyState();
 }
-
-// ---------------------------------------------------------------------------
-// Exited banner
-// ---------------------------------------------------------------------------
 
 function renderExitedBanner() {
   const container = getContainer();
@@ -536,10 +824,6 @@ function renderExitedBanner() {
   banner.appendChild(closeBtn);
 }
 
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
-
 function renderEmptyState() {
   const container = getContainer();
   let empty = container.querySelector(".terminal-empty");
@@ -556,10 +840,6 @@ function renderEmptyState() {
     container.appendChild(empty);
   }
 }
-
-// ---------------------------------------------------------------------------
-// IPC event handlers
-// ---------------------------------------------------------------------------
 
 function handleTerminalOutput({ id, data }) {
   const inst = terminalInstances.get(id);
@@ -585,10 +865,6 @@ function handleTerminalExited({ id, exitCode }) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Resize handling
-// ---------------------------------------------------------------------------
-
 function handleResize() {
   if (!activeTerminalId) return;
   const inst = terminalInstances.get(activeTerminalId);
@@ -597,12 +873,7 @@ function handleResize() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Initialisation
-// ---------------------------------------------------------------------------
-
 async function initTerminals() {
-  // Detect available shells
   if (window.electronAPI?.listShells) {
     try {
       availableShells = await window.electronAPI.listShells();
@@ -611,40 +882,34 @@ async function initTerminals() {
     }
   }
 
-  // Listen for pty output and exit events
   window.electronAPI?.onTerminalOutput(handleTerminalOutput);
   window.electronAPI?.onTerminalExited(handleTerminalExited);
 
-  // Handle container resize
   const container = getContainer();
   if (container) {
     const observer = new ResizeObserver(() => handleResize());
     observer.observe(container);
   }
 
+  renderArsenal();
+  renderQuickLaunchBar();
   renderTabStrip();
   renderEmptyState();
 }
 
-// ---------------------------------------------------------------------------
-// Global hook for presence panel click-through (Phase B integration)
-// ---------------------------------------------------------------------------
-
 window._focusEmbeddedTerminal = (id) => {
   if (!terminalInstances.has(id)) return;
-  // Switch to the Terminals tab (activateTab is global in renderer.js)
   if (typeof activateTab === "function") {
     activateTab("terminals");
   }
   focusTerminal(id);
 };
 
-// ---------------------------------------------------------------------------
-// Window exports
-// ---------------------------------------------------------------------------
-
 window.Terminals = {
   init: initTerminals,
   focus: focusTerminal,
   requestNew: requestNewTerminal,
+  toggleArsenal: toggleArsenal,
+  toggleTheme: toggleTheme,
+  toggleLayout: toggleLayout
 };

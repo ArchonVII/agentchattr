@@ -120,28 +120,44 @@ function getNextName(shellId) {
 
 function createTerminal(opts = {}) {
   const shells = detectShells();
-  const shellId = opts.shell || "pwsh";
-  const shellInfo = shells.find((s) => s.id === shellId) || shells[0];
+  let shellPath;
+  let shellId = opts.shell;
 
-  if (!shellInfo) {
-    return { error: "No shells available" };
+  if (opts.command) {
+    // If a specific command is given, we find the default shell to run it in.
+    const defaultShell = shells.find(s => s.id === 'pwsh') || shells.find(s => s.id === 'bash') || shells[0];
+    shellPath = defaultShell.path;
+    shellId = defaultShell.id;
+  } else {
+    // Otherwise, use the specified shell or the default.
+    shellId = shellId || "pwsh";
+    const shellInfo = shells.find((s) => s.id === shellId) || shells[0];
+    if (!shellInfo) {
+      return { error: "No shells available" };
+    }
+    shellPath = shellInfo.path;
   }
-
+  
   const id = randomUUID();
-  const name = opts.name || getNextName(shellInfo.id);
+  const name = opts.name || getNextName(shellId);
   const cwd = opts.cwd || process.cwd();
 
-  const ptyProcess = pty.spawn(shellInfo.path, [], {
+  const ptyProcess = pty.spawn(shellPath, [], {
     name: "xterm-256color",
     cols: DEFAULT_COLS,
     rows: DEFAULT_ROWS,
     cwd,
     env: process.env,
   });
+  
+  // If a command was specified, write it to the terminal.
+  if (opts.command) {
+    ptyProcess.write(`${opts.command}\r`);
+  }
 
   const entry = {
     pty: ptyProcess,
-    shell: shellInfo.id,
+    shell: shellId,
     name,
     pid: ptyProcess.pid,
     startedAt: Date.now(),
@@ -161,7 +177,7 @@ function createTerminal(opts = {}) {
 
   const result = {
     id,
-    shell: shellInfo.id,
+    shell: shellId,
     pid: ptyProcess.pid,
     name,
   };
