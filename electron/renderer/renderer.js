@@ -8,6 +8,8 @@ const state = {
   webviewReady: false,
   browserPane: window.BrowserPaneState.createBrowserPaneState(),
   hideSystem: false,
+  searchQuery: "",
+  agentFilter: "",
   sortConfig: { key: "port", direction: "asc" },
 };
 
@@ -182,7 +184,7 @@ function renderPorts() {
 
   const hideSystemLabel = document.createElement("label");
   hideSystemLabel.className = "ports-checkbox-label";
-  
+
   const hideSystemCheckbox = document.createElement("input");
   hideSystemCheckbox.type = "checkbox";
   hideSystemCheckbox.checked = state.hideSystem;
@@ -193,6 +195,52 @@ function renderPorts() {
 
   hideSystemLabel.append(hideSystemCheckbox, " Hide System entries");
   controls.appendChild(hideSystemLabel);
+
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.className = "ports-search";
+  searchInput.placeholder = "Search ports\u2026";
+  searchInput.value = state.searchQuery;
+  searchInput.addEventListener("input", (e) => {
+    state.searchQuery = e.target.value;
+    renderPorts();
+    // Re-focus and restore cursor position after re-render
+    const el = container.querySelector(".ports-search");
+    if (el) {
+      el.focus();
+      el.selectionStart = el.selectionEnd = e.target.selectionStart;
+    }
+  });
+  controls.appendChild(searchInput);
+
+  const uniqueAgents = [
+    ...new Set(
+      state.portRows.map((r) =>
+        readField(r, ["agent", "agentName", "owner", "channel"]),
+      ),
+    ),
+  ]
+    .filter((a) => a && a !== "\u2014")
+    .sort();
+
+  const agentSelect = document.createElement("select");
+  agentSelect.className = "ports-filter-select";
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "All agents";
+  agentSelect.appendChild(allOption);
+  for (const agent of uniqueAgents) {
+    const opt = document.createElement("option");
+    opt.value = agent;
+    opt.textContent = agent;
+    if (state.agentFilter === agent) opt.selected = true;
+    agentSelect.appendChild(opt);
+  }
+  agentSelect.addEventListener("change", (e) => {
+    state.agentFilter = e.target.value;
+    renderPorts();
+  });
+  controls.appendChild(agentSelect);
 
   header.append(titleGroup, controls);
   shell.appendChild(header);
@@ -207,7 +255,31 @@ function renderPorts() {
 
   let rows = [...state.portRows];
   if (state.hideSystem) {
-    rows = rows.filter(r => r.agent !== "System");
+    rows = rows.filter((r) => r.agent !== "System");
+  }
+
+  if (state.agentFilter) {
+    rows = rows.filter(
+      (r) =>
+        readField(r, ["agent", "agentName", "owner", "channel"]) ===
+        state.agentFilter,
+    );
+  }
+
+  if (state.searchQuery) {
+    const query = state.searchQuery.toLowerCase();
+    rows = rows.filter((row) => {
+      const fields = [
+        String(readField(row, ["port", "localPort", "listenPort"])),
+        String(readField(row, ["address", "host", "bind", "ip"])),
+        readPid(row) ?? "",
+        String(
+          readField(row, ["process", "processName", "command", "name", "exe"]),
+        ),
+        String(readField(row, ["agent", "agentName", "owner", "channel"])),
+      ];
+      return fields.some((f) => f.toLowerCase().includes(query));
+    });
   }
 
   const sortKey = state.sortConfig.key;
@@ -215,7 +287,7 @@ function renderPorts() {
 
   rows.sort((a, b) => {
     let valA, valB;
-    switch(sortKey) {
+    switch (sortKey) {
       case "port":
         valA = a.port;
         valB = b.port;
@@ -225,12 +297,34 @@ function renderPorts() {
         valB = parseInt(readPid(b) || "0", 10);
         break;
       case "process":
-        valA = readField(a, ["process", "processName", "command", "name", "exe"]).toLowerCase();
-        valB = readField(b, ["process", "processName", "command", "name", "exe"]).toLowerCase();
+        valA = readField(a, [
+          "process",
+          "processName",
+          "command",
+          "name",
+          "exe",
+        ]).toLowerCase();
+        valB = readField(b, [
+          "process",
+          "processName",
+          "command",
+          "name",
+          "exe",
+        ]).toLowerCase();
         break;
       case "agent":
-        valA = readField(a, ["agent", "agentName", "owner", "channel"]).toLowerCase();
-        valB = readField(b, ["agent", "agentName", "owner", "channel"]).toLowerCase();
+        valA = readField(a, [
+          "agent",
+          "agentName",
+          "owner",
+          "channel",
+        ]).toLowerCase();
+        valB = readField(b, [
+          "agent",
+          "agentName",
+          "owner",
+          "channel",
+        ]).toLowerCase();
         break;
       case "opened":
         valA = a.openedAt || 0;
@@ -247,9 +341,10 @@ function renderPorts() {
   if (rows.length === 0) {
     const empty = document.createElement("div");
     empty.className = "ports-empty";
-    empty.innerHTML = state.portRows.length === 0 
-      ? "<strong>Waiting for port data</strong><span>Port information will appear here when the Electron main process emits it.</span>"
-      : "<strong>No matching ports</strong><span>All current entries are hidden by your filters.</span>";
+    empty.innerHTML =
+      state.portRows.length === 0
+        ? "<strong>Waiting for port data</strong><span>Port information will appear here when the Electron main process emits it.</span>"
+        : "<strong>No matching ports</strong><span>All current entries are hidden by your filters.</span>";
     shell.appendChild(empty);
     container.appendChild(shell);
     return;
@@ -277,7 +372,7 @@ function renderPorts() {
   for (const col of columns) {
     const th = document.createElement("th");
     th.scope = "col";
-    
+
     if (col.key) {
       th.className = "sortable";
       if (state.sortConfig.key === col.key) {
@@ -286,7 +381,8 @@ function renderPorts() {
       th.textContent = col.label;
       th.addEventListener("click", () => {
         if (state.sortConfig.key === col.key) {
-          state.sortConfig.direction = state.sortConfig.direction === "asc" ? "desc" : "asc";
+          state.sortConfig.direction =
+            state.sortConfig.direction === "asc" ? "desc" : "asc";
         } else {
           state.sortConfig.key = col.key;
           state.sortConfig.direction = "asc";
@@ -331,11 +427,28 @@ function renderPorts() {
         String(readField(row, ["agent", "agentName", "owner", "channel"])),
       ),
     );
-    tr.appendChild(
-      buildCell(formatTime(row.openedAt), "muted mono"),
-    );
+    tr.appendChild(buildCell(formatTime(row.openedAt), "muted mono"));
 
     const actionCell = document.createElement("td");
+    const actionGroup = document.createElement("div");
+    actionGroup.className = "action-group";
+
+    const portNumber = readField(row, ["port", "localPort", "listenPort"]);
+    const browseButton = document.createElement("button");
+    browseButton.type = "button";
+    browseButton.className = "browse-button";
+    browseButton.textContent = "Browse";
+    browseButton.title = `Open http://localhost:${portNumber}`;
+    browseButton.addEventListener("click", () => {
+      const url = `http://localhost:${portNumber}`;
+      if (window.electronAPI?.openBrowserUrl) {
+        window.electronAPI.openBrowserUrl(url);
+      } else {
+        window.open(url, "_blank");
+      }
+    });
+    actionGroup.appendChild(browseButton);
+
     const killButton = document.createElement("button");
     killButton.type = "button";
     killButton.className = "kill-button";
@@ -346,7 +459,9 @@ function renderPorts() {
       await handleKillProcess(pid);
       killButton.disabled = !pid;
     });
-    actionCell.appendChild(killButton);
+    actionGroup.appendChild(killButton);
+
+    actionCell.appendChild(actionGroup);
     tr.appendChild(actionCell);
 
     tbody.appendChild(tr);
