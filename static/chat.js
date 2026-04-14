@@ -5142,8 +5142,83 @@ function initTerminalSnapshotPull() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Bridge: render type:"bridge" messages in chat timeline
+// ---------------------------------------------------------------------------
+
+const BRIDGE_CATEGORY_COLOURS = {
+  error: "#ff6b6b",
+  completion: "#4ade80",
+  file_reference: "#60a5fa",
+  progress: "#fbbf24",
+  snapshot: "#c084fc",
+  system: "#888",
+};
+
+function initBridgeMessageRenderer() {
+  // Inject CSS for bridge messages
+  const style = document.createElement("style");
+  style.textContent = `
+    .bridge-msg { border-left: 3px solid #444; padding-left: 10px; margin: 4px 0; }
+    .bridge-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .bridge-icon { font-size: 12px; opacity: 0.7; }
+    .bridge-sender { font-weight: 600; font-size: 12px; }
+    .bridge-session { font-size: 11px; color: #888; }
+    .bridge-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+    .bridge-text { font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 4px; margin: 4px 0; }
+    .bridge-context { margin-top: 4px; }
+    .bridge-context-toggle { font-size: 11px; color: #888; cursor: pointer; border: none; background: transparent; padding: 2px 0; font-family: inherit; }
+    .bridge-context-toggle:hover { color: #da7756; }
+    .bridge-context-lines { display: none; font-family: Consolas, monospace; font-size: 11px; color: #999; white-space: pre-wrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 3px; margin-top: 4px; }
+    .bridge-context-lines.open { display: block; }
+  `;
+  document.head.appendChild(style);
+
+  // Register via the extensible renderer hook
+  if (!window._messageRenderers) window._messageRenderers = {};
+  window._messageRenderers["bridge"] = function (el, msg) {
+    const meta = msg.metadata || {};
+    const category = meta.category || "system";
+    const colour = BRIDGE_CATEGORY_COLOURS[category] || "#888";
+    const sessionName = meta.session_name || meta.terminal_name || "";
+    const contextLines = meta.context_lines || [];
+    const senderColor = getColor(msg.sender);
+
+    el.classList.add("bridge-msg");
+    el.style.borderLeftColor = colour;
+
+    const contextId = `bridge-ctx-${msg.id}`;
+    const contextHtml =
+      contextLines.length > 1
+        ? `<div class="bridge-context">
+          <button class="bridge-context-toggle" onclick="document.getElementById('${contextId}').classList.toggle('open')">
+            context (${contextLines.length} lines)
+          </button>
+          <div id="${contextId}" class="bridge-context-lines">${escapeHtml(contextLines.join("\n"))}</div>
+        </div>`
+        : "";
+
+    el.innerHTML = `
+      <div class="bridge-header">
+        <span class="bridge-icon">&#x1F5A5;</span>
+        <span class="bridge-sender" style="color: ${senderColor}">${escapeHtml(msg.sender)}</span>
+        ${sessionName ? `<span class="bridge-session">${escapeHtml(sessionName)}</span>` : ""}
+        <span class="bridge-badge" style="background: ${colour}22; color: ${colour}">${escapeHtml(category)}</span>
+        <span class="msg-time">${msg.time || ""}</span>
+      </div>
+      <div class="bridge-text">${escapeHtml(msg.text)}</div>
+      ${contextHtml}
+      <div class="msg-actions">
+        <button class="reply-btn" onclick="startReply(${msg.id}, event)">reply</button>
+        <button class="delete-btn" onclick="deleteClick(${msg.id}, event)" title="Delete">del</button>
+      </div>
+    `;
+  };
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   init();
   initHelpTour();
   initTerminalSnapshotPull();
+  initBridgeMessageRenderer();
 });
