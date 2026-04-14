@@ -102,13 +102,7 @@ function createWindow() {
 
   mainWindow.loadURL(pathToFileURL(RENDERER_ENTRY).toString());
 
-  mainWindow.on("close", (event) => {
-    if (isQuitting) return;
-    event.preventDefault();
-    mainWindow.hide();
-  });
-
-  // Save window bounds on move/resize
+  // Save window bounds on move/resize and before close
   const saveBounds = () => {
     if (preferences && mainWindow && !mainWindow.isDestroyed()) {
       preferences.set("windowBounds", mainWindow.getBounds());
@@ -116,6 +110,7 @@ function createWindow() {
   };
   mainWindow.on("moved", saveBounds);
   mainWindow.on("resized", saveBounds);
+  mainWindow.on("close", saveBounds);
 
   mainWindow.on("closed", () => {
     mainWindow = null;
@@ -320,5 +315,5 @@ app.on("before-quit", () => {
 });
 
 app.on("window-all-closed", () => {
-  // Don't quit — tray keeps the app alive
+  app.quit();
 });
