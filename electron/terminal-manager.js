@@ -334,6 +334,13 @@ function setup(win) {
     // POST to Python backend (fire-and-forget with one retry)
     postBridgeEvent(event);
   });
+
+  // Periodically push terminal list + snapshots to the Python backend
+  // so the chat UI's "Pull from Terminal" dropdown works.
+  // Source: design spec Section 4.3 — Electron pushes data periodically.
+  setInterval(() => {
+    pushTerminalListToBackend();
+  }, 5000);
 }
 
 /**
@@ -376,6 +383,63 @@ async function postBridgeEvent(event, retryCount = 0) {
     req.end();
   } catch (err) {
     console.warn("Bridge POST error:", err.message);
+  }
+}
+
+/**
+ * Push terminal list to the Python backend for the chat UI dropdown.
+ * Also pushes snapshot data for each terminal.
+ */
+function pushTerminalListToBackend() {
+  const SERVER_PORT = 8300;
+  const termList = getBridgeTerminals();
+  if (termList.length === 0) return;
+
+  const http = require("http");
+
+  // Push terminal list
+  const listPayload = JSON.stringify({ terminals: termList });
+  const listReq = http.request(
+    {
+      hostname: "127.0.0.1",
+      port: SERVER_PORT,
+      path: "/api/bridge/terminals",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(listPayload),
+      },
+      timeout: 3000,
+    },
+    (res) => res.resume(),
+  );
+  listReq.on("error", () => {}); // silent
+  listReq.write(listPayload);
+  listReq.end();
+
+  // Push snapshots for each terminal
+  for (const t of termList) {
+    const lines = watcherEngine.getSnapshot(t.id, 50);
+    if (lines.length === 0) continue;
+
+    const snapPayload = JSON.stringify({ terminalId: t.id, lines });
+    const snapReq = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: SERVER_PORT,
+        path: "/api/bridge/snapshot",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(snapPayload),
+        },
+        timeout: 3000,
+      },
+      (res) => res.resume(),
+    );
+    snapReq.on("error", () => {}); // silent
+    snapReq.write(snapPayload);
+    snapReq.end();
   }
 }
 

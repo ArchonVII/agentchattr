@@ -5030,7 +5030,120 @@ function initHelpTour() {
 
 // --- Start ---
 
+// ---------------------------------------------------------------------------
+// Bridge: Pull from Terminal (snapshot pull into chat composer)
+// ---------------------------------------------------------------------------
+
+function initTerminalSnapshotPull() {
+  // Insert a "Pull from Terminal" button next to the input area
+  const inputEl = document.getElementById("input");
+  if (!inputEl) return;
+
+  const pullBtn = document.createElement("button");
+  pullBtn.type = "button";
+  pullBtn.className = "send-clock";
+  pullBtn.title = "Pull terminal output into message";
+  pullBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+    <path d="M6 9a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3A.5.5 0 0 1 6 9zM3.854 4.146a.5.5 0 1 0-.708.708L4.793 6.5 3.146 8.146a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2z"/>
+    <path d="M2 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H2zm12 1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h12z"/>
+  </svg>`;
+  pullBtn.style.cssText =
+    "padding: 4px 6px; border: none; background: transparent; color: #888; cursor: pointer; border-radius: 4px;";
+
+  // Insert before the send group
+  const sendGroup = inputEl.parentElement?.querySelector(".send-group");
+  if (sendGroup) {
+    sendGroup.parentElement.insertBefore(pullBtn, sendGroup);
+  }
+
+  pullBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    // Remove any existing dropdown
+    const old = document.getElementById("terminal-pull-dropdown");
+    if (old) {
+      old.remove();
+      return;
+    }
+
+    // Fetch terminal list from backend
+    let terminals = [];
+    try {
+      const res = await fetch("/api/bridge/terminals");
+      if (res.ok) terminals = await res.json();
+    } catch {
+      /* ignore */
+    }
+
+    if (terminals.length === 0) {
+      pullBtn.title = "No active terminals";
+      return;
+    }
+
+    // Create dropdown
+    const dropdown = document.createElement("div");
+    dropdown.id = "terminal-pull-dropdown";
+    dropdown.style.cssText = `
+      position: absolute; bottom: 100%; left: 0; margin-bottom: 4px;
+      background: #1f1f31; border: 1px solid #2a2a3a; border-radius: 6px;
+      padding: 4px 0; min-width: 200px; z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    `;
+
+    for (const t of terminals) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.style.cssText = `
+        display: block; width: 100%; padding: 6px 14px; border: none;
+        background: transparent; color: #e0e0e0; font-size: 13px;
+        font-family: inherit; text-align: left; cursor: pointer;
+      `;
+      const label = t.agentName
+        ? `${t.agentName} (${t.sessionName || t.name})`
+        : t.name || t.id.slice(0, 8);
+      item.textContent = label;
+      item.addEventListener("mouseenter", () => {
+        item.style.background = "rgba(218, 119, 86, 0.15)";
+      });
+      item.addEventListener("mouseleave", () => {
+        item.style.background = "transparent";
+      });
+      item.addEventListener("click", async () => {
+        dropdown.remove();
+        try {
+          const res = await fetch(`/api/bridge/snapshot/${t.id}?lines=50`);
+          if (res.ok) {
+            const data = await res.json();
+            const lines = data.lines || [];
+            if (lines.length > 0) {
+              const codeBlock = "```\n" + lines.join("\n") + "\n```";
+              inputEl.value += codeBlock;
+              inputEl.focus();
+              inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+      });
+      dropdown.appendChild(item);
+    }
+
+    pullBtn.style.position = "relative";
+    pullBtn.appendChild(dropdown);
+
+    // Close on outside click
+    setTimeout(() => {
+      const close = () => {
+        dropdown.remove();
+        document.removeEventListener("click", close);
+      };
+      document.addEventListener("click", close);
+    }, 0);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   init();
   initHelpTour();
+  initTerminalSnapshotPull();
 });

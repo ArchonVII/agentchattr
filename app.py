@@ -1721,6 +1721,28 @@ async def bridge_terminals_update(request: Request):
 # Cache of active terminals pushed by Electron
 _bridge_terminal_cache: list = []
 
+# Snapshot cache — Electron pushes snapshots here on demand
+_bridge_snapshot_cache: dict[str, list[str]] = {}
+
+
+@app.get("/api/bridge/snapshot/{terminal_id}")
+async def bridge_snapshot(terminal_id: str, lines: int = 50):
+    """Return cached snapshot for a terminal.
+    Electron pushes snapshots via POST /api/bridge/snapshot."""
+    cached = _bridge_snapshot_cache.get(terminal_id, [])
+    return JSONResponse({"lines": cached[-lines:]})
+
+
+@app.post("/api/bridge/snapshot")
+async def bridge_snapshot_push(request: Request):
+    """Electron pushes a terminal's snapshot here."""
+    body = await request.json()
+    tid = body.get("terminalId", "")
+    snapshot_lines = body.get("lines", [])
+    if tid:
+        _bridge_snapshot_cache[tid] = snapshot_lines
+    return JSONResponse({"status": "ok"})
+
 
 @app.get("/api/status")
 async def get_status():

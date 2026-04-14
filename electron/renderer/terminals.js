@@ -404,9 +404,19 @@ function createMacroBar(id) {
     bar.appendChild(btn);
   }
 
+  // Bridge: snapshot camera button
+  const snapshotBtn = document.createElement("button");
+  snapshotBtn.className = "macro-btn";
+  snapshotBtn.title = "Send last 50 lines to chat";
+  snapshotBtn.innerHTML = "&#x1F4F7; Snapshot";
+  snapshotBtn.style.marginLeft = "auto";
+  snapshotBtn.addEventListener("click", () => {
+    window.bridgeUI?.requestSnapshot(id);
+  });
+  bar.appendChild(snapshotBtn);
+
   const themeSelect = document.createElement("select");
   themeSelect.className = "macro-btn";
-  themeSelect.style.marginLeft = "auto";
   themeSelect.innerHTML = `
     <option value="default">Default Theme</option>
     <option value="cyberpunk">Cyberpunk</option>
@@ -775,6 +785,72 @@ function createXtermInstance(id, name, shell, pid, cwd) {
 
   terminal.onResize(({ cols, rows }) => {
     window.electronAPI?.resizeTerminal(id, cols, rows);
+  });
+
+  // Bridge: right-click "Send to Chat" context menu
+  surface.addEventListener("contextmenu", (e) => {
+    const selection = terminal.getSelection();
+    if (!selection) return; // Only show when text is selected
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Remove any existing context menu
+    const old = document.getElementById("bridge-context-menu");
+    if (old) old.remove();
+
+    const menu = document.createElement("div");
+    menu.id = "bridge-context-menu";
+    menu.style.cssText = `
+      position: fixed;
+      left: ${e.clientX}px;
+      top: ${e.clientY}px;
+      background: #1f1f31;
+      border: 1px solid #2a2a3a;
+      border-radius: 6px;
+      padding: 4px 0;
+      z-index: 10000;
+      min-width: 160px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    `;
+
+    const item = document.createElement("button");
+    item.style.cssText = `
+      display: block; width: 100%; padding: 6px 14px;
+      border: none; background: transparent; color: #e0e0e0;
+      font-size: 13px; font-family: inherit; text-align: left;
+      cursor: pointer;
+    `;
+    item.textContent = "Send to Chat";
+    item.addEventListener("mouseenter", () => {
+      item.style.background = "rgba(218, 119, 86, 0.15)";
+      item.style.color = "#fff2eb";
+    });
+    item.addEventListener("mouseleave", () => {
+      item.style.background = "transparent";
+      item.style.color = "#e0e0e0";
+    });
+    item.addEventListener("click", () => {
+      const text = "```\n" + selection + "\n```";
+      window.electronAPI?.sendSnapshotToChat(id, text, null);
+      menu.remove();
+    });
+    menu.appendChild(item);
+    document.body.appendChild(menu);
+
+    // Close menu on click outside or escape
+    const closeMenu = () => {
+      menu.remove();
+      document.removeEventListener("click", closeMenu);
+      document.removeEventListener("keydown", onEsc);
+    };
+    const onEsc = (ev) => {
+      if (ev.key === "Escape") closeMenu();
+    };
+    setTimeout(() => {
+      document.addEventListener("click", closeMenu);
+      document.addEventListener("keydown", onEsc);
+    }, 0);
   });
 
   const numInstances = terminalInstances.size;

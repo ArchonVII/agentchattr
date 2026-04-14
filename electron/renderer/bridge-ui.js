@@ -33,6 +33,14 @@
       }
     }
 
+    // Snapshot handler root — hidden, just handles events
+    if (!document.getElementById("bridge-snapshot-root")) {
+      const snapshotRoot = document.createElement("div");
+      snapshotRoot.id = "bridge-snapshot-root";
+      snapshotRoot.style.display = "none";
+      document.body.appendChild(snapshotRoot);
+    }
+
     // Signal that mount points are ready
     window.dispatchEvent(new CustomEvent("bridge:ready"));
   }
@@ -41,6 +49,14 @@
   window.bridgeUI = {
     toggleSettings() {
       window.dispatchEvent(new CustomEvent("bridge:toggle-settings"));
+    },
+
+    requestSnapshot(terminalId) {
+      window.dispatchEvent(
+        new CustomEvent("bridge:snapshot-request", {
+          detail: { terminalId },
+        }),
+      );
     },
 
     notifyTerminalCreated(id, meta) {
