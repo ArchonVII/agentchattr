@@ -356,8 +356,7 @@ function toggleRoomSidebar() {
 }
 
 function togglePresenceSidebar() {
-  const collapsed =
-    localStorage.getItem(PRESENCE_SIDEBAR_COLLAPSE_KEY) === "1";
+  const collapsed = localStorage.getItem(PRESENCE_SIDEBAR_COLLAPSE_KEY) === "1";
   setSidebarCollapsed(
     PRESENCE_SIDEBAR_COLLAPSE_KEY,
     "presence-panel",
@@ -1458,17 +1457,19 @@ function getChannelRosterEntries(channel = activeChannel) {
     const statusKey = resolved || key;
     const statusInfo = agentStatus[statusKey] || {};
     const isAgent =
-      !!resolved || key in agentConfig || key in baseColors || base in baseColors;
+      !!resolved ||
+      key in agentConfig ||
+      key in baseColors ||
+      base in baseColors;
     const isSelf = key === userKey;
-    const displayName =
-      isSelf
-        ? name
-        : isAgent
-          ? statusInfo.label ||
-            agentConfig[statusKey]?.label ||
-            agentConfig[resolved || ""]?.label ||
-            name
-          : name;
+    const displayName = isSelf
+      ? name
+      : isAgent
+        ? statusInfo.label ||
+          agentConfig[statusKey]?.label ||
+          agentConfig[resolved || ""]?.label ||
+          name
+        : name;
     const meta = [];
 
     if (isSelf) {
@@ -1525,6 +1526,18 @@ function getChannelRosterEntries(channel = activeChannel) {
   });
 }
 
+function _formatTerminalAge(timestamp) {
+  if (!timestamp) return "";
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 function renderChannelRoster() {
   const list = document.getElementById("presence-list");
   const channelLabel = document.getElementById("presence-channel-label");
@@ -1569,6 +1582,96 @@ function renderChannelRoster() {
         <div class="presence-meta">${escapeHtml(entry.meta)}</div>
       </div>`;
     list.appendChild(item);
+  }
+
+  // --- Terminal sessions section ---
+  const terminalData = window._terminalData;
+  if (Array.isArray(terminalData) && terminalData.length > 0) {
+    const COLLAPSE_KEY = "agentchattr-terminal-collapsed";
+    const collapsed = localStorage.getItem(COLLAPSE_KEY) === "1";
+
+    const section = document.createElement("div");
+    section.className = "presence-terminal-section";
+
+    const header = document.createElement("button");
+    header.type = "button";
+    header.className = "presence-terminal-header";
+    header.onclick = () => {
+      const next = localStorage.getItem(COLLAPSE_KEY) !== "1";
+      localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      renderChannelRoster();
+    };
+
+    const caret = document.createElement("span");
+    caret.className = "presence-terminal-caret";
+    caret.textContent = collapsed ? "\u25b8" : "\u25be";
+    header.appendChild(caret);
+
+    const headerLabel = document.createElement("span");
+    headerLabel.textContent = "Terminals";
+    header.appendChild(headerLabel);
+
+    const badge = document.createElement("span");
+    badge.className = "presence-terminal-badge";
+    badge.textContent = String(terminalData.length);
+    header.appendChild(badge);
+
+    section.appendChild(header);
+
+    if (!collapsed) {
+      // Sort: embedded first, then external; within each group by most recent
+      const sorted = [...terminalData].sort((a, b) => {
+        if (a.source !== b.source) {
+          return a.source === "embedded" ? -1 : 1;
+        }
+        return (b.startedAt || 0) - (a.startedAt || 0);
+      });
+
+      for (const term of sorted) {
+        const item = document.createElement("div");
+        item.className = "presence-item presence-terminal-item";
+        if (term.source === "embedded") item.classList.add("embedded");
+        if (term.status === "running") item.classList.add("available");
+
+        const age = _formatTerminalAge(term.startedAt);
+        const prefix = term.source === "embedded" ? "\u25b6 " : "";
+        const pidLabel = term.pid ? `PID ${term.pid}` : "";
+        const metaParts = [pidLabel, age].filter(Boolean).join(" \u00b7 ");
+
+        item.innerHTML = `
+          <div class="presence-avatar-wrap">
+            <div class="presence-avatar presence-terminal-avatar">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M4.5 6l2.5 2-2.5 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="8.5" y1="10" x2="11" y2="10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="presence-state-dot"></span>
+          </div>
+          <div class="presence-body">
+            <div class="presence-name-row">
+              <span class="presence-name">${escapeHtml(prefix + term.name)}</span>
+              <span class="presence-role">${escapeHtml(term.shell)}</span>
+            </div>
+            <div class="presence-meta">${escapeHtml(metaParts)}</div>
+          </div>`;
+
+        if (term.source === "embedded" && term.id) {
+          item.style.cursor = "pointer";
+          item.title = "Focus in Terminals tab";
+          item.addEventListener("click", () => {
+            if (window._focusEmbeddedTerminal) {
+              window._focusEmbeddedTerminal(term.id);
+            }
+          });
+        }
+
+        section.appendChild(item);
+      }
+    }
+
+    list.appendChild(section);
   }
 }
 

@@ -1,5 +1,9 @@
 "use strict";
 
+// Initial column widths (px). null = fill remaining space (Description column).
+// Stored in state so user resize survives re-renders caused by sort/filter.
+const COLUMN_INITIAL_WIDTHS = [70, 110, 70, null, 110, 95, 75]; // Port,Address,PID,Desc,Agent,Opened,Actions
+
 const state = {
   activeTab: "chat",
   portRows: [],
@@ -11,6 +15,7 @@ const state = {
   searchQuery: "",
   agentFilter: "",
   sortConfig: { key: "port", direction: "asc" },
+  columnWidths: [...COLUMN_INITIAL_WIDTHS],
 };
 
 const CHANNEL_SYNC_RETRY_MS = 250;
@@ -28,9 +33,15 @@ const elements = {
   browserPanePopout: document.getElementById("browser-pane-popout"),
   browserPaneClose: document.getElementById("browser-pane-close"),
   portsContainer: document.getElementById("ports-container"),
+  terminalsContainer: document.getElementById("terminals-container"),
 };
 
-const RESERVED_DEEP_LINK_TARGETS = new Set(["chat", "ports", "channel"]);
+const RESERVED_DEEP_LINK_TARGETS = new Set([
+  "chat",
+  "ports",
+  "terminals",
+  "channel",
+]);
 
 function fileUrlToPath(fileUrl) {
   const pathname = decodeURIComponent(new URL(fileUrl).pathname);
@@ -69,6 +80,7 @@ function activateTab(tabName) {
 
   elements.chatShell.hidden = tabName !== "chat";
   elements.portsContainer.hidden = tabName !== "ports";
+  elements.terminalsContainer.hidden = tabName !== "terminals";
 }
 
 function readField(row, keys, fallback = "\u2014") {
@@ -223,8 +235,14 @@ function buildActionButtons(row, pid) {
   const browseButton = document.createElement("button");
   browseButton.type = "button";
   browseButton.className = "browse-button";
-  browseButton.textContent = "Browse";
-  browseButton.title = `Open http://localhost:${portNumber}`;
+  // External-link icon
+  browseButton.innerHTML =
+    '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="8" height="8" rx="1"/><path d="M6 1h6v6"/><path d="M13 1 6.5 7.5"/></svg>';
+  browseButton.title = `Browse http://localhost:${portNumber}`;
+  browseButton.setAttribute(
+    "aria-label",
+    `Browse http://localhost:${portNumber}`,
+  );
   browseButton.addEventListener("click", () => {
     const url = `http://localhost:${portNumber}`;
     if (window.electronAPI?.openBrowserUrl) {
@@ -238,8 +256,15 @@ function buildActionButtons(row, pid) {
   const killButton = document.createElement("button");
   killButton.type = "button";
   killButton.className = "kill-button";
-  killButton.textContent = "Kill";
+  // X / kill icon
+  killButton.innerHTML =
+    '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M1 1l9 9M10 1L1 10"/></svg>';
   killButton.disabled = !pid;
+  killButton.title = pid ? `Kill PID ${pid}` : "No PID available";
+  killButton.setAttribute(
+    "aria-label",
+    pid ? `Kill process ${pid}` : "Kill (no PID)",
+  );
   killButton.addEventListener("click", async () => {
     killButton.disabled = true;
     await handleKillProcess(pid);
@@ -257,11 +282,24 @@ function buildPortsTable(rows, columns) {
 
   const table = document.createElement("table");
   table.className = "ports-table";
+  table.style.tableLayout = "fixed";
+
+  // Colgroup uses persisted widths from state; null width = fill remaining space
+  const colgroup = document.createElement("colgroup");
+  columns.forEach((_, i) => {
+    const col = document.createElement("col");
+    const w = state.columnWidths[i];
+    if (w !== null && w !== undefined) {
+      col.style.width = w + "px";
+    }
+    colgroup.appendChild(col);
+  });
+  table.appendChild(colgroup);
 
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
 
-  for (const col of columns) {
+  columns.forEach((col, i) => {
     const th = document.createElement("th");
     th.scope = "col";
 
@@ -284,8 +322,39 @@ function buildPortsTable(rows, columns) {
     } else {
       th.textContent = col.label;
     }
+
+    // Resize handle on every column except the last (Actions)
+    if (i < columns.length - 1) {
+      const handle = document.createElement("div");
+      handle.className = "col-resize-handle";
+      handle.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handle.classList.add("dragging");
+        const targetCol = colgroup.children[i];
+        const startX = e.clientX;
+        const startWidth = th.getBoundingClientRect().width;
+
+        const onMouseMove = (ev) => {
+          const newWidth = Math.max(48, startWidth + ev.clientX - startX);
+          targetCol.style.width = newWidth + "px";
+          state.columnWidths[i] = newWidth; // persist across re-renders
+        };
+
+        const onMouseUp = () => {
+          handle.classList.remove("dragging");
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+        };
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+      });
+      th.appendChild(handle);
+    }
+
     headerRow.appendChild(th);
-  }
+  });
 
   thead.appendChild(headerRow);
   table.appendChild(thead);
@@ -451,9 +520,8 @@ function renderPorts() {
     shell.appendChild(notice);
   }
 
-  // --- Filter and split rows ---
+  // --- Filter rows ---
   const allFiltered = filterRows(state.portRows);
-  const userRows = allFiltered.filter((r) => r.userPort);
 
   if (state.portRows.length === 0) {
     const empty = document.createElement("div");
@@ -465,24 +533,8 @@ function renderPorts() {
     return;
   }
 
-  // --- Two-column lattice ---
-  const lattice = document.createElement("div");
-  lattice.className = "ports-lattice";
-
-  // Left pane: all ports
-  const leftPane = document.createElement("div");
-  leftPane.className = "ports-pane";
-
-  const leftTitle = document.createElement("h2");
-  leftTitle.className = "ports-pane-title";
-  leftTitle.textContent = "All Ports";
-  const leftBadge = document.createElement("span");
-  leftBadge.className = "ports-pane-badge";
-  leftBadge.textContent = String(allFiltered.length);
-  leftTitle.appendChild(leftBadge);
-  leftPane.appendChild(leftTitle);
-
-  const allColumns = [
+  // --- Single combined table: Port / Address / PID / Description / Agent / Opened / Actions ---
+  const columns = [
     {
       label: "Port",
       key: "port",
@@ -504,21 +556,26 @@ function renderPorts() {
       buildCell: (row) => buildCell(readPid(row) ?? "\u2014", "mono"),
     },
     {
-      label: "Process",
-      key: "process",
-      buildCell: (row) =>
-        buildCell(
-          String(
-            readField(row, [
-              "process",
-              "processName",
-              "command",
-              "name",
-              "exe",
-            ]),
-          ),
-          "muted",
-        ),
+      label: "Description",
+      key: null,
+      buildCell: (row) => {
+        const cell = document.createElement("td");
+        const desc =
+          row.description ||
+          readField(row, ["process", "processName", "command", "name", "exe"]);
+        const mainSpan = document.createElement("span");
+        mainSpan.textContent = String(desc);
+        cell.appendChild(mainSpan);
+
+        if (row.commandLine) {
+          const cmdSpan = document.createElement("span");
+          cmdSpan.className = "user-port-cmdline";
+          cmdSpan.textContent = truncateCommandLine(row.commandLine, 80);
+          cmdSpan.title = row.commandLine;
+          cell.appendChild(cmdSpan);
+        }
+        return cell;
+      },
     },
     {
       label: "Agent",
@@ -545,98 +602,11 @@ function renderPorts() {
     empty.className = "ports-empty";
     empty.innerHTML =
       "<strong>No matching ports</strong><span>All current entries are hidden by your filters.</span>";
-    leftPane.appendChild(empty);
+    shell.appendChild(empty);
   } else {
-    leftPane.appendChild(buildPortsTable(allFiltered, allColumns));
+    shell.appendChild(buildPortsTable(allFiltered, columns));
   }
 
-  // Right pane: user ports with enriched info
-  const rightPane = document.createElement("div");
-  rightPane.className = "ports-pane";
-
-  const rightTitle = document.createElement("h2");
-  rightTitle.className = "ports-pane-title";
-  rightTitle.textContent = "Your Ports";
-  const rightBadge = document.createElement("span");
-  rightBadge.className = "ports-pane-badge user";
-  rightBadge.textContent = String(userRows.length);
-  rightTitle.appendChild(rightBadge);
-  rightPane.appendChild(rightTitle);
-
-  const userColumns = [
-    {
-      label: "Port",
-      key: "port",
-      buildCell: (row) =>
-        buildCell(
-          String(readField(row, ["port", "localPort", "listenPort"])),
-          "mono",
-        ),
-    },
-    {
-      label: "Description",
-      key: null,
-      buildCell: (row) => {
-        const cell = document.createElement("td");
-        const desc =
-          row.description ||
-          readField(row, ["process", "processName", "command", "name", "exe"]);
-        const descSpan = document.createElement("span");
-        descSpan.className = "user-port-desc";
-        descSpan.textContent = String(desc);
-        cell.appendChild(descSpan);
-
-        if (row.commandLine) {
-          const cmdSpan = document.createElement("span");
-          cmdSpan.className = "user-port-cmdline";
-          cmdSpan.textContent = truncateCommandLine(row.commandLine, 80);
-          cmdSpan.title = row.commandLine;
-          cell.appendChild(cmdSpan);
-        }
-        return cell;
-      },
-    },
-    {
-      label: "Process",
-      key: "process",
-      buildCell: (row) =>
-        buildCell(
-          String(
-            readField(row, [
-              "process",
-              "processName",
-              "command",
-              "name",
-              "exe",
-            ]),
-          ),
-          "muted",
-        ),
-    },
-    {
-      label: "Opened",
-      key: "opened",
-      buildCell: (row) => buildCell(formatTime(row.openedAt), "muted mono"),
-    },
-    {
-      label: "Actions",
-      key: null,
-      buildCell: (row, pid) => buildActionButtons(row, pid),
-    },
-  ];
-
-  if (userRows.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "ports-empty";
-    empty.innerHTML =
-      "<strong>No user ports detected</strong><span>Ports opened from your terminal or IDE will appear here automatically.</span>";
-    rightPane.appendChild(empty);
-  } else {
-    rightPane.appendChild(buildPortsTable(userRows, userColumns));
-  }
-
-  lattice.append(leftPane, rightPane);
-  shell.appendChild(lattice);
   container.appendChild(shell);
 }
 
@@ -835,6 +805,9 @@ function bindEvents() {
     void synchronisePendingChannel();
   });
 
+  // Terminal presence — forward terminal scan data to the chat webview
+  window.TerminalPresence.init(elements.chatWebview, window.electronAPI);
+
   elements.browserPanePopout.addEventListener("click", () => {
     const result = window.BrowserPaneState.popoutBrowserPane(state.browserPane);
     state.browserPane = result.state;
@@ -891,6 +864,7 @@ function init() {
   activateTab("chat");
   renderBrowserPane();
   renderPorts();
+  if (window.Terminals) window.Terminals.init();
 }
 
 init();

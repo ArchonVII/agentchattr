@@ -4,6 +4,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onPortData(callback) {
     ipcRenderer.on("port-data", (_event, data) => callback(data));
   },
+  onTerminalData(callback) {
+    ipcRenderer.on("terminal-data", (_event, data) => callback(data));
+  },
   onNotification(callback) {
     ipcRenderer.on("notification", (_event, data) => callback(data));
   },
@@ -34,5 +37,30 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   showOpenDialog(options) {
     return ipcRenderer.invoke("show-open-dialog", options);
+  },
+  // Terminal manager (Phase B — embedded terminals)
+  createTerminal(opts) {
+    return ipcRenderer.invoke("terminal:create", opts);
+  },
+  sendTerminalInput(id, data) {
+    ipcRenderer.send("terminal:input", { id, data });
+  },
+  resizeTerminal(id, cols, rows) {
+    ipcRenderer.send("terminal:resize", { id, cols, rows });
+  },
+  closeTerminal(id) {
+    ipcRenderer.send("terminal:close", { id });
+  },
+  listShells() {
+    return ipcRenderer.invoke("terminal:list-shells");
+  },
+  onTerminalOutput(callback) {
+    ipcRenderer.on("terminal:output", (_event, data) => callback(data));
+  },
+  onTerminalCreated(callback) {
+    ipcRenderer.on("terminal:created", (_event, data) => callback(data));
+  },
+  onTerminalExited(callback) {
+    ipcRenderer.on("terminal:exited", (_event, data) => callback(data));
   },
 });

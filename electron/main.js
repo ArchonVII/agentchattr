@@ -77,6 +77,32 @@ function registerIpcHandlers() {
     // module hasn't registered yet. The notifications module uses removeListener
     // before re-registering, so this won't conflict.
   });
+
+  // Terminal manager IPC
+  ipcMain.handle("terminal:create", (_event, opts) => {
+    const tm = require("./terminal-manager");
+    return tm.createTerminal(opts);
+  });
+
+  ipcMain.on("terminal:input", (_event, { id, data }) => {
+    const tm = require("./terminal-manager");
+    tm.sendInput(id, data);
+  });
+
+  ipcMain.on("terminal:resize", (_event, { id, cols, rows }) => {
+    const tm = require("./terminal-manager");
+    tm.resizeTerminal(id, cols, rows);
+  });
+
+  ipcMain.on("terminal:close", (_event, { id }) => {
+    const tm = require("./terminal-manager");
+    tm.closeTerminal(id);
+  });
+
+  ipcMain.handle("terminal:list-shells", () => {
+    const tm = require("./terminal-manager");
+    return tm.detectShells();
+  });
 }
 
 function createWindow() {
@@ -274,6 +300,21 @@ function wireModules() {
   const scanInterval = preferences.get("portScanInterval") || 5000;
   startScanning(mainWindow, scanInterval);
 
+  // Terminal scanner + manager integration
+  const {
+    startScanning: startTerminalScanning,
+    setExcludedPids,
+    setEmbeddedDataProvider,
+  } = require("./terminal-scanner");
+  const terminalManager = require("./terminal-manager");
+  terminalManager.setup(mainWindow);
+  setEmbeddedDataProvider(() => terminalManager.getEmbeddedTerminalData());
+  setInterval(
+    () => setExcludedPids(terminalManager.getActivePids()),
+    1000, // sync embedded PIDs every second for deduplication
+  );
+  startTerminalScanning(mainWindow);
+
   // Global shortcuts
   const { registerShortcuts } = require("./shortcuts");
   registerShortcuts(mainWindow, preferences);
@@ -309,6 +350,10 @@ app.on("before-quit", () => {
   isQuitting = true;
   const { stopScanning } = require("./port-scanner");
   stopScanning();
+  const { stopScanning: stopTerminalScanning } = require("./terminal-scanner");
+  stopTerminalScanning();
+  const terminalManager = require("./terminal-manager");
+  terminalManager.closeAll();
   const { unregisterAll } = require("./shortcuts");
   unregisterAll();
   shutdownServer();
