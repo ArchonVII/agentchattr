@@ -4,6 +4,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onPortData(callback) {
     ipcRenderer.on("port-data", (_event, data) => callback(data));
   },
+  onTerminalData(callback) {
+    ipcRenderer.on("terminal-data", (_event, data) => callback(data));
+  },
   onNotification(callback) {
     ipcRenderer.on("notification", (_event, data) => callback(data));
   },

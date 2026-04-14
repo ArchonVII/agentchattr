@@ -274,6 +274,12 @@ function wireModules() {
   const scanInterval = preferences.get("portScanInterval") || 5000;
   startScanning(mainWindow, scanInterval);
 
+  // Terminal scanner
+  const {
+    startScanning: startTerminalScanning,
+  } = require("./terminal-scanner");
+  startTerminalScanning(mainWindow);
+
   // Global shortcuts
   const { registerShortcuts } = require("./shortcuts");
   registerShortcuts(mainWindow, preferences);
@@ -309,6 +315,8 @@ app.on("before-quit", () => {
   isQuitting = true;
   const { stopScanning } = require("./port-scanner");
   stopScanning();
+  const { stopScanning: stopTerminalScanning } = require("./terminal-scanner");
+  stopTerminalScanning();
   const { unregisterAll } = require("./shortcuts");
   unregisterAll();
   shutdownServer();
