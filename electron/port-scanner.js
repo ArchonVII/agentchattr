@@ -14,7 +14,7 @@ const TASKLIST_BUFFER_BYTES = 1024 * 1024;
 let scanTimer = null;
 let scanInFlight = false;
 let targetWindow = null;
-let previousPortsByKey = new Map();
+let previousPortsByKey = new Map(); // key -> { entry, openedAt }
 let processNameCache = new Map();
 const history = [];
 
@@ -298,11 +298,14 @@ async function tagAgentPorts(ports) {
 }
 
 function updateHistory(currentPorts) {
-  const currentPortsByKey = new Map(currentPorts.map((entry) => [portKey(entry), entry]));
+  const currentPortsMap = new Map(currentPorts.map((entry) => [portKey(entry), entry]));
   const timestamp = Date.now();
 
-  for (const [key, entry] of currentPortsByKey.entries()) {
+  const nextPortsByKey = new Map();
+
+  for (const [key, entry] of currentPortsMap.entries()) {
     if (!previousPortsByKey.has(key)) {
+      // New port
       pushHistoryEntry({
         type: 'open',
         port: entry.port,
@@ -311,11 +314,18 @@ function updateHistory(currentPorts) {
         agent: entry.agent ?? null,
         timestamp,
       });
+      nextPortsByKey.set(key, { entry, openedAt: timestamp });
+    } else {
+      // Existing port, preserve openedAt
+      const prev = previousPortsByKey.get(key);
+      nextPortsByKey.set(key, { entry, openedAt: prev.openedAt });
     }
   }
 
-  for (const [key, entry] of previousPortsByKey.entries()) {
-    if (!currentPortsByKey.has(key)) {
+  for (const [key, prev] of previousPortsByKey.entries()) {
+    if (!currentPortsMap.has(key)) {
+      // Closed port
+      const entry = prev.entry;
       pushHistoryEntry({
         type: 'close',
         port: entry.port,
@@ -327,7 +337,7 @@ function updateHistory(currentPorts) {
     }
   }
 
-  previousPortsByKey = currentPortsByKey;
+  previousPortsByKey = nextPortsByKey;
 }
 
 async function performScanCycle() {
@@ -352,9 +362,19 @@ async function performScanCycle() {
 
     updateHistory(taggedPorts);
 
+    // Re-map taggedPorts to include the tracked openedAt
+    const portsWithTime = taggedPorts.map(port => {
+      const key = portKey(port);
+      const tracked = previousPortsByKey.get(key);
+      return {
+        ...port,
+        openedAt: tracked ? tracked.openedAt : Date.now()
+      };
+    });
+
     if (isWindowAvailable(targetWindow)) {
       targetWindow.webContents.send('port-data', {
-        ports: taggedPorts,
+        ports: portsWithTime,
         history: getHistory(),
       });
     }

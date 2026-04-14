@@ -7,6 +7,8 @@ const state = {
   pendingChannel: null,
   webviewReady: false,
   browserPane: window.BrowserPaneState.createBrowserPaneState(),
+  hideSystem: false,
+  sortConfig: { key: "port", direction: "asc" },
 };
 
 const CHANNEL_SYNC_RETRY_MS = 250;
@@ -139,6 +141,17 @@ async function handleKillProcess(pid) {
   renderPorts();
 }
 
+function formatTime(timestamp) {
+  if (!timestamp) return "\u2014";
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
 function renderPorts() {
   const container = elements.portsContainer;
   container.innerHTML = "";
@@ -149,15 +162,39 @@ function renderPorts() {
   const header = document.createElement("div");
   header.className = "ports-header";
 
+  const titleGroup = document.createElement("div");
+  titleGroup.style.display = "flex";
+  titleGroup.style.alignItems = "baseline";
+  titleGroup.style.gap = "12px";
+
   const title = document.createElement("h1");
   title.className = "ports-title";
   title.textContent = "Ports";
 
   const meta = document.createElement("div");
   meta.className = "ports-meta";
-  meta.textContent = `${state.portRows.length} entr${state.portRows.length === 1 ? "y" : "ies"}`;
+  meta.textContent = `${state.portRows.length} total entries`;
 
-  header.append(title, meta);
+  titleGroup.append(title, meta);
+
+  const controls = document.createElement("div");
+  controls.className = "ports-controls";
+
+  const hideSystemLabel = document.createElement("label");
+  hideSystemLabel.className = "ports-checkbox-label";
+  
+  const hideSystemCheckbox = document.createElement("input");
+  hideSystemCheckbox.type = "checkbox";
+  hideSystemCheckbox.checked = state.hideSystem;
+  hideSystemCheckbox.addEventListener("change", (e) => {
+    state.hideSystem = e.target.checked;
+    renderPorts();
+  });
+
+  hideSystemLabel.append(hideSystemCheckbox, " Hide System entries");
+  controls.appendChild(hideSystemLabel);
+
+  header.append(titleGroup, controls);
   shell.appendChild(header);
 
   if (state.notice) {
@@ -168,11 +205,51 @@ function renderPorts() {
     shell.appendChild(notice);
   }
 
-  if (state.portRows.length === 0) {
+  let rows = [...state.portRows];
+  if (state.hideSystem) {
+    rows = rows.filter(r => r.agent !== "System");
+  }
+
+  const sortKey = state.sortConfig.key;
+  const sortDir = state.sortConfig.direction === "asc" ? 1 : -1;
+
+  rows.sort((a, b) => {
+    let valA, valB;
+    switch(sortKey) {
+      case "port":
+        valA = a.port;
+        valB = b.port;
+        break;
+      case "pid":
+        valA = parseInt(readPid(a) || "0", 10);
+        valB = parseInt(readPid(b) || "0", 10);
+        break;
+      case "process":
+        valA = readField(a, ["process", "processName", "command", "name", "exe"]).toLowerCase();
+        valB = readField(b, ["process", "processName", "command", "name", "exe"]).toLowerCase();
+        break;
+      case "agent":
+        valA = readField(a, ["agent", "agentName", "owner", "channel"]).toLowerCase();
+        valB = readField(b, ["agent", "agentName", "owner", "channel"]).toLowerCase();
+        break;
+      case "opened":
+        valA = a.openedAt || 0;
+        valB = b.openedAt || 0;
+        break;
+      default:
+        return 0;
+    }
+    if (valA < valB) return -1 * sortDir;
+    if (valA > valB) return 1 * sortDir;
+    return 0;
+  });
+
+  if (rows.length === 0) {
     const empty = document.createElement("div");
     empty.className = "ports-empty";
-    empty.innerHTML =
-      "<strong>Waiting for port data</strong><span>Port information will appear here when the Electron main process emits it.</span>";
+    empty.innerHTML = state.portRows.length === 0 
+      ? "<strong>Waiting for port data</strong><span>Port information will appear here when the Electron main process emits it.</span>"
+      : "<strong>No matching ports</strong><span>All current entries are hidden by your filters.</span>";
     shell.appendChild(empty);
     container.appendChild(shell);
     return;
@@ -187,17 +264,38 @@ function renderPorts() {
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
 
-  for (const label of [
-    "Port",
-    "Address",
-    "PID",
-    "Process",
-    "Agent",
-    "Actions",
-  ]) {
+  const columns = [
+    { label: "Port", key: "port" },
+    { label: "Address", key: null },
+    { label: "PID", key: "pid" },
+    { label: "Process", key: "process" },
+    { label: "Agent", key: "agent" },
+    { label: "Opened", key: "opened" },
+    { label: "Actions", key: null },
+  ];
+
+  for (const col of columns) {
     const th = document.createElement("th");
     th.scope = "col";
-    th.textContent = label;
+    
+    if (col.key) {
+      th.className = "sortable";
+      if (state.sortConfig.key === col.key) {
+        th.classList.add(state.sortConfig.direction);
+      }
+      th.textContent = col.label;
+      th.addEventListener("click", () => {
+        if (state.sortConfig.key === col.key) {
+          state.sortConfig.direction = state.sortConfig.direction === "asc" ? "desc" : "asc";
+        } else {
+          state.sortConfig.key = col.key;
+          state.sortConfig.direction = "asc";
+        }
+        renderPorts();
+      });
+    } else {
+      th.textContent = col.label;
+    }
     headerRow.appendChild(th);
   }
 
@@ -206,7 +304,7 @@ function renderPorts() {
 
   const tbody = document.createElement("tbody");
 
-  for (const row of state.portRows) {
+  for (const row of rows) {
     const tr = document.createElement("tr");
     const pid = readPid(row);
 
@@ -232,6 +330,9 @@ function renderPorts() {
       buildCell(
         String(readField(row, ["agent", "agentName", "owner", "channel"])),
       ),
+    );
+    tr.appendChild(
+      buildCell(formatTime(row.openedAt), "muted mono"),
     );
 
     const actionCell = document.createElement("td");
