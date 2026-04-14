@@ -44,6 +44,7 @@ let scanTimer = null;
 let scanInFlight = false;
 let targetWindow = null;
 let excludedPids = new Set(); // PIDs managed by embedded terminals; skip these
+let embeddedDataProvider = null; // function that returns embedded terminal entries
 
 // ---------------------------------------------------------------------------
 // Knowledge (pure helper functions — no side effects, no I/O)
@@ -376,8 +377,13 @@ async function performScanCycle() {
 
     const entries = buildTerminalEntries(rawProcesses);
 
+    // Merge embedded terminal data if a provider is registered
+    const merged = embeddedDataProvider
+      ? [...embeddedDataProvider(), ...entries]
+      : entries;
+
     if (isWindowAvailable(targetWindow)) {
-      targetWindow.webContents.send("terminal-data", entries);
+      targetWindow.webContents.send("terminal-data", merged);
     }
   } catch (error) {
     console.error("terminal-scanner: Scan cycle failed:", error);
@@ -433,6 +439,16 @@ function setExcludedPids(pids) {
   excludedPids = new Set(pids);
 }
 
+/**
+ * Register a provider function that returns embedded terminal entries.
+ * Called during each scan cycle to merge embedded data into the output.
+ *
+ * @param {Function|null} fn  Returns Array of terminal entry objects
+ */
+function setEmbeddedDataProvider(fn) {
+  embeddedDataProvider = typeof fn === "function" ? fn : null;
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -442,6 +458,7 @@ module.exports = {
   startScanning,
   stopScanning,
   setExcludedPids,
+  setEmbeddedDataProvider,
 
   // Exported for testing
   normaliseProcessName,
