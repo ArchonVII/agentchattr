@@ -78,7 +78,9 @@ function renderQuickLaunchBar() {
   // Folder shortcuts
   quickLaunchFolders.forEach((folder) => {
     const btn = document.createElement("button");
-    btn.className = "quick-launch-folder" + (selectedLaunchFolder === folder ? " active" : "");
+    btn.className =
+      "quick-launch-folder" +
+      (selectedLaunchFolder === folder ? " active" : "");
     btn.textContent = folder.split(/[\\/]/).pop();
     btn.title = folder;
     btn.onclick = () => {
@@ -157,11 +159,11 @@ function launchAgentTerminal(agentId) {
   }
 
   const command = `${isWin ? "windows\\" : "macos-linux/"}${scriptName}${ext}`;
-  
+
   void requestNewTerminal(null, {
     cwd: selectedLaunchFolder,
     command: command,
-    name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`
+    name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`,
   });
 }
 
@@ -254,7 +256,7 @@ function performResize(e) {
 
   inst.wrapper.style.width = inst.width + "px";
   inst.wrapper.style.height = inst.height + "px";
-  
+
   if (inst.fitTimeout) clearTimeout(inst.fitTimeout);
   inst.fitTimeout = setTimeout(() => inst.fitAddon.fit(), 50);
 }
@@ -444,7 +446,7 @@ function toggleLayout() {
   const modes = ["tabs", "grid", "float"];
   const currentIndex = modes.indexOf(layoutMode);
   layoutMode = modes[(currentIndex + 1) % modes.length];
-  
+
   renderLayout();
   renderTabStrip();
 
@@ -472,7 +474,7 @@ function renderLayout() {
     inst.wrapper.style.height = "";
     inst.wrapper.style.zIndex = "";
     if (inst.macroBar) inst.macroBar.style.display = "flex";
-    
+
     if (layoutMode === "tabs") {
       inst.wrapper.style.display = isActive ? "" : "none";
     } else if (layoutMode === "grid") {
@@ -564,11 +566,26 @@ function renderTabStrip() {
   });
   strip.appendChild(addBtn);
 
+  // Bridge: watcher settings gear button
+  const watcherBtn = document.createElement("button");
+  watcherBtn.type = "button";
+  watcherBtn.className = "terminal-settings-toggle";
+  watcherBtn.title = "Watcher Settings";
+  watcherBtn.innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>';
+  watcherBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    window.bridgeUI?.toggleSettings();
+  });
+  strip.appendChild(watcherBtn);
+
   const arsenalBtn = document.createElement("button");
   arsenalBtn.type = "button";
-  arsenalBtn.className = "terminal-settings-toggle" + (arsenalVisible ? " active" : "");
+  arsenalBtn.className =
+    "terminal-settings-toggle" + (arsenalVisible ? " active" : "");
   arsenalBtn.title = "Toggle Arsenal Sidebar";
-  arsenalBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1z"/></svg>';
+  arsenalBtn.innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1z"/></svg>';
   arsenalBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     toggleArsenal();
@@ -651,7 +668,7 @@ async function requestNewTerminal(shellId, opts = {}) {
 
   const result = await window.electronAPI.createTerminal({
     shell: shellId || undefined,
-    ...opts
+    ...opts,
   });
 
   if (result?.error) {
@@ -660,12 +677,18 @@ async function requestNewTerminal(shellId, opts = {}) {
   }
 
   if (result?.id) {
-    createXtermInstance(result.id, result.name, result.shell, result.pid);
+    createXtermInstance(
+      result.id,
+      result.name,
+      result.shell,
+      result.pid,
+      result.cwd,
+    );
     focusTerminal(result.id);
   }
 }
 
-function createXtermInstance(id, name, shell, pid) {
+function createXtermInstance(id, name, shell, pid, cwd) {
   const terminal = new Terminal({
     theme: XTERM_THEME,
     fontFamily: 'Consolas, "Courier New", monospace',
@@ -679,6 +702,46 @@ function createXtermInstance(id, name, shell, pid) {
   terminal.loadAddon(fitAddon);
   terminal.loadAddon(new WebLinksAddon());
 
+  // Local File Link Provider
+  terminal.registerLinkProvider({
+    provideLinks(bufferLine, callback) {
+      const line = bufferLine.translateToString(true);
+      // Regex matches:
+      // 1. Absolute paths (Unix/Windows)
+      // 2. Relative paths (./ or ../)
+      // 3. Paths starting with a directory (e.g. src/main.js)
+      // and optional line numbers.
+      const regex =
+        /(?:(?:\/|[A-Za-z]:[\\\/])[\w\-.\\\/]+|(?:\.\.?[\/\\])[\w\-.\\\/]+|[\w\-.]+(?:[\\\/][\w\-.\\\/]+)+)(?::(\d+))?/g;
+      const links = [];
+      let match;
+      while ((match = regex.exec(line)) !== null) {
+        const text = match[0];
+        const lineNum = match[1];
+        const filePath = lineNum ? text.slice(0, text.lastIndexOf(":")) : text;
+
+        const startColumn = match.index + 1;
+        const endColumn = startColumn + text.length;
+
+        links.push({
+          range: {
+            start: { x: startColumn, y: bufferLine.y + 1 },
+            end: { x: endColumn, y: bufferLine.y + 1 },
+          },
+          text,
+          activate: (event, text) => {
+            window.electronAPI?.openTerminalFile?.({
+              path: filePath,
+              line: lineNum,
+              cwd: cwd,
+            });
+          },
+        });
+      }
+      callback(links);
+    },
+  });
+
   const wrapper = document.createElement("div");
   wrapper.className = "terminal-instance-wrapper";
   wrapper.dataset.terminalId = id;
@@ -687,19 +750,19 @@ function createXtermInstance(id, name, shell, pid) {
   const toolbar = document.createElement("div");
   toolbar.className = "terminal-toolbar";
   toolbar.addEventListener("mousedown", (e) => initDrag(e, id));
-  
+
   const resizeHandle = document.createElement("div");
   resizeHandle.className = "resize-handle bottom-right";
   resizeHandle.addEventListener("mousedown", (e) => initResize(e, id));
   wrapper.appendChild(resizeHandle);
-  
+
   const macroBar = createMacroBar(id);
   wrapper.appendChild(macroBar);
 
   const surface = document.createElement("div");
   surface.className = "terminal-surface";
   wrapper.appendChild(surface);
-  
+
   const mainWrapper = getWrapper();
   if (mainWrapper) mainWrapper.appendChild(wrapper);
 
@@ -713,7 +776,7 @@ function createXtermInstance(id, name, shell, pid) {
   terminal.onResize(({ cols, rows }) => {
     window.electronAPI?.resizeTerminal(id, cols, rows);
   });
-  
+
   const numInstances = terminalInstances.size;
   const newInstance = {
     terminal,
@@ -734,7 +797,7 @@ function createXtermInstance(id, name, shell, pid) {
     zIndex: highestZ++,
     fitTimeout: null,
   };
-  
+
   terminalInstances.set(id, newInstance);
 
   renderLayout();
@@ -911,5 +974,5 @@ window.Terminals = {
   requestNew: requestNewTerminal,
   toggleArsenal: toggleArsenal,
   toggleTheme: toggleTheme,
-  toggleLayout: toggleLayout
+  toggleLayout: toggleLayout,
 };
