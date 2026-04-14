@@ -154,134 +154,7 @@ function formatTime(timestamp) {
   });
 }
 
-function renderPorts() {
-  const container = elements.portsContainer;
-  container.innerHTML = "";
-
-  const shell = document.createElement("div");
-  shell.className = "ports-shell";
-
-  const header = document.createElement("div");
-  header.className = "ports-header";
-
-  const titleGroup = document.createElement("div");
-  titleGroup.style.display = "flex";
-  titleGroup.style.alignItems = "baseline";
-  titleGroup.style.gap = "12px";
-
-  const title = document.createElement("h1");
-  title.className = "ports-title";
-  title.textContent = "Ports";
-
-  const meta = document.createElement("div");
-  meta.className = "ports-meta";
-  meta.textContent = `${state.portRows.length} total entries`;
-
-  titleGroup.append(title, meta);
-
-  const controls = document.createElement("div");
-  controls.className = "ports-controls";
-
-  const hideSystemLabel = document.createElement("label");
-  hideSystemLabel.className = "ports-checkbox-label";
-
-  const hideSystemCheckbox = document.createElement("input");
-  hideSystemCheckbox.type = "checkbox";
-  hideSystemCheckbox.checked = state.hideSystem;
-  hideSystemCheckbox.addEventListener("change", (e) => {
-    state.hideSystem = e.target.checked;
-    renderPorts();
-  });
-
-  hideSystemLabel.append(hideSystemCheckbox, " Hide System entries");
-  controls.appendChild(hideSystemLabel);
-
-  const searchInput = document.createElement("input");
-  searchInput.type = "text";
-  searchInput.className = "ports-search";
-  searchInput.placeholder = "Search ports\u2026";
-  searchInput.value = state.searchQuery;
-  searchInput.addEventListener("input", (e) => {
-    state.searchQuery = e.target.value;
-    renderPorts();
-    // Re-focus and restore cursor position after re-render
-    const el = container.querySelector(".ports-search");
-    if (el) {
-      el.focus();
-      el.selectionStart = el.selectionEnd = e.target.selectionStart;
-    }
-  });
-  controls.appendChild(searchInput);
-
-  const uniqueAgents = [
-    ...new Set(
-      state.portRows.map((r) =>
-        readField(r, ["agent", "agentName", "owner", "channel"]),
-      ),
-    ),
-  ]
-    .filter((a) => a && a !== "\u2014")
-    .sort();
-
-  const agentSelect = document.createElement("select");
-  agentSelect.className = "ports-filter-select";
-  const allOption = document.createElement("option");
-  allOption.value = "";
-  allOption.textContent = "All agents";
-  agentSelect.appendChild(allOption);
-  for (const agent of uniqueAgents) {
-    const opt = document.createElement("option");
-    opt.value = agent;
-    opt.textContent = agent;
-    if (state.agentFilter === agent) opt.selected = true;
-    agentSelect.appendChild(opt);
-  }
-  agentSelect.addEventListener("change", (e) => {
-    state.agentFilter = e.target.value;
-    renderPorts();
-  });
-  controls.appendChild(agentSelect);
-
-  header.append(titleGroup, controls);
-  shell.appendChild(header);
-
-  if (state.notice) {
-    const notice = document.createElement("div");
-    notice.className =
-      `ports-notice ${state.notice.tone === "error" ? "error" : ""}`.trim();
-    notice.textContent = state.notice.message;
-    shell.appendChild(notice);
-  }
-
-  let rows = [...state.portRows];
-  if (state.hideSystem) {
-    rows = rows.filter((r) => r.agent !== "System");
-  }
-
-  if (state.agentFilter) {
-    rows = rows.filter(
-      (r) =>
-        readField(r, ["agent", "agentName", "owner", "channel"]) ===
-        state.agentFilter,
-    );
-  }
-
-  if (state.searchQuery) {
-    const query = state.searchQuery.toLowerCase();
-    rows = rows.filter((row) => {
-      const fields = [
-        String(readField(row, ["port", "localPort", "listenPort"])),
-        String(readField(row, ["address", "host", "bind", "ip"])),
-        readPid(row) ?? "",
-        String(
-          readField(row, ["process", "processName", "command", "name", "exe"]),
-        ),
-        String(readField(row, ["agent", "agentName", "owner", "channel"])),
-      ];
-      return fields.some((f) => f.toLowerCase().includes(query));
-    });
-  }
-
+function sortRows(rows) {
   const sortKey = state.sortConfig.key;
   const sortDir = state.sortConfig.direction === "asc" ? 1 : -1;
 
@@ -338,18 +211,47 @@ function renderPorts() {
     return 0;
   });
 
-  if (rows.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "ports-empty";
-    empty.innerHTML =
-      state.portRows.length === 0
-        ? "<strong>Waiting for port data</strong><span>Port information will appear here when the Electron main process emits it.</span>"
-        : "<strong>No matching ports</strong><span>All current entries are hidden by your filters.</span>";
-    shell.appendChild(empty);
-    container.appendChild(shell);
-    return;
-  }
+  return rows;
+}
 
+function buildActionButtons(row, pid) {
+  const actionCell = document.createElement("td");
+  const actionGroup = document.createElement("div");
+  actionGroup.className = "action-group";
+
+  const portNumber = readField(row, ["port", "localPort", "listenPort"]);
+  const browseButton = document.createElement("button");
+  browseButton.type = "button";
+  browseButton.className = "browse-button";
+  browseButton.textContent = "Browse";
+  browseButton.title = `Open http://localhost:${portNumber}`;
+  browseButton.addEventListener("click", () => {
+    const url = `http://localhost:${portNumber}`;
+    if (window.electronAPI?.openBrowserUrl) {
+      window.electronAPI.openBrowserUrl(url);
+    } else {
+      window.open(url, "_blank");
+    }
+  });
+  actionGroup.appendChild(browseButton);
+
+  const killButton = document.createElement("button");
+  killButton.type = "button";
+  killButton.className = "kill-button";
+  killButton.textContent = "Kill";
+  killButton.disabled = !pid;
+  killButton.addEventListener("click", async () => {
+    killButton.disabled = true;
+    await handleKillProcess(pid);
+    killButton.disabled = !pid;
+  });
+  actionGroup.appendChild(killButton);
+
+  actionCell.appendChild(actionGroup);
+  return actionCell;
+}
+
+function buildPortsTable(rows, columns) {
   const wrapper = document.createElement("div");
   wrapper.className = "ports-table-wrap";
 
@@ -358,16 +260,6 @@ function renderPorts() {
 
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
-
-  const columns = [
-    { label: "Port", key: "port" },
-    { label: "Address", key: null },
-    { label: "PID", key: "pid" },
-    { label: "Process", key: "process" },
-    { label: "Agent", key: "agent" },
-    { label: "Opened", key: "opened" },
-    { label: "Actions", key: null },
-  ];
 
   for (const col of columns) {
     const th = document.createElement("th");
@@ -404,72 +296,347 @@ function renderPorts() {
     const tr = document.createElement("tr");
     const pid = readPid(row);
 
-    tr.appendChild(
-      buildCell(
-        String(readField(row, ["port", "localPort", "listenPort"])),
-        "mono",
-      ),
-    );
-    tr.appendChild(
-      buildCell(String(readField(row, ["address", "host", "bind", "ip"]))),
-    );
-    tr.appendChild(buildCell(pid ?? "\u2014", "mono"));
-    tr.appendChild(
-      buildCell(
-        String(
-          readField(row, ["process", "processName", "command", "name", "exe"]),
-        ),
-        "muted",
-      ),
-    );
-    tr.appendChild(
-      buildCell(
-        String(readField(row, ["agent", "agentName", "owner", "channel"])),
-      ),
-    );
-    tr.appendChild(buildCell(formatTime(row.openedAt), "muted mono"));
-
-    const actionCell = document.createElement("td");
-    const actionGroup = document.createElement("div");
-    actionGroup.className = "action-group";
-
-    const portNumber = readField(row, ["port", "localPort", "listenPort"]);
-    const browseButton = document.createElement("button");
-    browseButton.type = "button";
-    browseButton.className = "browse-button";
-    browseButton.textContent = "Browse";
-    browseButton.title = `Open http://localhost:${portNumber}`;
-    browseButton.addEventListener("click", () => {
-      const url = `http://localhost:${portNumber}`;
-      if (window.electronAPI?.openBrowserUrl) {
-        window.electronAPI.openBrowserUrl(url);
-      } else {
-        window.open(url, "_blank");
+    for (const col of columns) {
+      if (col.buildCell) {
+        tr.appendChild(col.buildCell(row, pid));
       }
-    });
-    actionGroup.appendChild(browseButton);
-
-    const killButton = document.createElement("button");
-    killButton.type = "button";
-    killButton.className = "kill-button";
-    killButton.textContent = "Kill";
-    killButton.disabled = !pid;
-    killButton.addEventListener("click", async () => {
-      killButton.disabled = true;
-      await handleKillProcess(pid);
-      killButton.disabled = !pid;
-    });
-    actionGroup.appendChild(killButton);
-
-    actionCell.appendChild(actionGroup);
-    tr.appendChild(actionCell);
+    }
 
     tbody.appendChild(tr);
   }
 
   table.appendChild(tbody);
   wrapper.appendChild(table);
-  shell.appendChild(wrapper);
+  return wrapper;
+}
+
+function truncateCommandLine(cmdLine, maxLen) {
+  if (!cmdLine) return null;
+  if (cmdLine.length <= maxLen) return cmdLine;
+  return cmdLine.slice(0, maxLen - 1) + "\u2026";
+}
+
+function filterRows(rows) {
+  let filtered = [...rows];
+
+  if (state.hideSystem) {
+    filtered = filtered.filter((r) => r.agent !== "System");
+  }
+
+  if (state.agentFilter) {
+    filtered = filtered.filter(
+      (r) =>
+        readField(r, ["agent", "agentName", "owner", "channel"]) ===
+        state.agentFilter,
+    );
+  }
+
+  if (state.searchQuery) {
+    const query = state.searchQuery.toLowerCase();
+    filtered = filtered.filter((row) => {
+      const fields = [
+        String(readField(row, ["port", "localPort", "listenPort"])),
+        String(readField(row, ["address", "host", "bind", "ip"])),
+        readPid(row) ?? "",
+        String(
+          readField(row, ["process", "processName", "command", "name", "exe"]),
+        ),
+        String(readField(row, ["agent", "agentName", "owner", "channel"])),
+        row.description ?? "",
+        row.commandLine ?? "",
+      ];
+      return fields.some((f) => f.toLowerCase().includes(query));
+    });
+  }
+
+  return sortRows(filtered);
+}
+
+function renderPorts() {
+  const container = elements.portsContainer;
+  container.innerHTML = "";
+
+  const shell = document.createElement("div");
+  shell.className = "ports-shell";
+
+  // --- Header with controls ---
+  const header = document.createElement("div");
+  header.className = "ports-header";
+
+  const titleGroup = document.createElement("div");
+  titleGroup.style.display = "flex";
+  titleGroup.style.alignItems = "baseline";
+  titleGroup.style.gap = "12px";
+
+  const title = document.createElement("h1");
+  title.className = "ports-title";
+  title.textContent = "Ports";
+
+  const meta = document.createElement("div");
+  meta.className = "ports-meta";
+  meta.textContent = `${state.portRows.length} total entries`;
+
+  titleGroup.append(title, meta);
+
+  const controls = document.createElement("div");
+  controls.className = "ports-controls";
+
+  const hideSystemLabel = document.createElement("label");
+  hideSystemLabel.className = "ports-checkbox-label";
+
+  const hideSystemCheckbox = document.createElement("input");
+  hideSystemCheckbox.type = "checkbox";
+  hideSystemCheckbox.checked = state.hideSystem;
+  hideSystemCheckbox.addEventListener("change", (e) => {
+    state.hideSystem = e.target.checked;
+    renderPorts();
+  });
+
+  hideSystemLabel.append(hideSystemCheckbox, " Hide System entries");
+  controls.appendChild(hideSystemLabel);
+
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.className = "ports-search";
+  searchInput.placeholder = "Search ports\u2026";
+  searchInput.value = state.searchQuery;
+  searchInput.addEventListener("input", (e) => {
+    state.searchQuery = e.target.value;
+    renderPorts();
+    const el = container.querySelector(".ports-search");
+    if (el) {
+      el.focus();
+      el.selectionStart = el.selectionEnd = e.target.selectionStart;
+    }
+  });
+  controls.appendChild(searchInput);
+
+  const uniqueAgents = [
+    ...new Set(
+      state.portRows.map((r) =>
+        readField(r, ["agent", "agentName", "owner", "channel"]),
+      ),
+    ),
+  ]
+    .filter((a) => a && a !== "\u2014")
+    .sort();
+
+  const agentSelect = document.createElement("select");
+  agentSelect.className = "ports-filter-select";
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "All agents";
+  agentSelect.appendChild(allOption);
+  for (const agent of uniqueAgents) {
+    const opt = document.createElement("option");
+    opt.value = agent;
+    opt.textContent = agent;
+    if (state.agentFilter === agent) opt.selected = true;
+    agentSelect.appendChild(opt);
+  }
+  agentSelect.addEventListener("change", (e) => {
+    state.agentFilter = e.target.value;
+    renderPorts();
+  });
+  controls.appendChild(agentSelect);
+
+  header.append(titleGroup, controls);
+  shell.appendChild(header);
+
+  if (state.notice) {
+    const notice = document.createElement("div");
+    notice.className =
+      `ports-notice ${state.notice.tone === "error" ? "error" : ""}`.trim();
+    notice.textContent = state.notice.message;
+    shell.appendChild(notice);
+  }
+
+  // --- Filter and split rows ---
+  const allFiltered = filterRows(state.portRows);
+  const userRows = allFiltered.filter((r) => r.userPort);
+
+  if (state.portRows.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "ports-empty";
+    empty.innerHTML =
+      "<strong>Waiting for port data</strong><span>Port information will appear here when the Electron main process emits it.</span>";
+    shell.appendChild(empty);
+    container.appendChild(shell);
+    return;
+  }
+
+  // --- Two-column lattice ---
+  const lattice = document.createElement("div");
+  lattice.className = "ports-lattice";
+
+  // Left pane: all ports
+  const leftPane = document.createElement("div");
+  leftPane.className = "ports-pane";
+
+  const leftTitle = document.createElement("h2");
+  leftTitle.className = "ports-pane-title";
+  leftTitle.textContent = "All Ports";
+  const leftBadge = document.createElement("span");
+  leftBadge.className = "ports-pane-badge";
+  leftBadge.textContent = String(allFiltered.length);
+  leftTitle.appendChild(leftBadge);
+  leftPane.appendChild(leftTitle);
+
+  const allColumns = [
+    {
+      label: "Port",
+      key: "port",
+      buildCell: (row) =>
+        buildCell(
+          String(readField(row, ["port", "localPort", "listenPort"])),
+          "mono",
+        ),
+    },
+    {
+      label: "Address",
+      key: null,
+      buildCell: (row) =>
+        buildCell(String(readField(row, ["address", "host", "bind", "ip"]))),
+    },
+    {
+      label: "PID",
+      key: "pid",
+      buildCell: (row) => buildCell(readPid(row) ?? "\u2014", "mono"),
+    },
+    {
+      label: "Process",
+      key: "process",
+      buildCell: (row) =>
+        buildCell(
+          String(
+            readField(row, [
+              "process",
+              "processName",
+              "command",
+              "name",
+              "exe",
+            ]),
+          ),
+          "muted",
+        ),
+    },
+    {
+      label: "Agent",
+      key: "agent",
+      buildCell: (row) =>
+        buildCell(
+          String(readField(row, ["agent", "agentName", "owner", "channel"])),
+        ),
+    },
+    {
+      label: "Opened",
+      key: "opened",
+      buildCell: (row) => buildCell(formatTime(row.openedAt), "muted mono"),
+    },
+    {
+      label: "Actions",
+      key: null,
+      buildCell: (row, pid) => buildActionButtons(row, pid),
+    },
+  ];
+
+  if (allFiltered.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "ports-empty";
+    empty.innerHTML =
+      "<strong>No matching ports</strong><span>All current entries are hidden by your filters.</span>";
+    leftPane.appendChild(empty);
+  } else {
+    leftPane.appendChild(buildPortsTable(allFiltered, allColumns));
+  }
+
+  // Right pane: user ports with enriched info
+  const rightPane = document.createElement("div");
+  rightPane.className = "ports-pane";
+
+  const rightTitle = document.createElement("h2");
+  rightTitle.className = "ports-pane-title";
+  rightTitle.textContent = "Your Ports";
+  const rightBadge = document.createElement("span");
+  rightBadge.className = "ports-pane-badge user";
+  rightBadge.textContent = String(userRows.length);
+  rightTitle.appendChild(rightBadge);
+  rightPane.appendChild(rightTitle);
+
+  const userColumns = [
+    {
+      label: "Port",
+      key: "port",
+      buildCell: (row) =>
+        buildCell(
+          String(readField(row, ["port", "localPort", "listenPort"])),
+          "mono",
+        ),
+    },
+    {
+      label: "Description",
+      key: null,
+      buildCell: (row) => {
+        const cell = document.createElement("td");
+        const desc =
+          row.description ||
+          readField(row, ["process", "processName", "command", "name", "exe"]);
+        const descSpan = document.createElement("span");
+        descSpan.className = "user-port-desc";
+        descSpan.textContent = String(desc);
+        cell.appendChild(descSpan);
+
+        if (row.commandLine) {
+          const cmdSpan = document.createElement("span");
+          cmdSpan.className = "user-port-cmdline";
+          cmdSpan.textContent = truncateCommandLine(row.commandLine, 80);
+          cmdSpan.title = row.commandLine;
+          cell.appendChild(cmdSpan);
+        }
+        return cell;
+      },
+    },
+    {
+      label: "Process",
+      key: "process",
+      buildCell: (row) =>
+        buildCell(
+          String(
+            readField(row, [
+              "process",
+              "processName",
+              "command",
+              "name",
+              "exe",
+            ]),
+          ),
+          "muted",
+        ),
+    },
+    {
+      label: "Opened",
+      key: "opened",
+      buildCell: (row) => buildCell(formatTime(row.openedAt), "muted mono"),
+    },
+    {
+      label: "Actions",
+      key: null,
+      buildCell: (row, pid) => buildActionButtons(row, pid),
+    },
+  ];
+
+  if (userRows.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "ports-empty";
+    empty.innerHTML =
+      "<strong>No user ports detected</strong><span>Ports opened from your terminal or IDE will appear here automatically.</span>";
+    rightPane.appendChild(empty);
+  } else {
+    rightPane.appendChild(buildPortsTable(userRows, userColumns));
+  }
+
+  lattice.append(leftPane, rightPane);
+  shell.appendChild(lattice);
   container.appendChild(shell);
 }
 
