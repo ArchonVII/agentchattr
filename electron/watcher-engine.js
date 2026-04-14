@@ -97,6 +97,23 @@ class WatcherEngine {
     // Compiled rules
     this._rules = [];
     this._matchCallback = null;
+    this._identityCallback = null;
+
+    // Per-terminal line counter for agent auto-detection.
+    // Source: design spec Section 6.2 — check first ~20 lines.
+    this._lineCounters = new Map(); // terminalId -> count
+    this._detectedAgents = new Set(); // terminalIds already detected
+
+    // Agent banner patterns (not user-configurable).
+    this._agentPatterns = [
+      { pattern: /claude[- ]?code/i, agent: "claude" },
+      { pattern: /Claude Code/i, agent: "claude" },
+      { pattern: /anthropic/i, agent: "claude" },
+      { pattern: /\bgemini\b/i, agent: "gemini" },
+      { pattern: /\bcodex\b/i, agent: "codex" },
+      { pattern: /\bqwen\b/i, agent: "qwen" },
+      { pattern: /\bcopilot\b/i, agent: "copilot" },
+    ];
 
     this._loadRules();
   }
@@ -111,6 +128,16 @@ class WatcherEngine {
    */
   onMatch(callback) {
     this._matchCallback = callback;
+  }
+
+  /**
+   * Register a callback for agent identity detection.
+   * Called with ({ terminalId, agentName }) when an agent CLI banner
+   * is detected in the first ~20 lines of terminal output.
+   * @param {function} callback
+   */
+  onIdentityDetected(callback) {
+    this._identityCallback = callback;
   }
 
   /**
@@ -207,6 +234,8 @@ class WatcherEngine {
     this._contextBuffers.delete(terminalId);
     this._snapshotBuffers.delete(terminalId);
     this._burstCounters.delete(terminalId);
+    this._lineCounters.delete(terminalId);
+    this._detectedAgents.delete(terminalId);
   }
 
   // -------------------------------------------------------------------------
@@ -288,6 +317,22 @@ class WatcherEngine {
       this._contextBuffers.set(terminalId, ctxBuf);
     }
     ctxBuf.push(line);
+
+    // Agent auto-detection — check first ~20 lines for CLI banners
+    if (this._identityCallback && !this._detectedAgents.has(terminalId)) {
+      const count = (this._lineCounters.get(terminalId) || 0) + 1;
+      this._lineCounters.set(terminalId, count);
+      // Source: design spec Section 6.2 — scan first ~20 lines.
+      if (count <= 20) {
+        for (const { pattern, agent } of this._agentPatterns) {
+          if (pattern.test(line)) {
+            this._detectedAgents.add(terminalId);
+            this._identityCallback({ terminalId, agentName: agent });
+            break;
+          }
+        }
+      }
+    }
 
     // Scan against enabled rules (sorted by priority)
     if (!this._matchCallback) return;

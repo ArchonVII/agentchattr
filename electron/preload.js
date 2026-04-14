@@ -98,4 +98,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setTerminalIdentity(id, agentName, sessionName) {
     ipcRenderer.send("terminal:set-identity", { id, agentName, sessionName });
   },
+  onIdentitySuggested(callback) {
+    ipcRenderer.on("terminal:identity-suggested", (_event, data) =>
+      callback(data),
+    );
+  },
 });

@@ -335,6 +335,19 @@ function setup(win) {
     postBridgeEvent(event);
   });
 
+  // Wire agent auto-detection callback
+  watcherEngine.onIdentityDetected(({ terminalId, agentName }) => {
+    const entry = terminals.get(terminalId);
+    if (entry && !entry.agentName) {
+      // Suggest identity to renderer — user confirms via toast
+      sendToRenderer("terminal:identity-suggested", {
+        terminalId,
+        agentName,
+        terminalName: entry.name,
+      });
+    }
+  });
+
   // Periodically push terminal list + snapshots to the Python backend
   // so the chat UI's "Pull from Terminal" dropdown works.
   // Source: design spec Section 4.3 — Electron pushes data periodically.

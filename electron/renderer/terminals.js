@@ -404,6 +404,25 @@ function createMacroBar(id) {
     bar.appendChild(btn);
   }
 
+  // Bridge: agent identity dropdown
+  const agentSelect = document.createElement("select");
+  agentSelect.className = "macro-btn";
+  agentSelect.title = "Assign agent identity";
+  agentSelect.innerHTML = `
+    <option value="">Agent...</option>
+    <option value="claude">Claude</option>
+    <option value="codex">Codex</option>
+    <option value="gemini">Gemini</option>
+    <option value="qwen">Qwen</option>
+    <option value="copilot">Copilot</option>
+  `;
+  agentSelect.dataset.terminalId = id;
+  agentSelect.addEventListener("change", (e) => {
+    const agentName = e.target.value || null;
+    window.electronAPI?.setTerminalIdentity(id, agentName, undefined);
+  });
+  bar.appendChild(agentSelect);
+
   // Bridge: snapshot camera button
   const snapshotBtn = document.createElement("button");
   snapshotBtn.className = "macro-btn";
@@ -1023,6 +1042,36 @@ async function initTerminals() {
 
   window.electronAPI?.onTerminalOutput(handleTerminalOutput);
   window.electronAPI?.onTerminalExited(handleTerminalExited);
+
+  // Bridge: handle agent identity suggestions from auto-detection
+  window.electronAPI?.onIdentitySuggested(
+    ({ terminalId, agentName, terminalName }) => {
+      // Auto-select the agent in the dropdown
+      const inst = terminalInstances.get(terminalId);
+      if (!inst) return;
+      const select = inst.macroBar?.querySelector(
+        `select[data-terminal-id="${terminalId}"]`,
+      );
+      if (select) select.value = agentName;
+
+      // Show a brief toast notification
+      const toast = document.createElement("div");
+      toast.style.cssText = `
+      position: fixed; bottom: 20px; right: 20px; z-index: 10000;
+      background: #1f1f31; border: 1px solid #4ade80; border-radius: 8px;
+      padding: 10px 16px; color: #e0e0e0; font-size: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; gap: 12px;
+      align-items: center;
+    `;
+      toast.innerHTML = `
+      <span>Detected <strong style="color: #4ade80">${agentName}</strong> in ${terminalName || "terminal"}</span>
+      <button style="padding: 3px 8px; border: 1px solid #4ade80; border-radius: 4px; background: transparent; color: #4ade80; cursor: pointer; font-size: 11px;" onclick="window.electronAPI?.setTerminalIdentity('${terminalId}', '${agentName}', undefined); this.parentElement.remove();">Accept</button>
+      <button style="padding: 3px 8px; border: 1px solid #666; border-radius: 4px; background: transparent; color: #888; cursor: pointer; font-size: 11px;" onclick="this.parentElement.remove();">Dismiss</button>
+    `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 10000);
+    },
+  );
 
   const container = getContainer();
   if (container) {
