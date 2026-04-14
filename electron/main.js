@@ -104,6 +104,52 @@ function registerIpcHandlers() {
     return tm.detectShells();
   });
 
+  ipcMain.handle(
+    "terminal:open-file",
+    async (_event, { path: filePath, line, cwd }) => {
+      const fs = require("fs");
+      const path = require("path");
+      const { spawn } = require("child_process");
+
+      let fullPath = filePath;
+      if (!path.isAbsolute(filePath) && cwd) {
+        fullPath = path.resolve(cwd, filePath);
+      }
+
+      if (!fs.existsSync(fullPath)) {
+        console.warn("File does not exist:", fullPath);
+        return { success: false, error: "File does not exist" };
+      }
+
+      // Try to open with VS Code if available (it supports line numbers via -g)
+      const codeCmd = process.platform === "win32" ? "code.cmd" : "code";
+      const args = line ? ["-g", `${fullPath}:${line}`] : [fullPath];
+
+      return new Promise((resolve) => {
+        const child = spawn(codeCmd, args, { shell: true });
+
+        child.on("error", (err) => {
+          console.warn(
+            "Failed to open with VS Code, falling back to shell.openPath:",
+            err,
+          );
+          require("electron").shell.openPath(fullPath);
+          resolve({ success: true, fallback: true });
+        });
+
+        child.on("exit", (code) => {
+          if (code === 0) {
+            resolve({ success: true });
+          } else {
+            // Fallback if code exists but failed for some reason
+            require("electron").shell.openPath(fullPath);
+            resolve({ success: true, fallback: true });
+          }
+        });
+      });
+    },
+  );
+
   ipcMain.handle("select-folder", async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ["openDirectory"],
@@ -111,6 +157,77 @@ function registerIpcHandlers() {
     if (result.canceled) return null;
     return result.filePaths[0];
   });
+
+  // Bridge: watcher config and snapshot IPC
+  ipcMain.handle("terminal:watcher-config-get", () => {
+    const tm = require("./terminal-manager");
+    return tm.getWatcherRules();
+  });
+
+  ipcMain.handle("terminal:watcher-config-set", (_event, rules) => {
+    const tm = require("./terminal-manager");
+    tm.setWatcherRules(rules);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("terminal:watcher-config-updated", rules);
+    }
+    return { success: true };
+  });
+
+  ipcMain.handle("terminal:snapshot", (_event, { id, lineCount }) => {
+    const tm = require("./terminal-manager");
+    return tm.getSnapshot(id, lineCount);
+  });
+
+  ipcMain.on(
+    "terminal:bridge-snapshot-to-chat",
+    (_event, { id, text, agentName }) => {
+      const tm = require("./terminal-manager");
+      const identity = tm.getTerminalIdentity(id);
+      const sender =
+        agentName ||
+        identity?.agentName ||
+        identity?.sessionName ||
+        `terminal-${id.slice(0, 8)}`;
+      const http = require("http");
+      const payload = JSON.stringify({
+        terminalId: id,
+        agentName: sender,
+        terminalName: identity?.sessionName || "",
+        ruleId: "manual-snapshot",
+        category: "snapshot",
+        matchedText: text,
+        contextLines: [],
+        timestamp: Date.now(),
+      });
+      const req = http.request(
+        {
+          hostname: "127.0.0.1",
+          port: SERVER_PORT,
+          path: "/api/bridge/event",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(payload),
+          },
+          timeout: 3000,
+        },
+        (res) => res.resume(),
+      );
+      req.on("error", (err) =>
+        console.warn("Snapshot bridge POST failed:", err.message),
+      );
+      req.write(payload);
+      req.end();
+    },
+  );
+
+  ipcMain.on(
+    "terminal:set-identity",
+    (_event, { id, agentName, sessionName }) => {
+      const tm = require("./terminal-manager");
+      tm.setTerminalIdentity(id, agentName, sessionName);
+    },
+  );
 }
 
 function createWindow() {
