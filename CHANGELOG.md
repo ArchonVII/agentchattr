@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-04-14
+
+### Added
+
+- Terminal process scanning: detects external terminal sessions (pwsh, powershell, cmd, bash, wsl, git-bash) via PowerShell WMI with Windows Terminal tab enrichment.
+- Collapsible "Terminals" section in the presence panel sidebar showing detected terminal sessions with status dots, shell type labels, PID, and relative age.
+- Embedded interactive terminals via xterm.js + node-pty in a new Terminals tab, with unlimited concurrent sessions, shell picker dropdown, tab rename, and pop-out support.
+- Terminal lifecycle management: exited banner with restart/close, deduplication between embedded and external terminals.
+- Presence panel click-through: clicking an embedded terminal in the sidebar focuses it in the Terminals tab.
+
 ## 2026-04-13
 
 ### Added
