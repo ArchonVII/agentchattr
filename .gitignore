@@ -26,6 +26,8 @@ docs/*
 docs/superpowers/*
 !docs/superpowers/qa/
 !docs/superpowers/qa/**
+!docs/superpowers/specs/
+!docs/superpowers/specs/**
 !docs/archive/
 docs/archive/*
 !docs/archive/shipped/
@@ -38,3 +40,4 @@ electron/node_modules/
 electron/dist/
 electron/config.json
 electron/renderer/*.bundle.js
+.superpowers/

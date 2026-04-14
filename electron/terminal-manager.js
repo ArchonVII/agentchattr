@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { randomUUID } = require("crypto");
 const pty = require("node-pty");
+const { WatcherEngine } = require("./watcher-engine");
 
 // ---------------------------------------------------------------------------
 // Constants (CASK ordering)
@@ -58,9 +59,15 @@ const SHELL_CANDIDATES = [
 // State
 // ---------------------------------------------------------------------------
 
-const terminals = new Map(); // id -> { pty, shell, name, pid, startedAt }
+const terminals = new Map(); // id -> { pty, shell, name, pid, startedAt, agentName, sessionName }
 const shellCounters = new Map(); // shell id -> next number
 let mainWindow = null;
+let sessionCounter = 0;
+
+// Source: design spec Section 1 — rules path relative to repo root.
+const REPO_ROOT = path.resolve(__dirname, "..");
+const RULES_PATH = path.join(REPO_ROOT, "data", "watcher-rules.json");
+const watcherEngine = new WatcherEngine(RULES_PATH);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -125,7 +132,10 @@ function createTerminal(opts = {}) {
 
   if (opts.command) {
     // If a specific command is given, we find the default shell to run it in.
-    const defaultShell = shells.find(s => s.id === 'pwsh') || shells.find(s => s.id === 'bash') || shells[0];
+    const defaultShell =
+      shells.find((s) => s.id === "pwsh") ||
+      shells.find((s) => s.id === "bash") ||
+      shells[0];
     shellPath = defaultShell.path;
     shellId = defaultShell.id;
   } else {
@@ -137,7 +147,7 @@ function createTerminal(opts = {}) {
     }
     shellPath = shellInfo.path;
   }
-  
+
   const id = randomUUID();
   const name = opts.name || getNextName(shellId);
   const cwd = opts.cwd || process.cwd();
@@ -149,29 +159,37 @@ function createTerminal(opts = {}) {
     cwd,
     env: process.env,
   });
-  
+
   // If a command was specified, write it to the terminal.
   if (opts.command) {
     ptyProcess.write(`${opts.command}\r`);
   }
 
+  sessionCounter++;
   const entry = {
     pty: ptyProcess,
     shell: shellId,
     name,
     pid: ptyProcess.pid,
     startedAt: Date.now(),
+    agentName: opts.agentName || null,
+    sessionName: opts.sessionName || `session-${sessionCounter}`,
   };
 
   terminals.set(id, entry);
 
-  // Stream stdout to renderer
+  // Stream stdout to renderer — feed watcher engine before forwarding
   ptyProcess.onData((data) => {
+    watcherEngine.scan(id, data, {
+      name: entry.name,
+      agentName: entry.agentName,
+    });
     sendToRenderer("terminal:output", { id, data });
   });
 
   // Notify renderer on exit
   ptyProcess.onExit(({ exitCode }) => {
+    watcherEngine.removeTerminal(id);
     sendToRenderer("terminal:exited", { id, exitCode });
   });
 
@@ -180,6 +198,7 @@ function createTerminal(opts = {}) {
     shell: shellId,
     pid: ptyProcess.pid,
     name,
+    cwd,
   };
 
   sendToRenderer("terminal:created", result);
@@ -207,6 +226,7 @@ function closeTerminal(id) {
   const entry = terminals.get(id);
   if (entry) {
     entry.pty.kill();
+    watcherEngine.removeTerminal(id);
     terminals.delete(id);
   }
 }
@@ -248,8 +268,115 @@ function getEmbeddedTerminalData() {
   return entries;
 }
 
+// ---------------------------------------------------------------------------
+// Bridge: snapshot, identity, watcher config
+// ---------------------------------------------------------------------------
+
+function getSnapshot(id, lineCount = 50) {
+  return watcherEngine.getSnapshot(id, lineCount);
+}
+
+function setTerminalIdentity(id, agentName, sessionName) {
+  const entry = terminals.get(id);
+  if (!entry) return;
+  if (agentName !== undefined) entry.agentName = agentName;
+  if (sessionName !== undefined) entry.sessionName = sessionName;
+}
+
+function getTerminalIdentity(id) {
+  const entry = terminals.get(id);
+  if (!entry) return null;
+  return { agentName: entry.agentName, sessionName: entry.sessionName };
+}
+
+function getWatcherRules() {
+  return watcherEngine.getRules();
+}
+
+function setWatcherRules(rules) {
+  watcherEngine.setRules(rules);
+}
+
+/**
+ * Returns terminal metadata for the bridge (used by backend proxy).
+ */
+function getBridgeTerminals() {
+  const result = [];
+  for (const [id, entry] of terminals) {
+    result.push({
+      id,
+      name: entry.name,
+      shell: entry.shell,
+      agentName: entry.agentName,
+      sessionName: entry.sessionName,
+      pid: entry.pid,
+    });
+  }
+  return result;
+}
+
 function setup(win) {
   mainWindow = win;
+
+  // Wire the watcher match callback to POST to backend and notify renderer
+  watcherEngine.onMatch((event) => {
+    // Resolve agent name from terminal entry if not set on the event
+    const entry = terminals.get(event.terminalId);
+    if (entry) {
+      event.terminalName = entry.name;
+      event.agentName = event.agentName || entry.agentName;
+      event.sessionName = entry.sessionName;
+    }
+
+    // Notify renderer for badge updates
+    sendToRenderer("terminal:bridge-event", event);
+
+    // POST to Python backend (fire-and-forget with one retry)
+    postBridgeEvent(event);
+  });
+}
+
+/**
+ * POST a bridge event to the Python backend.
+ * Fire-and-forget: logs failures but never blocks terminal output.
+ * Source: design spec Section 6 — retry once after 1s, then drop.
+ */
+async function postBridgeEvent(event, retryCount = 0) {
+  // Source: main.js SERVER_PORT constant — Python backend port.
+  const SERVER_PORT = 8300;
+  try {
+    const http = require("http");
+    const payload = JSON.stringify(event);
+    const req = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: SERVER_PORT,
+        path: "/api/bridge/event",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(payload),
+        },
+        // Source: design spec — short timeout to avoid blocking.
+        timeout: 3000,
+      },
+      (res) => {
+        // Drain the response
+        res.resume();
+      },
+    );
+    req.on("error", (err) => {
+      if (retryCount < 1) {
+        setTimeout(() => postBridgeEvent(event, retryCount + 1), 1000);
+      } else {
+        console.warn("Bridge POST failed after retry:", err.message);
+      }
+    });
+    req.write(payload);
+    req.end();
+  } catch (err) {
+    console.warn("Bridge POST error:", err.message);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -266,4 +393,10 @@ module.exports = {
   closeAll,
   getActivePids,
   getEmbeddedTerminalData,
+  getSnapshot,
+  setTerminalIdentity,
+  getTerminalIdentity,
+  getWatcherRules,
+  setWatcherRules,
+  getBridgeTerminals,
 };

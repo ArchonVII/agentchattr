@@ -1,0 +1,132 @@
+{
+  "rules": [
+    {
+      "id": "builtin-node-typeerror",
+      "name": "Node.js TypeError",
+      "category": "error",
+      "pattern": "TypeError:.*",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-node-referenceerror",
+      "name": "Node.js ReferenceError",
+      "category": "error",
+      "pattern": "ReferenceError:.*",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-node-syntaxerror",
+      "name": "Node.js SyntaxError",
+      "category": "error",
+      "pattern": "SyntaxError:.*",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-node-rangeerror",
+      "name": "Node.js RangeError",
+      "category": "error",
+      "pattern": "RangeError:.*",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-python-traceback",
+      "name": "Python Traceback",
+      "category": "error",
+      "pattern": "Traceback \\(most recent call last\\):",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-python-error",
+      "name": "Python named errors",
+      "category": "error",
+      "pattern": "^(\\w+Error|\\w+Exception):.*",
+      "enabled": true,
+      "priority": 2
+    },
+    {
+      "id": "builtin-rust-panic",
+      "name": "Rust panic",
+      "category": "error",
+      "pattern": "thread '.*' panicked at",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-go-panic",
+      "name": "Go panic",
+      "category": "error",
+      "pattern": "^panic:.*",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-generic-error",
+      "name": "Generic ERROR prefix",
+      "category": "error",
+      "pattern": "^(ERROR|FATAL|CRITICAL)[:\\s]",
+      "enabled": true,
+      "priority": 3
+    },
+    {
+      "id": "builtin-tests-passed",
+      "name": "Tests passed",
+      "category": "completion",
+      "pattern": "(\\d+\\s+(tests?|specs?)\\s+passed|All\\s+\\d+\\s+tests?\\s+passed|Tests:\\s+\\d+\\s+passed)",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-build-succeeded",
+      "name": "Build succeeded",
+      "category": "completion",
+      "pattern": "(Build\\s+succeeded|build\\s+complete|Successfully\\s+compiled|compiled\\s+successfully|built\\s+in\\s+\\d)",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-exit-code-zero",
+      "name": "Process exit code 0",
+      "category": "completion",
+      "pattern": "(exit\\s+code\\s*:?\\s*0|exited\\s+with\\s+0)",
+      "enabled": true,
+      "priority": 2
+    },
+    {
+      "id": "builtin-tests-failed",
+      "name": "Tests failed",
+      "category": "error",
+      "pattern": "(\\d+\\s+(tests?|specs?)\\s+failed|FAILED|FAIL\\s)",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-file-reference",
+      "name": "File path with line number",
+      "category": "file_reference",
+      "pattern": "(?:[A-Za-z]:)?(?:[/\\\\][\\w.@-]+)+\\.[a-zA-Z]{1,10}:\\d+",
+      "enabled": true,
+      "priority": 2
+    },
+    {
+      "id": "builtin-progress-percent",
+      "name": "Progress percentage",
+      "category": "progress",
+      "pattern": "\\d{1,3}%\\s*(complete|done|finished|\\||\\.)",
+      "enabled": true,
+      "priority": 3
+    },
+    {
+      "id": "builtin-progress-step",
+      "name": "Progress step counter",
+      "category": "progress",
+      "pattern": "(\\[\\d+/\\d+\\]|step\\s+\\d+\\s+of\\s+\\d+|\\(\\d+/\\d+\\))",
+      "enabled": true,
+      "priority": 3
+    }
+  ]
+}

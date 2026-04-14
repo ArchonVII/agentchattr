@@ -1628,6 +1628,100 @@ async def api_send(request: Request):
     return JSONResponse(msg)
 
 
+# ---------------------------------------------------------------------------
+# Terminal-to-Chat Bridge
+# ---------------------------------------------------------------------------
+
+# Dedup cache for bridge events — key: hash, value: timestamp.
+_bridge_dedup: dict[str, float] = {}
+# Source: design spec Section 6 — dedup window for identical matches.
+_BRIDGE_DEDUP_WINDOW = 2.0
+
+
+@app.post("/api/bridge/event")
+async def bridge_event(request: Request):
+    """Receive a watcher event from the Electron bridge and inject it
+    into the chat timeline as a type:'bridge' message.
+
+    No auth required — only accessible from localhost (Electron main process).
+    Bridge events do NOT count as hops in the loop guard.
+    """
+    body = await request.json()
+
+    matched_text = body.get("matchedText", "")
+    terminal_id = body.get("terminalId", "")
+    rule_id = body.get("ruleId", "")
+    category = body.get("category", "")
+
+    # Server-side dedup (mirrors Electron-side dedup)
+    import hashlib
+    dedup_key = hashlib.md5(
+        f"{terminal_id}:{rule_id}:{matched_text}".encode()
+    ).hexdigest()
+    now = time.time()
+    last_seen = _bridge_dedup.get(dedup_key)
+    if last_seen and now - last_seen < _BRIDGE_DEDUP_WINDOW:
+        return JSONResponse({"status": "deduped"})
+    _bridge_dedup[dedup_key] = now
+
+    # Prune stale entries (~1% of calls)
+    import random
+    if random.random() < 0.01:
+        cutoff = now - _BRIDGE_DEDUP_WINDOW * 2
+        stale = [k for k, v in _bridge_dedup.items() if v < cutoff]
+        for k in stale:
+            del _bridge_dedup[k]
+
+    # Resolve sender — prefer agent name, fall back to terminal/session name
+    sender = (
+        body.get("agentName")
+        or body.get("sessionName")
+        or body.get("terminalName")
+        or f"terminal-{terminal_id[:8]}"
+    )
+
+    metadata = {
+        "category": category,
+        "terminal_name": body.get("terminalName", ""),
+        "terminal_id": terminal_id,
+        "session_name": body.get("sessionName", ""),
+        "rule_id": rule_id,
+        "context_lines": body.get("contextLines", []),
+        "source": "watcher",
+    }
+
+    # store.add broadcasts via _on_store_message automatically
+    msg = store.add(
+        sender=sender,
+        text=matched_text,
+        msg_type="bridge",
+        channel="general",
+        metadata=metadata,
+    )
+
+    return JSONResponse(msg)
+
+
+@app.get("/api/bridge/terminals")
+async def bridge_terminals():
+    """Return list of active Electron terminals for the snapshot pull UI.
+    Electron periodically POSTs this data; we cache and serve it."""
+    return JSONResponse(_bridge_terminal_cache)
+
+
+@app.post("/api/bridge/terminals")
+async def bridge_terminals_update(request: Request):
+    """Electron main process pushes terminal list here periodically."""
+    global _bridge_terminal_cache
+    body = await request.json()
+    _bridge_terminal_cache = body.get("terminals", [])
+    return JSONResponse({"status": "ok"})
+
+
+# Cache of active terminals pushed by Electron
+_bridge_terminal_cache: list = []
+
+
 @app.get("/api/status")
 async def get_status():
     status = agents.get_status()
