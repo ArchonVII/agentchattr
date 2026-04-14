@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>agentchattr</title>
+    <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css" />
     <style>
       :root {
         color-scheme: dark;
@@ -208,8 +209,175 @@
       }
 
       webview[hidden],
-      #ports-container[hidden] {
+      #ports-container[hidden],
+      #terminals-container[hidden] {
         display: none;
+      }
+
+      #terminals-container {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        background: #12121e;
+      }
+
+      .terminals-tab-strip {
+        display: flex;
+        align-items: stretch;
+        height: 32px;
+        background: #1a1a2e;
+        border-bottom: 1px solid #2a2a3a;
+        padding: 0 8px;
+        gap: 2px;
+        flex-shrink: 0;
+        overflow-x: auto;
+      }
+
+      .terminal-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 12px;
+        background: transparent;
+        border: none;
+        color: #888;
+        font-size: 12px;
+        font-family: inherit;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+      }
+
+      .terminal-tab.active {
+        color: #da7756;
+        border-bottom-color: #da7756;
+      }
+
+      .terminal-tab:hover:not(.active) {
+        color: #b4b4c3;
+      }
+
+      .terminal-tab-close {
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        border: none;
+        border-radius: 3px;
+        background: transparent;
+        color: #666;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1;
+        opacity: 0;
+      }
+
+      .terminal-tab:hover .terminal-tab-close,
+      .terminal-tab.active .terminal-tab-close {
+        opacity: 1;
+      }
+
+      .terminal-tab-close:hover {
+        background: rgba(255, 100, 100, 0.2);
+        color: #ffb5b5;
+      }
+
+      .terminal-tab-add {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        background: transparent;
+        border: none;
+        color: #666;
+        font-size: 18px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .terminal-tab-add:hover {
+        color: #da7756;
+      }
+
+      .terminal-shell-menu {
+        position: absolute;
+        top: 32px;
+        background: #1f1f31;
+        border: 1px solid #2a2a3a;
+        border-radius: 6px;
+        padding: 4px 0;
+        z-index: 100;
+        min-width: 160px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      }
+
+      .terminal-shell-option {
+        display: block;
+        width: 100%;
+        padding: 6px 14px;
+        border: none;
+        background: transparent;
+        color: #e0e0e0;
+        font-size: 13px;
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .terminal-shell-option:hover {
+        background: rgba(218, 119, 86, 0.15);
+        color: #fff2eb;
+      }
+
+      .terminal-surface {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+      }
+
+      .terminal-surface .xterm {
+        height: 100%;
+        padding: 4px;
+      }
+
+      .terminal-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #666;
+        font-size: 14px;
+      }
+
+      .terminal-exited-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: #1a1a2e;
+        border-top: 1px solid #2a2a3a;
+        color: #888;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      .terminal-exited-banner button {
+        padding: 4px 10px;
+        border: 1px solid #2a2a3a;
+        border-radius: 4px;
+        background: #1f1f31;
+        color: #e0e0e0;
+        font-size: 12px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      .terminal-exited-banner button:hover {
+        border-color: #da7756;
       }
 
       .ports-shell {
@@ -601,6 +769,26 @@
             &#8599;
           </button>
         </div>
+        <div class="tab-item">
+          <button
+            type="button"
+            class="tab-button"
+            data-tab="terminals"
+            role="tab"
+            aria-selected="false"
+          >
+            Terminals
+          </button>
+          <button
+            type="button"
+            class="pop-out-button"
+            data-popout="terminals"
+            aria-label="Pop out Terminals"
+            title="Pop out Terminals"
+          >
+            &#8599;
+          </button>
+        </div>
       </div>
 
       <div class="content-area">
@@ -655,11 +843,13 @@
           </aside>
         </div>
         <div id="ports-container" hidden></div>
+        <div id="terminals-container" hidden></div>
       </div>
     </div>
 
     <script src="./browser-pane-state.js"></script>
     <script src="./terminal-presence.js"></script>
+    <script src="./terminals.js"></script>
     <script src="./renderer.js"></script>
   </body>
 </html>

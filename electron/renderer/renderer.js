@@ -33,9 +33,15 @@ const elements = {
   browserPanePopout: document.getElementById("browser-pane-popout"),
   browserPaneClose: document.getElementById("browser-pane-close"),
   portsContainer: document.getElementById("ports-container"),
+  terminalsContainer: document.getElementById("terminals-container"),
 };
 
-const RESERVED_DEEP_LINK_TARGETS = new Set(["chat", "ports", "channel"]);
+const RESERVED_DEEP_LINK_TARGETS = new Set([
+  "chat",
+  "ports",
+  "terminals",
+  "channel",
+]);
 
 function fileUrlToPath(fileUrl) {
   const pathname = decodeURIComponent(new URL(fileUrl).pathname);
@@ -74,6 +80,7 @@ function activateTab(tabName) {
 
   elements.chatShell.hidden = tabName !== "chat";
   elements.portsContainer.hidden = tabName !== "ports";
+  elements.terminalsContainer.hidden = tabName !== "terminals";
 }
 
 function readField(row, keys, fallback = "\u2014") {
@@ -857,6 +864,7 @@ function init() {
   activateTab("chat");
   renderBrowserPane();
   renderPorts();
+  if (window.Terminals) window.Terminals.init();
 }
 
 init();
