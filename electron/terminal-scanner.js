@@ -302,7 +302,7 @@ function buildTerminalEntries(rawProcesses) {
       id: `ext-${proc.pid}`,
       pid: proc.pid,
       name: windowTitle,
-      shell: shellLabelFromName(normName) ?? normName,
+      shell: normName,
       source: "external",
       status: "running",
       startedAt,
