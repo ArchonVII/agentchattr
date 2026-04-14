@@ -37,3 +37,4 @@ agentchattr-*.zip
 electron/node_modules/
 electron/dist/
 electron/config.json
+electron/renderer/*.bundle.js

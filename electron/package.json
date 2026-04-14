@@ -3,9 +3,12 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "build": "esbuild renderer/terminals.js --bundle --outfile=renderer/terminals.bundle.js --format=iife --platform=browser",
+    "prestart": "npm run build",
     "test": "node --test qa/*.test.cjs",
     "smoke:launcher": "node qa/launcher-smoke.cjs",
-    "smoke:desktop": "node qa/desktop-smoke.cjs"
+    "smoke:desktop": "node qa/desktop-smoke.cjs",
+    "smoke:terminal": "node qa/terminal-smoke.cjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
@@ -16,6 +19,7 @@
     "node-pty": "^1.1.0"
   },
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "playwright-core": "^1.59.1"
   }
 }
