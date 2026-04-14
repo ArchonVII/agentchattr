@@ -270,9 +270,8 @@
       .user-port-cmdline {
         display: block;
         font-size: 10px;
-        color: #666;
-        margin-top: 1px;
-        max-width: 300px;
+        color: #555;
+        margin-top: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -388,15 +387,21 @@
       .ports-table-wrap {
         border: 1px solid #2a2a3a;
         border-radius: 10px;
-        overflow: hidden;
+        overflow: auto;
         background: #1a1a2e;
       }
 
       .ports-table {
         width: 100%;
+        min-width: 600px;
         border-collapse: collapse;
-        font-size: 13px;
+        font-size: 12px;
         font-variant-numeric: tabular-nums;
+      }
+
+      .ports-table td {
+        overflow-wrap: break-word;
+        word-break: break-all;
       }
 
       .ports-table thead {
@@ -405,7 +410,7 @@
 
       .ports-table th,
       .ports-table td {
-        padding: 12px 14px;
+        padding: 4px 8px;
         border-bottom: 1px solid #2a2a3a;
         text-align: left;
         vertical-align: middle;
@@ -414,6 +419,9 @@
       .ports-table th {
         color: #a7a7b7;
         font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
         position: sticky;
         top: 0;
         z-index: 1;
@@ -468,84 +476,85 @@
       }
 
       .kill-button {
-        min-width: 56px;
-        padding: 6px 10px;
+        width: 28px;
+        height: 28px;
+        min-width: unset;
+        padding: 0;
         border: 1px solid #5b2f2f;
         border-radius: 6px;
         background: #2a1717;
         color: #ffb5b5;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
       }
 
       .kill-button:hover:not(:disabled) {
         border-color: #da7756;
         color: #ffd3c8;
+        background: #3a1f1f;
       }
 
       .kill-button:disabled {
         cursor: not-allowed;
-        opacity: 0.45;
+        opacity: 0.35;
       }
 
       .browse-button {
-        min-width: 56px;
-        padding: 6px 10px;
+        width: 28px;
+        height: 28px;
+        min-width: unset;
+        padding: 0;
         border: 1px solid #2a3a2a;
         border-radius: 6px;
         background: #172a17;
         color: #b5ffb5;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
       }
 
       .browse-button:hover:not(:disabled) {
         border-color: #56da77;
         color: #c8ffd3;
+        background: #1f3a1f;
       }
 
       .browse-button:disabled {
         cursor: not-allowed;
-        opacity: 0.45;
+        opacity: 0.35;
       }
 
       .action-group {
         display: flex;
-        gap: 6px;
+        gap: 4px;
+        align-items: center;
       }
 
-      .ports-search {
-        padding: 7px 12px;
-        border: 1px solid #2a2a3a;
-        border-radius: 6px;
-        background: #1f1f31;
-        color: #e0e0e0;
-        font-size: 13px;
-        font-family: inherit;
-        min-width: 180px;
-        outline: none;
+      .ports-table td:last-child {
+        padding: 3px 6px;
       }
 
-      .ports-search:focus {
-        border-color: #da7756;
+      .col-resize-handle {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        cursor: col-resize;
+        user-select: none;
+        z-index: 2;
+        border-right: 2px solid transparent;
+        transition: border-color 0.1s;
       }
 
-      .ports-search::placeholder {
-        color: #666;
-      }
-
-      .ports-filter-select {
-        padding: 7px 10px;
-        border: 1px solid #2a2a3a;
-        border-radius: 6px;
-        background: #1f1f31;
-        color: #e0e0e0;
-        font-size: 13px;
-        font-family: inherit;
-        cursor: pointer;
-        outline: none;
-      }
-
-      .ports-filter-select:focus {
-        border-color: #da7756;
+      .col-resize-handle:hover,
+      .col-resize-handle.dragging {
+        border-color: rgba(218, 119, 86, 0.55);
       }
     </style>
   </head>
@@ -650,6 +659,7 @@
     </div>
 
     <script src="./browser-pane-state.js"></script>
+    <script src="./terminal-presence.js"></script>
     <script src="./renderer.js"></script>
   </body>
 </html>
