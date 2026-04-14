@@ -222,6 +222,36 @@
         background: #12121e;
       }
 
+      .terminals-wrapper {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .terminals-wrapper.grid-layout {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        grid-auto-rows: minmax(300px, 1fr);
+        gap: 2px;
+        background: #2a2a3a; /* Grid lines */
+        overflow: auto;
+      }
+
+      .terminals-wrapper.grid-layout .terminal-surface {
+        display: block !important;
+        background: #12121e;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+      }
+
+      .terminals-wrapper.grid-layout .terminal-surface.active {
+        border-color: #da7756;
+        z-index: 10;
+      }
+
       .terminals-tab-strip {
         display: flex;
         align-items: stretch;
@@ -302,6 +332,23 @@
         color: #da7756;
       }
 
+      .terminal-layout-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        background: transparent;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        flex-shrink: 0;
+        margin-left: auto;
+      }
+
+      .terminal-layout-toggle:hover {
+        color: #da7756;
+      }
+
       .terminal-shell-menu {
         position: absolute;
         top: 32px;
@@ -330,6 +377,65 @@
       .terminal-shell-option:hover {
         background: rgba(218, 119, 86, 0.15);
         color: #fff2eb;
+      }
+
+      .terminal-instance-wrapper {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        background: #12121e;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+      }
+
+      .terminal-instance-wrapper.active {
+        border-color: #da7756;
+      }
+
+      .terminal-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 12px;
+        background: #171726;
+        border-bottom: 1px solid #2a2a3a;
+        flex-shrink: 0;
+      }
+
+      .terminal-toolbar-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        background: transparent;
+        border: 1px solid #2a2a3a;
+        border-radius: 4px;
+        color: #888;
+        font-size: 11px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.2s;
+      }
+
+      .terminal-toolbar-btn:hover {
+        background: rgba(218, 119, 86, 0.1);
+        border-color: #da7756;
+        color: #fff2eb;
+      }
+
+      .terminal-toolbar-btn svg {
+        margin-right: 4px;
+      }
+
+      .terminal-toolbar-spacer {
+        flex: 1;
+      }
+
+      .terminal-status {
+        font-size: 10px;
+        color: #555;
+        font-family: Consolas, monospace;
       }
 
       .terminal-surface {

@@ -5,5 +5,6 @@
 - Add browser status/readback primitives if agents need more than open/dock/pop-out URL control.
 - Consider adding port history timeline view (currently tracked in memory but not rendered).
 - Smoke test terminal scanning and embedded terminals end-to-end in the Electron app.
-- Consider deep terminal-to-chat integration (piping terminal output to chat channels) as a future phase.
+- Implement AI-driven "Ghost Text" suggestions in the terminal based on agent history.
+- Inject custom PowerShell prompt with agent status for deeper shell integration.
 - Consider saved terminal profiles (custom working directories, environment variables) as a future enhancement.

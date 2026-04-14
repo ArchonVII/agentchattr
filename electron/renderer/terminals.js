@@ -41,9 +41,10 @@ const XTERM_THEME = {
 // State
 // ---------------------------------------------------------------------------
 
-const terminalInstances = new Map(); // id -> { terminal, fitAddon, surface, name, shell, exited, exitCode }
+const terminalInstances = new Map(); // id -> { terminal, fitAddon, wrapper, surface, name, shell, exited, exitCode, pid }
 let activeTerminalId = null;
 let availableShells = [];
+let layoutMode = "tabs"; // "tabs" or "grid"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -51,6 +52,57 @@ let availableShells = [];
 
 function getContainer() {
   return document.getElementById("terminals-container");
+}
+
+function getWrapper() {
+  const container = getContainer();
+  if (!container) return null;
+
+  let wrapper = container.querySelector(".terminals-wrapper");
+  if (!wrapper) {
+    wrapper = document.createElement("div");
+    wrapper.className = "terminals-wrapper";
+    container.appendChild(wrapper);
+  }
+  return wrapper;
+}
+
+// ---------------------------------------------------------------------------
+// Layout management
+// ---------------------------------------------------------------------------
+
+function toggleLayout() {
+  layoutMode = layoutMode === "tabs" ? "grid" : "tabs";
+  renderLayout();
+  renderTabStrip();
+
+  // Refit all visible terminals
+  for (const inst of terminalInstances.values()) {
+    if (layoutMode === "grid" || inst.id === activeTerminalId) {
+      // Small delay to let CSS transition/layout settle
+      setTimeout(() => inst.fitAddon.fit(), 50);
+    }
+  }
+}
+
+function renderLayout() {
+  const wrapper = getWrapper();
+  if (!wrapper) return;
+
+  wrapper.classList.toggle("grid-layout", layoutMode === "grid");
+
+  for (const [id, inst] of terminalInstances) {
+    const isActive = id === activeTerminalId;
+    inst.wrapper.classList.toggle("active", isActive);
+
+    if (layoutMode === "grid") {
+      inst.wrapper.style.display = "";
+    } else {
+      inst.wrapper.style.display = isActive ? "" : "none";
+    }
+  }
+
+  renderExitedBanner();
 }
 
 // ---------------------------------------------------------------------------
@@ -129,6 +181,22 @@ function renderTabStrip() {
   });
   strip.appendChild(addBtn);
 
+  // Layout toggle button
+  const layoutBtn = document.createElement("button");
+  layoutBtn.type = "button";
+  layoutBtn.className = "terminal-layout-toggle";
+  layoutBtn.title = `Switch to ${layoutMode === "tabs" ? "Grid" : "Tabs"} view`;
+  layoutBtn.innerHTML =
+    layoutMode === "tabs"
+      ? '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></svg>'
+      : '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="14" height="10"/></svg>';
+
+  layoutBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleLayout();
+  });
+  strip.appendChild(layoutBtn);
+
   container.prepend(strip);
 }
 
@@ -205,26 +273,93 @@ async function requestNewTerminal(shellId) {
   }
 }
 
-function createXtermInstance(id, name, shell) {
+function createXtermInstance(id, name, shell, pid) {
   const terminal = new Terminal({
     theme: XTERM_THEME,
     fontFamily: 'Consolas, "Courier New", monospace',
-    fontSize: 14,
+    fontSize: 13,
     cursorBlink: true,
     cursorStyle: "bar",
+    scrollback: 5000,
   });
 
   const fitAddon = new FitAddon();
   terminal.loadAddon(fitAddon);
   terminal.loadAddon(new WebLinksAddon());
 
+  // Create Wrapper
+  const wrapper = document.createElement("div");
+  wrapper.className = "terminal-instance-wrapper";
+  wrapper.dataset.terminalId = id;
+
+  // Create Toolbar
+  const toolbar = document.createElement("div");
+  toolbar.className = "terminal-toolbar";
+
+  // Toolbar Content
+  const nameLabel = document.createElement("div");
+  nameLabel.className = "terminal-status";
+  nameLabel.style.marginRight = "12px";
+  nameLabel.textContent = name || shell;
+  toolbar.appendChild(nameLabel);
+
+  // Clear Button
+  const clearBtn = createToolbarBtn("Clear", () => terminal.clear());
+  toolbar.appendChild(clearBtn);
+
+  // Restart Button
+  const restartBtn = createToolbarBtn("Restart", () => {
+    destroyTerminal(id);
+    void requestNewTerminal(shell);
+  });
+  toolbar.appendChild(restartBtn);
+
+  // Copy All Button
+  const copyBtn = createToolbarBtn("Copy All", () => {
+    const text = getTerminalText(terminal);
+    if (text) {
+      navigator.clipboard.writeText(text);
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => (copyBtn.textContent = "Copy All"), 2000);
+    }
+  });
+  toolbar.appendChild(copyBtn);
+
+  // Explain Button (AI Integration)
+  const explainBtn = createToolbarBtn("Explain Output", () => {
+    const text = getTerminalText(terminal, 100); // Last 100 lines
+    if (text) explainTerminalOutput(text, name || shell);
+  });
+  explainBtn.style.color = "#da7756";
+  explainBtn.style.borderColor = "rgba(218, 119, 86, 0.4)";
+  toolbar.appendChild(explainBtn);
+
+  toolbar.appendChild(document.createElement("div")).className =
+    "terminal-toolbar-spacer";
+
+  if (pid) {
+    const pidLabel = document.createElement("div");
+    pidLabel.className = "terminal-status";
+    pidLabel.textContent = `PID: ${pid}`;
+    toolbar.appendChild(pidLabel);
+  }
+
+  wrapper.appendChild(toolbar);
+
+  // Create Surface
   const surface = document.createElement("div");
   surface.className = "terminal-surface";
-  surface.dataset.terminalId = id;
-  surface.style.display = "none";
+  wrapper.appendChild(surface);
 
-  const container = getContainer();
-  container.appendChild(surface);
+  // Respect layout mode for initial display
+  if (layoutMode === "grid") {
+    wrapper.style.display = "";
+  } else {
+    wrapper.style.display = "none";
+  }
+
+  const mainWrapper = getWrapper();
+  if (mainWrapper) mainWrapper.appendChild(wrapper);
 
   terminal.open(surface);
   fitAddon.fit();
@@ -242,9 +377,11 @@ function createXtermInstance(id, name, shell) {
   terminalInstances.set(id, {
     terminal,
     fitAddon,
+    wrapper,
     surface,
     name: name || shell || id.slice(0, 8),
     shell,
+    pid,
     exited: false,
     exitCode: null,
   });
@@ -253,14 +390,71 @@ function createXtermInstance(id, name, shell) {
   renderEmptyState();
 }
 
+function createToolbarBtn(text, onClick) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "terminal-toolbar-btn";
+  btn.textContent = text;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onClick();
+  });
+  return btn;
+}
+
+function getTerminalText(terminal, maxLines = null) {
+  const buffer = terminal.buffer.active;
+  let text = "";
+  const start = maxLines ? Math.max(0, buffer.length - maxLines) : 0;
+  for (let i = start; i < buffer.length; i++) {
+    const line = buffer.getLine(i);
+    if (line) text += line.translateToString(true) + "\n";
+  }
+  return text.trim();
+}
+
+function explainTerminalOutput(text, context) {
+  // Use the global function defined in renderer.js or terminal-presence.js
+  // to send a message to the chat agent.
+  const chatWebview = document.getElementById("chat-webview");
+  if (!chatWebview) return;
+
+  const prompt = `I need help explaining the following output from my ${context} terminal:\n\n\`\`\`\n${text}\n\`\`\``;
+
+  // We use a custom event or direct execution to send this to the agent
+  const script = `
+    (() => {
+      if (window.ChatApp && typeof window.ChatApp.appendSystemMessage === 'function') {
+         window.ChatApp.appendSystemMessage('Asking agent to explain terminal output...');
+      }
+      // Simulate user input
+      const input = document.querySelector('textarea') || document.querySelector('input[type="text"]');
+      if (input) {
+        input.value = ${JSON.stringify(prompt)};
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        // Try to find and click submit button
+        const submit = document.querySelector('button[type="submit"]') || document.querySelector('.send-button');
+        if (submit) submit.click();
+      }
+    })();
+  `;
+
+  try {
+    chatWebview.executeJavaScript(script);
+    // Switch to chat tab
+    if (typeof activateTab === "function") activateTab("chat");
+  } catch (e) {
+    console.error("Failed to send terminal output to chat:", e);
+  }
+}
+
 function focusTerminal(id) {
   if (!terminalInstances.has(id)) return;
 
   activeTerminalId = id;
 
-  for (const [tid, inst] of terminalInstances) {
-    inst.surface.style.display = tid === id ? "" : "none";
-  }
+  // Update visibility based on layout mode
+  renderLayout();
 
   const active = terminalInstances.get(id);
   if (active) {
@@ -278,7 +472,7 @@ function destroyTerminal(id) {
 
   window.electronAPI?.closeTerminal(id);
   inst.terminal.dispose();
-  inst.surface.remove();
+  inst.wrapper.remove();
   terminalInstances.delete(id);
 
   if (activeTerminalId === id) {

@@ -4,6 +4,10 @@
 
 ### Added
 
+- Custom Terminal Wrapper & Toolbar: Added a dedicated toolbar for terminal sessions with "Explain Output", "Restart", "Clear", and "Copy All" buttons.
+- AI Terminal Integration: "Explain Output" button captures terminal context and sends it to the chat agent for instant analysis or troubleshooting.
+- Session Metadata: Real-time PID display in the terminal toolbar for each session.
+- UI Enhancements: Professionally styled terminal instance wrappers with active highlighting and optimized font settings (13px).
 - Terminal process scanning: detects external terminal sessions (pwsh, powershell, cmd, bash, wsl, git-bash) via PowerShell WMI with Windows Terminal tab enrichment.
 - Collapsible "Terminals" section in the presence panel sidebar showing detected terminal sessions with status dots, shell type labels, PID, and relative age.
 - Embedded interactive terminals via xterm.js + node-pty in a new Terminals tab, with unlimited concurrent sessions, shell picker dropdown, tab rename, and pop-out support.
