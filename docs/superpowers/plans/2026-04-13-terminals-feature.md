@@ -339,7 +339,7 @@ git commit -m "feat(terminals): wire scanner into main process and preload"
 
 This module runs in the Electron renderer. It receives terminal data via IPC and forwards it to the chat webview so the presence panel can render terminal items.
 
-- [ ] **Step 1: Create `electron/renderer/terminal-presence.js`**
+- [x] **Step 1: Create `electron/renderer/terminal-presence.js`**
 
 ```js
 "use strict";
@@ -381,7 +381,7 @@ function initTerminalPresence(chatWebview, electronAPI) {
 window.TerminalPresence = { init: initTerminalPresence };
 ```
 
-- [ ] **Step 2: Add the script tag to `electron/renderer/index.html`**
+- [x] **Step 2: Add the script tag to `electron/renderer/index.html`**
 
 Before the `renderer.js` script tag (line ~661), add:
 
@@ -389,7 +389,7 @@ Before the `renderer.js` script tag (line ~661), add:
     <script src="./terminal-presence.js"></script>
 ```
 
-- [ ] **Step 3: Initialise the bridge in `electron/renderer/renderer.js`**
+- [x] **Step 3: Initialise the bridge in `electron/renderer/renderer.js`**
 
 Inside `bindEvents()`, after the `chatWebview.addEventListener("dom-ready", ...)` block (line ~799), add:
 
@@ -398,7 +398,7 @@ Inside `bindEvents()`, after the `chatWebview.addEventListener("dom-ready", ...)
   window.TerminalPresence.init(elements.chatWebview, window.electronAPI);
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add electron/renderer/terminal-presence.js electron/renderer/index.html electron/renderer/renderer.js
