@@ -69,6 +69,31 @@ function configureWebview() {
   );
 }
 
+function buildChatThemeVars() {
+  if (!window.ChatThemeBridge) return {};
+
+  const computed = getComputedStyle(document.documentElement);
+  return window.ChatThemeBridge.collectChatThemeVars((name) =>
+    computed.getPropertyValue(name),
+  );
+}
+
+async function applyChatWebviewTheme() {
+  if (!state.webviewReady || !window.ChatThemeBridge) {
+    return;
+  }
+
+  const script = window.ChatThemeBridge.buildApplyChatThemeScript(
+    buildChatThemeVars(),
+  );
+
+  try {
+    await elements.chatWebview.executeJavaScript(script, true);
+  } catch (error) {
+    console.error("Unable to apply app theme to chat webview:", error);
+  }
+}
+
 function activateTab(tabName) {
   state.activeTab = tabName;
 
@@ -823,7 +848,12 @@ function bindEvents() {
 
   elements.chatWebview.addEventListener("dom-ready", () => {
     state.webviewReady = true;
+    void applyChatWebviewTheme();
     void synchronisePendingChannel();
+  });
+
+  window.addEventListener("app-theme-updated", () => {
+    void applyChatWebviewTheme();
   });
 
   // Terminal presence — forward terminal scan data to the chat webview

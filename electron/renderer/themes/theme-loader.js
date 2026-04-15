@@ -119,6 +119,14 @@ async function applyAppTheme(themeId) {
 
   _currentThemeId = theme.id;
 
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("app-theme-updated", {
+        detail: { themeId: theme.id },
+      }),
+    );
+  }
+
   // 4. Persist choice via IPC (non-blocking)
   if (window.electronAPI?.setPreference) {
     window.electronAPI.setPreference("appTheme", theme.id);

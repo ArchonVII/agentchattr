@@ -40,6 +40,26 @@ const schema = {
     type: "string",
     default: "default",
   },
+  quickLaunchState: {
+    type: "object",
+    properties: {
+      folders: {
+        type: "array",
+        items: {
+          type: "string",
+        },
+        default: [],
+      },
+      selectedFolder: {
+        type: ["string", "null"],
+        default: null,
+      },
+    },
+    default: {
+      folders: [],
+      selectedFolder: null,
+    },
+  },
 };
 
 function createPreferences() {

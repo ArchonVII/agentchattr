@@ -20,6 +20,7 @@ This fork is maintained as a fork-only codebase.
 - Do not open upstream PRs from this fork.
 - Do not merge this fork's work into `bcurts/agentchattr`.
 - Do not treat upstream mergeability as part of the workflow for this repo.
+- When reporting completed work, include a 12-digit build verification code for the current revision so UI changes can be checked against the running build.
 
 ## Quickstart (Windows)
 

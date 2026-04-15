@@ -134,6 +134,13 @@
           await _loadFont(theme.font);
         }
         _currentThemeId = theme.id;
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("app-theme-updated", {
+              detail: { themeId: theme.id }
+            })
+          );
+        }
         if (window.electronAPI?.setPreference) {
           window.electronAPI.setPreference("appTheme", theme.id);
         } else if (window.require) {

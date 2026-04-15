@@ -35,13 +35,14 @@ def build_startup_info() -> dict:
     worktree = ROOT.name
     build_code = secrets.token_hex(6).upper()
     commit = _git_output("rev-parse", "--short=12", "HEAD")
+    visible_code = commit or build_code
     return {
         "code": build_code,
         "branch": branch,
         "worktree": worktree,
         "started_at": started_at,
         "commit": commit,
-        "label": f"{build_code} - {branch}/{worktree} - {started_at}",
+        "label": f"{visible_code} - {branch}/{worktree} - {started_at}",
     }
 
 

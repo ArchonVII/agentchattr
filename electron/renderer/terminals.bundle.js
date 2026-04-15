@@ -12742,6 +12742,13 @@ ${s3.join("\n")}
           await _loadFont(theme.font);
         }
         _currentThemeId = theme.id;
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("app-theme-updated", {
+              detail: { themeId: theme.id }
+            })
+          );
+        }
         if (window.electronAPI?.setPreference) {
           window.electronAPI.setPreference("appTheme", theme.id);
         } else if (window.require) {
@@ -12783,6 +12790,56 @@ ${s3.join("\n")}
     }
   });
 
+  // renderer/quick-launch-state.js
+  var require_quick_launch_state = __commonJS({
+    "renderer/quick-launch-state.js"(exports, module) {
+      "use strict";
+      var MAX_QUICK_LAUNCH_FOLDERS2 = 5;
+      function normaliseFolderList(folders) {
+        if (!Array.isArray(folders)) return [];
+        const seen = /* @__PURE__ */ new Set();
+        const result = [];
+        for (const folder of folders) {
+          if (typeof folder !== "string") continue;
+          const trimmed = folder.trim();
+          if (!trimmed || seen.has(trimmed)) continue;
+          seen.add(trimmed);
+          result.push(trimmed);
+          if (result.length >= MAX_QUICK_LAUNCH_FOLDERS2) break;
+        }
+        return result;
+      }
+      function normaliseQuickLaunchState2(state) {
+        const folders = normaliseFolderList(state?.folders);
+        const selectedFolder = typeof state?.selectedFolder === "string" && folders.includes(state.selectedFolder) ? state.selectedFolder : folders[0] ?? null;
+        return {
+          folders,
+          selectedFolder
+        };
+      }
+      function addQuickLaunchFolder2(state, folder) {
+        const normalisedState = normaliseQuickLaunchState2(state);
+        if (typeof folder !== "string" || !folder.trim()) {
+          return normalisedState;
+        }
+        const trimmedFolder = folder.trim();
+        const folders = normalisedState.folders.includes(trimmedFolder) ? normalisedState.folders : [...normalisedState.folders, trimmedFolder].slice(
+          0,
+          MAX_QUICK_LAUNCH_FOLDERS2
+        );
+        return normaliseQuickLaunchState2({
+          folders,
+          selectedFolder: trimmedFolder
+        });
+      }
+      module.exports = {
+        MAX_QUICK_LAUNCH_FOLDERS: MAX_QUICK_LAUNCH_FOLDERS2,
+        addQuickLaunchFolder: addQuickLaunchFolder2,
+        normaliseQuickLaunchState: normaliseQuickLaunchState2
+      };
+    }
+  });
+
   // renderer/terminals.js
   var { Terminal } = require_xterm();
   var { FitAddon } = require_addon_fit();
@@ -12800,6 +12857,11 @@ ${s3.join("\n")}
   } = require_terminal_theme_ui();
   var { getCurrentAppTheme } = require_theme_loader();
   var { getAppTheme } = require_theme_registry();
+  var {
+    MAX_QUICK_LAUNCH_FOLDERS,
+    addQuickLaunchFolder,
+    normaliseQuickLaunchState
+  } = require_quick_launch_state();
   var terminalInstances = /* @__PURE__ */ new Map();
   var activeTerminalId = null;
   var availableShells = [];
@@ -12809,6 +12871,7 @@ ${s3.join("\n")}
   var quickLaunchFolders = [];
   var selectedLaunchFolder = null;
   var skipPermissions = true;
+  var QUICK_LAUNCH_PREFERENCE_KEY = "quickLaunchState";
   var actionState = {
     isDragging: false,
     isResizing: false,
@@ -12824,31 +12887,46 @@ ${s3.join("\n")}
     const bar = document.getElementById("quick-launch-bar");
     if (!bar) return;
     bar.innerHTML = "";
+    const addBtn = document.createElement("button");
+    addBtn.className = "quick-launch-folder";
+    addBtn.textContent = "+ Folder";
+    addBtn.disabled = quickLaunchFolders.length >= MAX_QUICK_LAUNCH_FOLDERS;
+    addBtn.title = addBtn.disabled ? `Saved folder limit reached (${MAX_QUICK_LAUNCH_FOLDERS})` : "Choose a project folder";
+    addBtn.onclick = async () => {
+      const folder = await window.electronAPI.selectFolder();
+      if (!folder) return;
+      setQuickLaunchState(addQuickLaunchFolder(getQuickLaunchState(), folder));
+      renderQuickLaunchBar();
+      void persistQuickLaunchState();
+    };
+    bar.appendChild(addBtn);
+    const folderSelect = document.createElement("select");
+    folderSelect.className = "quick-launch-select";
+    folderSelect.setAttribute("aria-label", "Saved project folders");
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = quickLaunchFolders.length === 0 ? "No saved folders" : "Choose folder";
+    placeholder.disabled = quickLaunchFolders.length > 0;
+    folderSelect.appendChild(placeholder);
     quickLaunchFolders.forEach((folder) => {
-      const btn = document.createElement("button");
-      btn.className = "quick-launch-folder" + (selectedLaunchFolder === folder ? " active" : "");
-      btn.textContent = folder.split(/[\\/]/).pop();
-      btn.title = folder;
-      btn.onclick = () => {
-        selectedLaunchFolder = folder;
-        renderQuickLaunchBar();
-      };
-      bar.appendChild(btn);
+      const option = document.createElement("option");
+      option.value = folder;
+      option.textContent = folder.split(/[\\/]/).pop() || folder;
+      option.title = folder;
+      folderSelect.appendChild(option);
     });
-    if (quickLaunchFolders.length < 5) {
-      const addBtn = document.createElement("button");
-      addBtn.className = "quick-launch-folder";
-      addBtn.textContent = "+ Folder";
-      addBtn.onclick = async () => {
-        const folder = await window.electronAPI.selectFolder();
-        if (folder && !quickLaunchFolders.includes(folder)) {
-          quickLaunchFolders.push(folder);
-          selectedLaunchFolder = folder;
-          renderQuickLaunchBar();
-        }
-      };
-      bar.appendChild(addBtn);
-    }
+    folderSelect.disabled = quickLaunchFolders.length === 0;
+    folderSelect.value = selectedLaunchFolder || "";
+    folderSelect.onchange = (event) => {
+      const folder = event.target.value || null;
+      setQuickLaunchState({
+        ...getQuickLaunchState(),
+        selectedFolder: folder
+      });
+      renderQuickLaunchBar();
+      void persistQuickLaunchState();
+    };
+    bar.appendChild(folderSelect);
     const divider = document.createElement("div");
     divider.className = "quick-launch-divider";
     bar.appendChild(divider);
@@ -12897,6 +12975,47 @@ ${s3.join("\n")}
       command,
       name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`
     });
+  }
+  function getQuickLaunchState() {
+    return {
+      folders: quickLaunchFolders,
+      selectedFolder: selectedLaunchFolder
+    };
+  }
+  function setQuickLaunchState(state) {
+    const nextState = normaliseQuickLaunchState(state);
+    quickLaunchFolders = nextState.folders;
+    selectedLaunchFolder = nextState.selectedFolder;
+  }
+  async function persistQuickLaunchState() {
+    if (!window.electronAPI?.setPreference) return;
+    try {
+      await window.electronAPI.setPreference(
+        QUICK_LAUNCH_PREFERENCE_KEY,
+        getQuickLaunchState()
+      );
+    } catch (error) {
+      console.warn("Failed to persist quick launch folders:", error);
+    }
+  }
+  async function loadQuickLaunchState() {
+    const fallbackState = {
+      folders: window.TerminalConfig?.quickLaunch?.folders || [],
+      selectedFolder: null
+    };
+    if (!window.electronAPI?.getPreference) {
+      setQuickLaunchState(fallbackState);
+      return;
+    }
+    try {
+      const savedState = await window.electronAPI.getPreference(
+        QUICK_LAUNCH_PREFERENCE_KEY
+      );
+      setQuickLaunchState(savedState || fallbackState);
+    } catch (error) {
+      console.warn("Failed to load quick launch folders:", error);
+      setQuickLaunchState(fallbackState);
+    }
   }
   function initDrag(e, id) {
     e.preventDefault();
@@ -13706,6 +13825,7 @@ ${s3.join("\n")}
       const observer = new ResizeObserver(() => handleResize());
       observer.observe(container);
     }
+    await loadQuickLaunchState();
     renderArsenal();
     renderQuickLaunchBar();
     renderTabStrip();
