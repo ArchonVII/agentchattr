@@ -36,6 +36,10 @@ const schema = {
     type: "array",
     default: [],
   },
+  appTheme: {
+    type: "string",
+    default: "default",
+  },
 };
 
 function createPreferences() {
