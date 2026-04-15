@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>agentchattr</title>
+    <title>clatter</title>
     <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css" />
     <style>
       :root {
@@ -393,6 +393,54 @@
       }
       .macro-btn.red {
         border-left: 2px solid #ff6b6b;
+      }
+
+      /* Retro chrome button styles (source: design spec) */
+      .macro-btn.btn-pixel {
+        border: 2px solid currentColor;
+        border-radius: 0;
+        box-shadow:
+          inset -2px -2px 0 rgba(0, 0, 0, 0.3),
+          inset 2px 2px 0 rgba(255, 255, 255, 0.1);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+      }
+
+      .macro-btn.btn-bevel {
+        border: none;
+        border-radius: 0;
+        background: #c0c0c0;
+        color: #000;
+        box-shadow:
+          inset -1px -1px 0 #808080,
+          inset 1px 1px 0 #ffffff,
+          inset -2px -2px 0 #404040,
+          inset 2px 2px 0 #dfdfdf;
+        font-size: 11px;
+      }
+      .macro-btn.btn-bevel:hover {
+        background: #d0d0d0;
+      }
+      .macro-btn.btn-bevel:active {
+        box-shadow:
+          inset 1px 1px 0 #808080,
+          inset -1px -1px 0 #ffffff,
+          inset 2px 2px 0 #404040,
+          inset -2px -2px 0 #dfdfdf;
+      }
+
+      .macro-btn.btn-vector {
+        border: 1px solid currentColor;
+        border-radius: 2px;
+        background: transparent;
+        box-shadow: 0 0 4px currentColor;
+        transition: box-shadow 0.2s;
+      }
+      .macro-btn.btn-vector:hover {
+        box-shadow:
+          0 0 8px currentColor,
+          0 0 2px currentColor inset;
       }
 
       /* --- Command Arsenal Sidebar --- */
