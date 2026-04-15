@@ -47,16 +47,25 @@ def build_startup_info() -> dict:
 
 
 def main():
+    from rich.logging import RichHandler
+    from theme_console import console as rich_console
+
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        datefmt="%H:%M:%S",
+        format="%(message)s",
+        datefmt="[%H:%M:%S]",
+        handlers=[RichHandler(
+            console=rich_console,
+            rich_tracebacks=True,
+            show_path=False,
+        )],
     )
 
     from config_loader import load_config
     config_path = ROOT / "config.toml"
     if not config_path.exists():
-        print(f"Error: {config_path} not found")
+        from theme_console import render_error
+        render_error("CONFIG ERROR", f"{config_path} not found")
         sys.exit(1)
 
     config = load_config(ROOT)
@@ -155,35 +164,30 @@ def main():
 
     # --- Security: warn if binding to a non-localhost address ---
     if host not in ("127.0.0.1", "localhost", "::1"):
-        print(f"\n  !! SECURITY WARNING — binding to {host} !!")
-        print("  This exposes agentchattr to your local network.")
-        print()
-        print("  Risks:")
-        print("  - No TLS: traffic (including session token) is plaintext")
-        print("  - Anyone on your network can sniff the token and gain full access")
-        print("  - With the token, anyone can @mention agents and trigger tool execution")
-        print("  - If agents run with auto-approve, this means remote code execution")
-        print()
-        print("  Only use this on a trusted home network. Never on public/shared WiFi.")
+        from theme_console import render_security_warning, render_error, console as rich_console
+
+        render_security_warning(host)
         if "--allow-network" not in sys.argv:
-            print("  Pass --allow-network to start anyway, or set host to 127.0.0.1.\n")
+            rich_console.print("[ui.muted]  Pass --allow-network to start anyway, or set host to 127.0.0.1.[/ui.muted]")
             sys.exit(1)
         else:
-            print()
             try:
                 confirm = input("  Type YES to accept these risks and start: ").strip()
             except (EOFError, KeyboardInterrupt):
                 confirm = ""
             if confirm != "YES":
-                print("  Aborted.\n")
+                render_error("ABORTED", "User declined network binding.")
                 sys.exit(1)
 
-    print(f"\n  agentchattr")
-    print(f"  Web UI:  http://{host}:{port}")
-    print(f"  MCP HTTP: http://{host}:{http_port}/mcp  (Claude, Codex)")
-    print(f"  MCP SSE:  http://{host}:{sse_port}/sse   (Gemini)")
-    print(f"  Agents auto-trigger on @mention")
-    print(f"\n  Session token: {session_token}\n")
+    from theme_console import render_banner
+    render_banner({
+        "host": host,
+        "port": port,
+        "http_port": http_port,
+        "sse_port": sse_port,
+        "session_token": session_token,
+        "label": _app_module.build_info.get("label", ""),
+    })
 
     uvicorn.run(app, host=host, port=port, log_level="info")
 

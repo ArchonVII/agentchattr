@@ -578,6 +578,16 @@ def configure(cfg: dict, session_token: str = ""):
 async def get_build_info():
     return JSONResponse(build_info or {})
 
+
+@app.get("/api/theme")
+async def get_theme():
+    """Return the active theme ID and its snapshot data.
+
+    Source: CSS-to-ANSI Translation Layer spec, Section 7.3.
+    """
+    from theme_manager import get_current_theme
+    return get_current_theme()
+
 _event_loop = None  # set by run.py after starting the event loop
 _last_active_channel: str = "general"  # last channel any message was sent in
 

@@ -38,7 +38,8 @@ def load_config(root: Path | None = None) -> dict:
             if name not in config_agents:
                 config_agents[name] = agent_cfg
             else:
-                print(f"  Warning: Ignoring local agent '{name}' (already defined in config.toml)")
+                from theme_console import console as rich_console
+                rich_console.print(f"  [ui.danger]Warning:[/ui.danger] Ignoring local agent '[ui.accent]{name}[/ui.accent]' (already defined in config.toml)")
 
     config_agents = config.setdefault("agents", {})
     config["_base_agents"] = dict(config_agents)
