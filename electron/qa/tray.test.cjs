@@ -99,7 +99,7 @@ test("createTray toggles window visibility, supports quit, and setBadge updates 
   };
 
   const tray = createTray(mainWindow);
-  assert.equal(tray.toolTip, "agentchattr");
+  assert.equal(tray.toolTip, "clatter");
   assert.equal(tray.contextMenu[0].label, "Show/Hide");
   assert.equal(tray.contextMenu[2].label, "Quit");
 
