@@ -8,6 +8,11 @@ const DEFAULT_MACROS = [
   { label: "Git Status", command: "git status\n", color: "blue" },
   { label: "NPM Start", command: "npm start\n", color: "green" },
   { label: "Clear", command: "clear\n", color: "red" },
+  {
+    label: "TUI Dashboard",
+    command: "npx tsx tui/dashboard.jsx\n",
+    color: "blue",
+  },
 ];
 
 const DEFAULT_COMMANDS = [

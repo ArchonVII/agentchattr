@@ -23,15 +23,30 @@ import MacWindow from "./components/MacWindow.jsx";
 
 const args = process.argv.slice(2);
 const themeIdx = args.indexOf("--theme");
-const initialTheme =
+const cliTheme =
   themeIdx !== -1 && args[themeIdx + 1]
     ? args[themeIdx + 1]
-    : process.env.AGENTCHATTR_THEME || "default";
+    : process.env.AGENTCHATTR_THEME || null;
 
 // Server base URL.
 // Source: run.py default port.
 const SERVER_PORT = process.env.AGENTCHATTR_PORT || 8300;
 const BASE_URL = `http://127.0.0.1:${SERVER_PORT}`;
+
+// Auto-detect theme from the running server if not specified via CLI/env.
+async function resolveTheme() {
+  if (cliTheme) return cliTheme;
+  try {
+    const resp = await fetch(`${BASE_URL}/api/theme`);
+    if (resp.ok) {
+      const data = await resp.json();
+      return data.id || "default";
+    }
+  } catch {
+    // Server not reachable — fall back to default
+  }
+  return "default";
+}
 
 // ---------------------------------------------------------------------------
 // Data fetching
@@ -161,8 +176,10 @@ function Dashboard() {
 // Entry point
 // ---------------------------------------------------------------------------
 
-render(
-  <ThemeProvider themeId={initialTheme}>
-    <Dashboard />
-  </ThemeProvider>,
-);
+resolveTheme().then((themeId) => {
+  render(
+    <ThemeProvider themeId={themeId}>
+      <Dashboard />
+    </ThemeProvider>,
+  );
+});
