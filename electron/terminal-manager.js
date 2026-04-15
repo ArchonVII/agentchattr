@@ -91,6 +91,14 @@ function sendToRenderer(channel, data) {
   }
 }
 
+function emitBridgeTrace(stage, detail = {}) {
+  sendToRenderer("terminal:bridge-trace", {
+    stage,
+    timestamp: Date.now(),
+    ...detail,
+  });
+}
+
 function detectShells() {
   const available = [];
 
@@ -180,6 +188,11 @@ function createTerminal(opts = {}) {
 
   // Stream stdout to renderer — feed watcher engine before forwarding
   ptyProcess.onData((data) => {
+    emitBridgeTrace("pty:data", {
+      terminalId: id,
+      terminalName: entry.name,
+      preview: String(data).slice(0, 200),
+    });
     watcherEngine.scan(id, data, {
       name: entry.name,
       agentName: entry.agentName,
@@ -191,6 +204,17 @@ function createTerminal(opts = {}) {
   ptyProcess.onExit(({ exitCode }) => {
     watcherEngine.removeTerminal(id);
     sendToRenderer("terminal:exited", { id, exitCode });
+    postBridgeEvent({
+      terminalId: id,
+      terminalName: entry.name,
+      agentName: entry.agentName,
+      sessionName: entry.sessionName,
+      ruleId: "terminal-exited",
+      category: "system",
+      matchedText: `Terminal ${entry.name} exited with code ${exitCode ?? "?"}`,
+      contextLines: [],
+      timestamp: Date.now(),
+    });
   });
 
   const result = {
@@ -202,6 +226,27 @@ function createTerminal(opts = {}) {
   };
 
   sendToRenderer("terminal:created", result);
+  const introLines = [
+    `Session started: ${name}`,
+    `shell: ${shellId}`,
+    `session: ${entry.sessionName}`,
+    `cwd: ${cwd}`,
+    `pid: ${ptyProcess.pid}`,
+  ];
+  if (entry.agentName) {
+    introLines.splice(1, 0, `agent: ${entry.agentName}`);
+  }
+  postBridgeEvent({
+    terminalId: id,
+    terminalName: name,
+    agentName: entry.agentName,
+    sessionName: entry.sessionName,
+    ruleId: "terminal-created",
+    category: "system",
+    matchedText: introLines.join("\n"),
+    contextLines: [],
+    timestamp: Date.now(),
+  });
   return result;
 }
 
@@ -330,6 +375,13 @@ function setup(win) {
 
     // Notify renderer for badge updates
     sendToRenderer("terminal:bridge-event", event);
+    emitBridgeTrace("watcher:match", {
+      terminalId: event.terminalId,
+      terminalName: event.terminalName,
+      ruleId: event.ruleId,
+      category: event.category,
+      matchedText: event.matchedText,
+    });
 
     // POST to Python backend (fire-and-forget with one retry)
     postBridgeEvent(event);
@@ -364,6 +416,12 @@ function setup(win) {
 async function postBridgeEvent(event, retryCount = 0) {
   // Source: main.js SERVER_PORT constant — Python backend port.
   const SERVER_PORT = 8300;
+  emitBridgeTrace("bridge:post:start", {
+    terminalId: event.terminalId,
+    ruleId: event.ruleId,
+    retryCount,
+    matchedText: event.matchedText,
+  });
   try {
     const http = require("http");
     const payload = JSON.stringify(event);
@@ -381,11 +439,22 @@ async function postBridgeEvent(event, retryCount = 0) {
         timeout: 3000,
       },
       (res) => {
+        emitBridgeTrace("bridge:post:response", {
+          terminalId: event.terminalId,
+          ruleId: event.ruleId,
+          statusCode: res.statusCode,
+        });
         // Drain the response
         res.resume();
       },
     );
     req.on("error", (err) => {
+      emitBridgeTrace("bridge:post:error", {
+        terminalId: event.terminalId,
+        ruleId: event.ruleId,
+        retryCount,
+        error: err.message,
+      });
       if (retryCount < 1) {
         setTimeout(() => postBridgeEvent(event, retryCount + 1), 1000);
       } else {
@@ -395,6 +464,11 @@ async function postBridgeEvent(event, retryCount = 0) {
     req.write(payload);
     req.end();
   } catch (err) {
+    emitBridgeTrace("bridge:post:throw", {
+      terminalId: event.terminalId,
+      ruleId: event.ruleId,
+      error: err.message,
+    });
     console.warn("Bridge POST error:", err.message);
   }
 }

@@ -74,6 +74,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onBridgeEvent(callback) {
     ipcRenderer.on("terminal:bridge-event", (_event, data) => callback(data));
   },
+  onBridgeTrace(callback) {
+    ipcRenderer.on("terminal:bridge-trace", (_event, data) => callback(data));
+  },
   onWatcherConfigUpdated(callback) {
     ipcRenderer.on("terminal:watcher-config-updated", (_event, data) =>
       callback(data),

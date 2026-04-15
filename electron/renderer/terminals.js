@@ -1050,6 +1050,9 @@ async function initTerminals() {
 
   window.electronAPI?.onTerminalOutput(handleTerminalOutput);
   window.electronAPI?.onTerminalExited(handleTerminalExited);
+  window.electronAPI?.onBridgeTrace?.((trace) => {
+    console.log("[bridge-trace]", trace);
+  });
 
   // Bridge: handle agent identity suggestions from auto-detection
   window.electronAPI?.onIdentitySuggested(

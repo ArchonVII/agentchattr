@@ -3,6 +3,7 @@
 import asyncio
 import json
 import secrets
+import subprocess
 import sys
 import threading
 import time
@@ -12,6 +13,36 @@ from pathlib import Path
 # Ensure the project directory is on the import path
 ROOT = Path(__file__).parent
 sys.path.insert(0, str(ROOT))
+
+
+def _git_output(*args: str) -> str:
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except Exception:
+        return ""
+
+
+def build_startup_info() -> dict:
+    started_at = time.strftime("%Y-%m-%d %H:%M:%S")
+    branch = _git_output("branch", "--show-current") or "unknown-branch"
+    worktree = ROOT.name
+    build_code = secrets.token_hex(6).upper()
+    commit = _git_output("rev-parse", "--short=12", "HEAD")
+    return {
+        "code": build_code,
+        "branch": branch,
+        "worktree": worktree,
+        "started_at": started_at,
+        "commit": commit,
+        "label": f"{build_code} - {branch}/{worktree} - {started_at}",
+    }
 
 
 def main():
@@ -35,6 +66,8 @@ def main():
     # Configure the FastAPI app (creates shared store)
     from app import app, configure, set_event_loop, store as _store_ref
     configure(config, session_token=session_token)
+    import app as _app_module
+    _app_module.build_info = build_startup_info()
 
     # Share stores with the MCP bridge
     from app import store, rules, summaries, jobs, room_settings, registry, router as app_router, agents as app_agents, session_engine, session_store
@@ -58,8 +91,6 @@ def main():
 
     # Create process manager for UI-launched agents
     from process_manager import ProcessManager
-    import app as _app_module
-
     def _on_agent_log(name: str, line: str):
         loop = getattr(_app_module, '_event_loop', None)
         if loop:

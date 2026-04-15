@@ -45,6 +45,7 @@ session_engine: SessionEngine | None = None
 process_manager = None  # ProcessManager, set by run.py
 config: dict = {}
 ws_clients: set[WebSocket] = set()
+build_info: dict = {}
 
 # --- Security: session token (set by configure()) ---
 session_token: str = ""
@@ -267,11 +268,11 @@ def _install_security_middleware(token: str, cfg: dict):
                 return await call_next(request)
 
             # Agent registration/heartbeat: loopback only (no remote agent minting).
-            if path.startswith(("/api/register", "/api/deregister/", "/api/heartbeat/")):
+            if path.startswith(("/api/register", "/api/deregister/", "/api/heartbeat/", "/api/bridge/")):
                 client_ip = request.client.host if request.client else ""
                 if client_ip not in ("127.0.0.1", "::1", "localhost"):
                     return JSONResponse(
-                        {"error": f"forbidden: agent registration is restricted to local loopback. Source {client_ip} is not allowed."},
+                        {"error": f"forbidden: local control endpoints are restricted to local loopback. Source {client_ip} is not allowed."},
                         status_code=403,
                     )
                 return await call_next(request)
@@ -569,6 +570,11 @@ def configure(cfg: dict, session_token: str = ""):
 
 
 # --- Store → WebSocket bridge ---
+
+
+@app.get("/api/build_info")
+async def get_build_info():
+    return JSONResponse(build_info or {})
 
 _event_loop = None  # set by run.py after starting the event loop
 _last_active_channel: str = "general"  # last channel any message was sent in
@@ -1658,7 +1664,7 @@ async def bridge_event(request: Request):
     dedup_key = hashlib.md5(
         f"{terminal_id}:{rule_id}:{matched_text}".encode()
     ).hexdigest()
-    now = time.time()
+    now = _time.time()
     last_seen = _bridge_dedup.get(dedup_key)
     if last_seen and now - last_seen < _BRIDGE_DEDUP_WINDOW:
         return JSONResponse({"status": "deduped"})

@@ -67,6 +67,7 @@ Notes:
 - Agents can now request browser URLs inside the desktop shell: URLs open in a docked in-app browser pane by default, and can also be popped out into a separate native Electron window.
 - **Integrated Terminals:** A dedicated "Terminals" tab provides unlimited concurrent embedded terminal sessions via `xterm.js`.
   - **Multi-Layout:** Toggle between Tabs, Grid, or Floating window modes.
+  - **Interactive File Links:** Clickable file paths and line numbers (e.g., `src/main.js:42`) that open directly in VS Code or your default editor.
   - **Quick Launch:** Save up to 5 project folders and one-click launch Claude, Codex, or Gemini with automated permission bypass support.
   - **Command Arsenal:** Sidebar for quick-injecting common commands and CLI skills.
   - **Macros & Themes:** Per-terminal macro buttons and instant theme switching (Cyberpunk, Dracula, etc.).
