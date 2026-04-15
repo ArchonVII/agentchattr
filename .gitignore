@@ -21,6 +21,7 @@ tests/
 tests/*
 !tests/test_room_sidebar_ui.py
 !tests/test_generate_snapshot.js
+!tests/test_theme_console.py
 agents_lineup.svg
 docs/*
 !docs/superpowers/
