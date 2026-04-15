@@ -40,7 +40,7 @@ function createThemeSelector(terminalId, onThemeChange) {
 
   // Existing themes first, retro second (source: design spec grouping)
   const existingIds = ["default", "cyberpunk", "matrix", "dracula"];
-  const retroIds = ["c64", "msdos", "apple2", "amber"];
+  const retroIds = ["c64", "msdos", "apple2", "amber", "nes", "system6"];
 
   const existingGroup = document.createElement("optgroup");
   existingGroup.label = "Themes";

@@ -532,6 +532,120 @@ const THEMES = {
       letterSpacing: 0.5, // px — user instruction
     },
   },
+
+  // ── NES (8-bit) ───────────────────────────────────────────────────────
+  nes: {
+    id: "nes",
+    name: "NES",
+    era: "8-bit",
+    xterm: {
+      // NES colour palette — sourced from NES PPU palette approximations
+      // Reference: https://www.nesdev.org/wiki/PPU_palettes
+      background: "#212529",
+      foreground: "#fcfcfc",
+      cursor: "#e76e55",
+      cursorAccent: "#212529",
+      selectionBackground: "rgba(231, 110, 85, 0.3)",
+      black: "#212529",
+      red: "#e76e55", // NES red
+      green: "#4aa52e", // NES green
+      yellow: "#e8a33e", // NES gold
+      blue: "#3a5fc4", // NES blue
+      magenta: "#b53cc0", // NES purple
+      cyan: "#4ac7c4", // NES cyan
+      white: "#c0c0c0",
+      brightBlack: "#4a4a4a",
+      brightRed: "#ff9e8a",
+      brightGreen: "#7fdb6a",
+      brightYellow: "#ffd06b",
+      brightBlue: "#6b8cff",
+      brightMagenta: "#e06bef",
+      brightCyan: "#7fffff",
+      brightWhite: "#fcfcfc",
+    },
+    font: {
+      family: "Press Start 2P",
+      file: "PressStart2P-Regular.ttf",
+      fallback: "monospace",
+      size: 12, // px; Press Start 2P renders large, keep small — user instruction
+    },
+    cursor: { style: "block", blink: true },
+    effects: {
+      glow: { enabled: false, color: null, radius: 0 },
+      border: { enabled: false, color: null, width: 0 },
+    },
+    chrome: {
+      toolbarBg: "#1a1d21",
+      buttonStyle: "pixel",
+      accentColor: "#e76e55",
+      tabIndicatorColor: "#e76e55", // matches NES red — design spec
+    },
+    boot: {
+      lines: [],
+      delay: 0,
+    },
+    tuning: {
+      lineHeight: 1.4, // extra leading for pixel font readability — user instruction
+      letterSpacing: 0, // Press Start 2P has built-in spacing — user instruction
+    },
+  },
+
+  // ── SYSTEM 6 (Classic Mac) ────────────────────────────────────────────
+  system6: {
+    id: "system6",
+    name: "System 6",
+    era: "1988",
+    xterm: {
+      // Classic Mac monochrome — black on white, 1-bit aesthetic
+      // Source: Apple Human Interface Guidelines (1987)
+      background: "#ffffff",
+      foreground: "#000000",
+      cursor: "#000000",
+      cursorAccent: "#ffffff",
+      selectionBackground: "rgba(0, 0, 0, 0.25)",
+      black: "#000000",
+      red: "#000000", // monochrome — all dark
+      green: "#000000",
+      yellow: "#444444",
+      blue: "#000000",
+      magenta: "#000000",
+      cyan: "#444444",
+      white: "#ffffff",
+      brightBlack: "#555555",
+      brightRed: "#333333",
+      brightGreen: "#333333",
+      brightYellow: "#777777",
+      brightBlue: "#333333",
+      brightMagenta: "#333333",
+      brightCyan: "#777777",
+      brightWhite: "#ffffff",
+    },
+    font: {
+      family: "Monaco",
+      file: null, // system font — system.css bundles Chicago but Monaco is for terminal
+      fallback: "monospace",
+      size: 13, // px — user instruction
+    },
+    cursor: { style: "block", blink: true },
+    effects: {
+      glow: { enabled: false, color: null, radius: 0 },
+      border: { enabled: true, color: "#000000", width: 4 }, // black bezel like Mac screen — user instruction
+    },
+    chrome: {
+      toolbarBg: "#e8e8e8",
+      buttonStyle: "default",
+      accentColor: "#000000",
+      tabIndicatorColor: "#000000", // matches monochrome — design spec
+    },
+    boot: {
+      lines: ["Welcome to Macintosh.", ""],
+      delay: 60, // ms per character — user instruction
+    },
+    tuning: {
+      lineHeight: 1.2, // standard Mac row spacing — user instruction
+      letterSpacing: 0, // user instruction
+    },
+  },
 };
 
 // ---------------------------------------------------------------------------
