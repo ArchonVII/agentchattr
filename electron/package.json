@@ -3,9 +3,10 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "npm run build:terminals && npm run build:bridge",
+    "build": "npm run build:terminals && npm run build:bridge && npm run build:themes",
     "build:terminals": "esbuild renderer/terminals.js --bundle --outfile=renderer/terminals.bundle.js --format=iife --platform=browser",
     "build:bridge": "esbuild renderer/bridge/index.jsx --bundle --outfile=renderer/bridge.bundle.js --format=iife --platform=browser --jsx=automatic --loader:.jsx=jsx",
+    "build:themes": "esbuild renderer/themes/theme-picker.js --bundle --outfile=renderer/themes/themes.bundle.js --format=iife --platform=browser",
     "prestart": "npm run build",
     "test": "node --test qa/*.test.cjs",
     "smoke:launcher": "node qa/launcher-smoke.cjs",
