@@ -1,6 +1,7 @@
 "use strict";
 
-// Terminal Configuration — stores macros, commands, and theme presets.
+// Terminal Configuration — stores macros, commands, and quick launch settings.
+// Theme presets now live in terminal-themes.js.
 // In a real app, this could be persisted via electron-store.
 
 const DEFAULT_MACROS = [
@@ -28,33 +29,9 @@ const DEFAULT_COMMANDS = [
   },
 ];
 
-const THEME_PRESETS = {
-  default: {
-    background: "#12121e",
-    foreground: "#e0e0e0",
-    cursor: "#da7756",
-  },
-  cyberpunk: {
-    background: "#000b1e",
-    foreground: "#00ff9f",
-    cursor: "#f0f",
-  },
-  matrix: {
-    background: "#0d0208",
-    foreground: "#00ff41",
-    cursor: "#00ff41",
-  },
-  dracula: {
-    background: "#282a36",
-    foreground: "#f8f8f2",
-    cursor: "#ff79c6",
-  },
-};
-
 window.TerminalConfig = {
   macros: DEFAULT_MACROS,
   commands: DEFAULT_COMMANDS,
-  themes: THEME_PRESETS,
   quickLaunch: {
     folders: [
       // "C:/Users/josep/path/to/repo-one",
