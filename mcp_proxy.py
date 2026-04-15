@@ -309,14 +309,16 @@ class McpIdentityProxy:
             if self._port > 0:
                 # Fixed port in use — another wrapper instance owns the proxy
                 log.info(f"Proxy port {self._port} in use, skipping (another instance owns it)")
-                print(f"  MCP proxy: port {self._port} in use (shared with another instance)")
+                from theme_console import console as rich_console
+                rich_console.print(f"  [ui.muted]MCP proxy: port {self._port} in use (shared with another instance)[/ui.muted]")
                 self._server = None
                 return False
             raise
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._thread.start()
         log.info(f"MCP proxy for {self._agent_name} on port {self.port}")
-        print(f"  MCP proxy: port {self.port}")
+        from theme_console import console as rich_console
+        rich_console.print(f"  [ui.accent]MCP proxy:[/ui.accent] port {self.port}")
         return True
 
     def stop(self):
