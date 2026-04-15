@@ -12419,9 +12419,14 @@ ${s3.join("\n")}
           const rect = btn.getBoundingClientRect();
           popover.style.position = "fixed";
           popover.style.top = `${rect.bottom + 4}px`;
-          popover.style.left = `${rect.left}px`;
           popover.style.zIndex = "10001";
           document.body.appendChild(popover);
+          const popoverRect = popover.getBoundingClientRect();
+          if (rect.left + popoverRect.width > window.innerWidth) {
+            popover.style.left = `${Math.max(0, rect.right - popoverRect.width)}px`;
+          } else {
+            popover.style.left = `${rect.left}px`;
+          }
           const closeHandler = (ev) => {
             if (!popover.contains(ev.target) && ev.target !== btn) {
               popover.remove();

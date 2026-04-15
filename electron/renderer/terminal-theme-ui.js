@@ -115,11 +115,18 @@ function createTuningButton(terminalId, getTerminalInstance) {
     const rect = btn.getBoundingClientRect();
     popover.style.position = "fixed";
     popover.style.top = `${rect.bottom + 4}px`; // 4px gap — visual spacing
-    popover.style.left = `${rect.left}px`;
     // z-index 10001: above scanline overlay (10), above context menus (10000)
     popover.style.zIndex = "10001";
 
     document.body.appendChild(popover);
+
+    // Flip to left-aligned if the popover would overflow the right edge
+    const popoverRect = popover.getBoundingClientRect();
+    if (rect.left + popoverRect.width > window.innerWidth) {
+      popover.style.left = `${Math.max(0, rect.right - popoverRect.width)}px`;
+    } else {
+      popover.style.left = `${rect.left}px`;
+    }
 
     // Close on outside click
     const closeHandler = (ev) => {
