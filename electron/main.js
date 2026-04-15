@@ -410,7 +410,7 @@ function startServer(pythonPath) {
   // Source: CSS-to-ANSI spec Section 7.1.
   try {
     const { execFileSync } = require("child_process");
-    execFileSync("node", ["scripts/generate-theme-snapshot.js"], {
+    execFileSync("node", ["scripts/generate-theme-snapshot.cjs"], {
       cwd: REPO_ROOT,
       timeout: 5000,
     });

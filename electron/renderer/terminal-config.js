@@ -10,7 +10,7 @@ const DEFAULT_MACROS = [
   { label: "Clear", command: "clear\n", color: "red" },
   {
     label: "TUI Dashboard",
-    command: "cd C:\\AI\\JAgentchattr && npx tsx tui/dashboard.jsx\n",
+    command: "cd C:\\AI\\JAgentchattr; npx tsx tui/dashboard.jsx\n",
     color: "blue",
   },
 ];

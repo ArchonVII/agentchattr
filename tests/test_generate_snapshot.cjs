@@ -10,7 +10,7 @@ const OUTPUT = path.join(REPO_ROOT, "data", "theme_snapshot.json");
 // Clean any existing snapshot to prove the script creates it fresh
 if (fs.existsSync(OUTPUT)) fs.unlinkSync(OUTPUT);
 
-execFileSync("node", ["scripts/generate-theme-snapshot.js"], { cwd: REPO_ROOT });
+execFileSync("node", ["scripts/generate-theme-snapshot.cjs"], { cwd: REPO_ROOT });
 
 const snapshot = JSON.parse(fs.readFileSync(OUTPUT, "utf-8"));
 
