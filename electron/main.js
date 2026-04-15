@@ -245,6 +245,12 @@ function createWindow() {
     height: bounds.height || 800,
     x: bounds.x,
     y: bounds.y,
+    titleBarStyle: "hidden",
+    titleBarOverlay: {
+      color: "#1a1a2e",
+      symbolColor: "#e0e0e0",
+      height: 36,
+    },
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       webviewTag: true,

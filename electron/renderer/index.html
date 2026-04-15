@@ -43,14 +43,17 @@
         background: #1a1a2e;
         border-bottom: 1px solid #2a2a3a;
         padding: 0 8px;
+        padding-right: 140px; /* Space for window controls on Windows */
         gap: 8px;
         flex-shrink: 0;
+        -webkit-app-region: drag;
       }
 
       .tab-item {
         display: flex;
         align-items: center;
         min-width: 0;
+        -webkit-app-region: no-drag;
       }
 
       .tab-button {
