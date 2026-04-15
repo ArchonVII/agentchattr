@@ -732,8 +732,16 @@ function createXtermInstance(id, name, shell, pid, cwd) {
   terminal.loadAddon(new WebLinksAddon());
 
   // Local File Link Provider
+  // xterm.js v6: provideLinks receives (lineNumber, callback)
+  // where lineNumber is a 1-based buffer row index.
   terminal.registerLinkProvider({
-    provideLinks(bufferLine, callback) {
+    provideLinks(lineNumber, callback) {
+      const buffer = terminal.buffer.active;
+      const bufferLine = buffer.getLine(lineNumber - 1);
+      if (!bufferLine) {
+        callback([]);
+        return;
+      }
       const line = bufferLine.translateToString(true);
       // Regex matches:
       // 1. Absolute paths (Unix/Windows)
@@ -754,8 +762,8 @@ function createXtermInstance(id, name, shell, pid, cwd) {
 
         links.push({
           range: {
-            start: { x: startColumn, y: bufferLine.y + 1 },
-            end: { x: endColumn, y: bufferLine.y + 1 },
+            start: { x: startColumn, y: lineNumber },
+            end: { x: endColumn, y: lineNumber },
           },
           text,
           activate: (event, text) => {
