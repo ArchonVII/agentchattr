@@ -6,35 +6,17 @@
 const { Terminal } = require("@xterm/xterm");
 const { FitAddon } = require("@xterm/addon-fit");
 const { WebLinksAddon } = require("@xterm/addon-web-links");
-
-// ---------------------------------------------------------------------------
-// Constants (CASK ordering)
-// ---------------------------------------------------------------------------
-
-// xterm.js theme matching the agentchattr dark palette.
-const XTERM_THEME = {
-  background: "#12121e",
-  foreground: "#e0e0e0",
-  cursor: "#da7756",
-  cursorAccent: "#12121e",
-  selectionBackground: "rgba(218, 119, 86, 0.3)",
-  black: "#12121e",
-  red: "#ff6b6b",
-  green: "#4ade80",
-  yellow: "#fbbf24",
-  blue: "#60a5fa",
-  magenta: "#a78bfa",
-  cyan: "#22d3ee",
-  white: "#e0e0e0",
-  brightBlack: "#555",
-  brightRed: "#ff8a8a",
-  brightGreen: "#86efac",
-  brightYellow: "#fcd34d",
-  brightBlue: "#93c5fd",
-  brightMagenta: "#c4b5fd",
-  brightCyan: "#67e8f9",
-  brightWhite: "#ffffff",
-};
+const { getTheme, loadThemeFont } = require("./terminal-themes");
+const {
+  createScanlineOverlay,
+  applyCRTGlow,
+  wrapMonitorBorder,
+  removeAllEffects,
+} = require("./terminal-effects");
+const {
+  createThemeSelector,
+  createTuningButton,
+} = require("./terminal-theme-ui");
 
 // ---------------------------------------------------------------------------
 // State
@@ -434,37 +416,135 @@ function createMacroBar(id) {
   });
   bar.appendChild(snapshotBtn);
 
-  const themeSelect = document.createElement("select");
-  themeSelect.className = "macro-btn";
-  themeSelect.innerHTML = `
-    <option value="default">Default Theme</option>
-    <option value="cyberpunk">Cyberpunk</option>
-    <option value="matrix">Matrix</option>
-    <option value="dracula">Dracula</option>
-  `;
-  themeSelect.addEventListener("change", (e) => {
-    toggleTheme(id, e.target.value);
-  });
+  const themeSelect = createThemeSelector(id, applyTheme);
   bar.appendChild(themeSelect);
+
+  const tuningBtn = createTuningButton(id, (tid) => terminalInstances.get(tid));
+  bar.appendChild(tuningBtn);
 
   return bar;
 }
 
-function toggleTheme(id, themeName) {
+// ---------------------------------------------------------------------------
+// Theme application
+// ---------------------------------------------------------------------------
+
+async function applyTheme(id, themeId) {
   const inst = terminalInstances.get(id);
   if (!inst) return;
 
-  const themes = window.TerminalConfig?.themes || {};
-  const theme = themes[themeName] || themes.default;
-  if (!theme) return;
+  const theme = getTheme(themeId);
 
-  inst.terminal.options.theme = {
-    background: theme.background,
-    foreground: theme.foreground,
-    cursor: theme.cursor,
-    selectionBackground: "rgba(218, 119, 86, 0.3)",
+  // Clean up existing effects before applying new theme
+  removeAllEffects(inst.effectsState);
+
+  // Load custom font if needed
+  await loadThemeFont(theme.font);
+
+  // Apply xterm.js theme (full 16-colour palette)
+  inst.terminal.options.theme = theme.xterm;
+
+  // Apply font
+  const fontFamily = theme.font.file
+    ? `"${theme.font.family}", ${theme.font.fallback ? `"${theme.font.fallback}", ` : ""}monospace`
+    : theme.font.family;
+  inst.terminal.options.fontFamily = fontFamily;
+  inst.terminal.options.fontSize = theme.font.size;
+
+  // Apply cursor style
+  inst.terminal.options.cursorStyle = theme.cursor.style;
+  inst.terminal.options.cursorBlink = theme.cursor.blink;
+
+  // Apply tuning defaults (user can override via popover)
+  inst.terminal.options.lineHeight = theme.tuning.lineHeight;
+  inst.terminal.options.letterSpacing = theme.tuning.letterSpacing;
+
+  // Initialise tuning state from theme defaults
+  inst.tuning = {
+    fontSize: theme.font.size,
+    lineHeight: theme.tuning.lineHeight,
+    letterSpacing: theme.tuning.letterSpacing,
+    glowIntensity: 50, // 50% default glow — design spec
+    scanlineOpacity: 30, // 30% default scanline — design spec
+    scanlines: false,
+    border: theme.effects.border.enabled,
   };
-  inst.theme = themeName;
+
+  // Apply effects
+  if (theme.effects.glow.enabled) {
+    inst.effectsState.glow = applyCRTGlow(
+      inst.surface,
+      theme.effects.glow.color,
+      theme.effects.glow.radius,
+    );
+  }
+
+  if (theme.effects.border.enabled) {
+    inst.effectsState.border = wrapMonitorBorder(
+      inst.surface,
+      theme.effects.border.color,
+      theme.effects.border.width,
+    );
+  }
+
+  // Apply chrome styling
+  _applyChromeTheme(inst, theme);
+
+  // Store theme ID
+  inst.theme = themeId;
+
+  // Refit terminal after font/spacing changes (50ms debounce for DOM update)
+  setTimeout(() => inst.fitAddon.fit(), 50);
+}
+
+function _applyChromeTheme(inst, theme) {
+  const { chrome } = theme;
+  if (!chrome) return;
+
+  // Toolbar background
+  if (inst.macroBar && chrome.toolbarBg) {
+    inst.macroBar.style.backgroundColor = chrome.toolbarBg;
+  } else if (inst.macroBar) {
+    inst.macroBar.style.backgroundColor = "";
+  }
+
+  // Button styling
+  if (inst.macroBar) {
+    const buttons = inst.macroBar.querySelectorAll(".macro-btn");
+    for (const btn of buttons) {
+      btn.classList.remove("btn-pixel", "btn-bevel", "btn-vector");
+      if (chrome.buttonStyle && chrome.buttonStyle !== "default") {
+        btn.classList.add(`btn-${chrome.buttonStyle}`);
+      }
+    }
+  }
+
+  // Wrapper accent border
+  if (inst.wrapper && chrome.accentColor) {
+    inst.wrapper.style.borderColor = chrome.accentColor;
+  } else if (inst.wrapper) {
+    inst.wrapper.style.borderColor = "";
+  }
+}
+
+/**
+ * Plays a boot sequence — writes lines to the terminal with a delay
+ * between each line. Used on terminal creation with a retro theme.
+ */
+function _playBootSequence(terminal, bootConfig) {
+  if (!bootConfig || !bootConfig.lines || bootConfig.lines.length === 0) return;
+
+  const delay = bootConfig.delay || 50; // ms per line — theme-defined
+  let i = 0;
+
+  function writeLine() {
+    if (i >= bootConfig.lines.length) return;
+    terminal.write(bootConfig.lines[i] + "\r\n");
+    i++;
+    setTimeout(writeLine, delay);
+  }
+
+  writeLine();
 }
 
 // ---------------------------------------------------------------------------
@@ -718,13 +798,16 @@ async function requestNewTerminal(shellId, opts = {}) {
 }
 
 function createXtermInstance(id, name, shell, pid, cwd) {
+  const defaultTheme = getTheme("default");
   const terminal = new Terminal({
-    theme: XTERM_THEME,
-    fontFamily: 'Consolas, "Courier New", monospace',
-    fontSize: 13,
-    cursorBlink: true,
-    cursorStyle: "bar",
-    scrollback: 5000,
+    theme: defaultTheme.xterm,
+    fontFamily: defaultTheme.font.family,
+    fontSize: defaultTheme.font.size,
+    cursorBlink: defaultTheme.cursor.blink,
+    cursorStyle: defaultTheme.cursor.style,
+    lineHeight: defaultTheme.tuning.lineHeight,
+    letterSpacing: defaultTheme.tuning.letterSpacing,
+    scrollback: 5000, // lines of scrollback buffer — existing default
   });
 
   const fitAddon = new FitAddon();
@@ -893,12 +976,27 @@ function createXtermInstance(id, name, shell, pid, cwd) {
     pid,
     exited: false,
     exitCode: null,
-    x: 20 + numInstances * 25,
-    y: 20 + numInstances * 25,
-    width: 600,
-    height: 400,
+    x: 20 + numInstances * 25, // px; stagger offset per instance — existing layout logic
+    y: 20 + numInstances * 25, // px; stagger offset per instance — existing layout logic
+    width: 600, // px; default floating width — existing layout logic
+    height: 400, // px; default floating height — existing layout logic
     zIndex: highestZ++,
     fitTimeout: null,
+    theme: "default",
+    effectsState: {
+      scanline: null,
+      glow: null,
+      border: null,
+    },
+    tuning: {
+      fontSize: 13, // px; default font size — matches default theme
+      lineHeight: 1.2, // xterm default — inherited baseline
+      letterSpacing: 0, // xterm default — no extra spacing
+      glowIntensity: 50, // 50% default glow — design spec
+      scanlineOpacity: 30, // 30% default scanline — design spec
+      scanlines: false,
+      border: false,
+    },
   };
 
   terminalInstances.set(id, newInstance);
@@ -1109,6 +1207,6 @@ window.Terminals = {
   focus: focusTerminal,
   requestNew: requestNewTerminal,
   toggleArsenal: toggleArsenal,
-  toggleTheme: toggleTheme,
+  applyTheme: applyTheme,
   toggleLayout: toggleLayout,
 };
