@@ -16,6 +16,7 @@
           era: null,
           adapter: null,
           font: null,
+          terminalTheme: "default",
           preview: { bg: "#12121e", fg: "#e0e0e0", accent: "#da7756" }
         },
         {
@@ -28,6 +29,7 @@
             file: "PressStart2P-Regular.ttf",
             format: "truetype"
           },
+          terminalTheme: "nes",
           preview: { bg: "#212529", fg: "#fff", accent: "#e76e55" }
         },
         {
@@ -36,6 +38,7 @@
           era: "1998",
           adapter: "adapter-98.css",
           font: null,
+          terminalTheme: "msdos",
           preview: { bg: "#008080", fg: "#000", accent: "#000080" }
         },
         {
@@ -44,6 +47,7 @@
           era: "1988",
           adapter: "adapter-system.css",
           font: null,
+          terminalTheme: "system6",
           preview: { bg: "#fff", fg: "#000", accent: "#000" }
         },
         {
@@ -56,6 +60,7 @@
             file: "C64_Pro_Mono-STYLE.woff",
             format: "woff"
           },
+          terminalTheme: "c64",
           preview: { bg: "#352879", fg: "#6C5EB5", accent: "#6C5EB5" }
         }
       ];
