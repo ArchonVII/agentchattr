@@ -20,6 +20,7 @@ tests/
 !tests/
 tests/*
 !tests/test_room_sidebar_ui.py
+!tests/test_generate_snapshot.js
 agents_lineup.svg
 docs/*
 !docs/superpowers/
@@ -41,3 +42,4 @@ electron/dist/
 electron/config.json
 electron/renderer/*.bundle.js
 .superpowers/
+data/theme_snapshot.json
