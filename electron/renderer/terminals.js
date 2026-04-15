@@ -17,6 +17,8 @@ const {
   createThemeSelector,
   createTuningButton,
 } = require("./terminal-theme-ui");
+const { getCurrentAppTheme } = require("./themes/theme-loader");
+const { getAppTheme } = require("./themes/theme-registry");
 
 // ---------------------------------------------------------------------------
 // State
@@ -798,7 +800,10 @@ async function requestNewTerminal(shellId, opts = {}) {
 }
 
 function createXtermInstance(id, name, shell, pid, cwd) {
-  const defaultTheme = getTheme("default");
+  // Use the app theme's recommended terminal theme as the default for new terminals
+  const currentAppTheme = getAppTheme(getCurrentAppTheme());
+  const initialTerminalThemeId = currentAppTheme.terminalTheme || "default";
+  const defaultTheme = getTheme(initialTerminalThemeId);
   const terminal = new Terminal({
     theme: defaultTheme.xterm,
     fontFamily: defaultTheme.font.family,
@@ -982,7 +987,7 @@ function createXtermInstance(id, name, shell, pid, cwd) {
     height: 400, // px; default floating height — existing layout logic
     zIndex: highestZ++,
     fitTimeout: null,
-    theme: "default",
+    theme: initialTerminalThemeId,
     effectsState: {
       scanline: null,
       glow: null,
@@ -1000,6 +1005,14 @@ function createXtermInstance(id, name, shell, pid, cwd) {
   };
 
   terminalInstances.set(id, newInstance);
+
+  // Apply the mapped terminal theme (handles effects, chrome, boot, font loading)
+  if (initialTerminalThemeId !== "default") {
+    applyTheme(id, initialTerminalThemeId);
+    // Sync the theme selector dropdown to show the mapped theme
+    const themeSelect = macroBar.querySelector("select");
+    if (themeSelect) themeSelect.value = initialTerminalThemeId;
+  }
 
   renderLayout();
   renderTabStrip();
