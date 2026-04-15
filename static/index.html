@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>agentchattr</title>
+    <title>clatter</title>
     <link rel="stylesheet" href="/static/style.css?v=252" />
     <link rel="stylesheet" href="/static/sessions.css?v=223" />
     <link rel="stylesheet" href="/static/jobs.css?v=223" />
@@ -14,8 +14,7 @@
     <div id="app">
       <header>
         <div class="header-left">
-          <img src="/static/logo.png" alt="agentchattr" class="header-logo" />
-          <h1 id="room-title">agentchattr</h1>
+          <h1 id="room-title">clatter</h1>
           <a
             class="discord-pill"
             href="https://discord.gg/qzfn5YTT9a"
@@ -172,7 +171,7 @@
             class="settings-btn"
             id="help-btn"
             onclick="toggleHelp()"
-            title="Help"
+            title="Tutorial"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle
@@ -300,6 +299,9 @@
               style="display: none"
               onchange="importHistory(this)"
             />
+            <button class="settings-danger" onclick="clearChat()">
+              Clear Chat History
+            </button>
           </div>
         </div>
       </div>
@@ -337,14 +339,6 @@
             target="_blank"
             rel="noopener"
           ></a>
-          <a
-            class="channel-support"
-            href="https://buymeacoffee.com/bcurts"
-            target="_blank"
-            rel="noopener"
-            title="Support development"
-            >&#9829;<span class="support-label"> Support development</span></a
-          >
         </div>
       </div>
 

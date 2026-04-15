@@ -70,7 +70,7 @@ function setupNotifications(mainWindow, trayModule) {
 
   notificationListener = (_event, payload = {}) => {
     const {
-      title = 'agentchattr',
+      title = 'clatter',
       body = '',
       channel = null,
     } = payload && typeof payload === 'object' ? payload : {};

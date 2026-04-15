@@ -1,4 +1,4 @@
-"""agentchattr — FastAPI web UI + agent auto-trigger."""
+"""clatter — FastAPI web UI + agent auto-trigger."""
 
 import asyncio
 import json
@@ -29,7 +29,7 @@ from session_engine import SessionEngine
 
 log = logging.getLogger(__name__)
 
-app = FastAPI(title="agentchattr")
+app = FastAPI(title="clatter")
 
 # --- globals (set by configure()) ---
 store: MessageStore | None = None
@@ -74,7 +74,7 @@ def _check_register_rate(ip: str) -> bool:
 
 # Room settings (persisted to data/settings.json)
 room_settings: dict = {
-    "title": "agentchattr",
+    "title": "clatter",
     "username": "user",
     "font": "sans",
     "channels": ["general"],
@@ -213,6 +213,8 @@ def _load_settings():
             room_settings.update(saved)
         except Exception:
             pass
+    if room_settings.get("title") in ("", "agentchattr"):
+        room_settings["title"] = "clatter"
     # Ensure "general" always exists and is first
     if "channels" not in room_settings or not room_settings["channels"]:
         room_settings["channels"] = ["general"]
@@ -1338,7 +1340,7 @@ async def websocket_endpoint(websocket: WebSocket):
             elif event.get("type") == "update_settings":
                 new = event.get("data", {})
                 if "title" in new and isinstance(new["title"], str):
-                    room_settings["title"] = new["title"].strip() or "agentchattr"
+                    room_settings["title"] = new["title"].strip() or "clatter"
                 if "username" in new and isinstance(new["username"], str):
                     room_settings["username"] = new["username"].strip() or "user"
                 if "font" in new and new["font"] in ("mono", "serif", "sans"):

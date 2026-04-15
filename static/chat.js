@@ -5060,10 +5060,11 @@ window.renderChannelRoster = renderChannelRoster;
 window.toggleRoomSidebar = toggleRoomSidebar;
 window.togglePresenceSidebar = togglePresenceSidebar;
 
-// Auto-show on first visit
+// Help stays opt-in behind the dedicated ? button.
 function initHelpTour() {
-  if (!localStorage.getItem("help_seen")) {
-    setTimeout(openHelp, 2500);
+  const helpBtn = document.getElementById("help-btn");
+  if (helpBtn) {
+    helpBtn.classList.add("help-pulse");
   }
 }
 

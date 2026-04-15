@@ -14,6 +14,11 @@ def test_index_includes_left_room_sidebar_shell():
     assert 'id="presence-panel"' in html
     assert 'id="presence-list"' in html
     assert 'id="presence-panel-toggle"' in html
+    assert '<title>clatter</title>' in html
+    assert 'id="room-title">clatter<' in html
+    assert 'Clear Chat History' in html
+    assert "Support development" not in html
+    assert 'class="header-logo"' not in html
 
 
 def test_styles_include_room_sidebar_layout():
@@ -30,3 +35,10 @@ def test_styles_include_room_sidebar_layout():
         "@media (max-width: 900px) {\n    #presence-panel {\n        display: none;"
         not in css
     )
+
+
+def test_help_tour_is_not_auto_opened_anymore():
+    js = (ROOT / "static" / "chat.js").read_text(encoding="utf-8")
+
+    assert "setTimeout(openHelp, 2500)" not in js
+    assert 'helpBtn.classList.add("help-pulse")' in js

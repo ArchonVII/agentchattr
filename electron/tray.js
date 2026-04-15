@@ -99,7 +99,7 @@ function createTray(mainWindow) {
   }
 
   trayInstance = new Tray(loadTrayIcon());
-  trayInstance.setToolTip("agentchattr");
+  trayInstance.setToolTip("clatter");
   trayInstance.setContextMenu(
     Menu.buildFromTemplate([
       {

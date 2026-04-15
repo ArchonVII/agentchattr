@@ -1,47 +1,47 @@
-/* agentchattr — dark theme / design tokens */
+/* clatter — black CRT cyberpunk design tokens */
 
 :root {
   /* --- Surfaces --- */
-  --bg: #0f0f17;
-  --bg-header: #14141f;
-  --bg-input: #1a1a2e;
-  --bg-msg: #16161f;
-  --bg-msg-hover: #1c1c2a;
-  --bg-elevated: #1e1435;
-  --bg-subtle: rgba(255, 255, 255, 0.04);
-  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg: #050806;
+  --bg-header: #070d0a;
+  --bg-input: #0a120e;
+  --bg-msg: #09110d;
+  --bg-msg-hover: #0d1813;
+  --bg-elevated: #071611;
+  --bg-subtle: rgba(0, 255, 163, 0.06);
+  --bg-overlay: rgba(0, 0, 0, 0.72);
 
   /* --- Borders --- */
-  --border: #2a2a3e;
-  --border-strong: #3a3a55;
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border: rgba(0, 255, 163, 0.16);
+  --border-strong: rgba(22, 244, 255, 0.3);
+  --border-subtle: rgba(0, 255, 163, 0.08);
 
   /* --- Text --- */
-  --text: #b8b8c8;
-  --text-dim: #6a6a80;
-  --text-system: #555570;
+  --text: #d8fff1;
+  --text-dim: #6dc8b0;
+  --text-system: #3d7d6d;
   --text-on-accent: #fff;
-  --text-muted: #cfc8ea;
+  --text-muted: #bdf7e5;
 
   /* --- Semantic colors --- */
-  --accent: #7c3aed;
-  --accent-soft: rgba(124, 58, 237, 0.15);
-  --accent-hover: rgba(124, 58, 237, 0.2);
-  --user-color: #a78bfa;
-  --system-color: #555570;
+  --accent: #00ffa3;
+  --accent-soft: rgba(0, 255, 163, 0.14);
+  --accent-hover: rgba(0, 255, 163, 0.22);
+  --user-color: #16f4ff;
+  --system-color: #3d7d6d;
 
-  --success: #34d399;
-  --success-soft: rgba(52, 211, 153, 0.2);
-  --online: #4ade80;
+  --success: #00ffa3;
+  --success-soft: rgba(0, 255, 163, 0.16);
+  --online: #00ffa3;
 
-  --danger: #ef4444;
-  --danger-soft: rgba(239, 68, 68, 0.1);
-  --error-color: #f87171;
-  --error-soft: rgba(248, 113, 113, 0.15);
+  --danger: #ff4d6d;
+  --danger-soft: rgba(255, 77, 109, 0.14);
+  --error-color: #ff6b88;
+  --error-soft: rgba(255, 107, 136, 0.16);
 
-  --warning: #fbbf24;
-  --pending: #da7756;
-  --info: #60a5fa;
+  --warning: #ffe66d;
+  --pending: #ff3cac;
+  --info: #16f4ff;
 
   /* --- Neutral tints (white alpha for dark theme) --- */
   --white-02: rgba(255, 255, 255, 0.02);
@@ -120,6 +120,7 @@ body {
   color: var(--text);
   height: 100vh;
   overflow: hidden;
+  text-shadow: 0 0 10px rgba(0, 255, 163, 0.05);
 }
 
 body,
@@ -151,6 +152,29 @@ body.high-contrast {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  position: relative;
+  background:
+    radial-gradient(circle at top center, rgba(22, 244, 255, 0.08), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(255, 60, 172, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(0, 255, 163, 0.04), transparent 16%),
+    var(--bg);
+}
+
+#app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      rgba(255, 255, 255, 0.02) 0,
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  opacity: 0.12;
+  mix-blend-mode: screen;
+  z-index: 0;
 }
 
 /* --- Header --- */
@@ -162,7 +186,9 @@ header {
   padding: 12px 16px;
   background: var(--bg-header);
   border-bottom: none;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 1px 0 rgba(0, 255, 163, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.45);
   flex-shrink: 0;
   z-index: 2;
 }
@@ -173,22 +199,17 @@ header {
   gap: 10px;
 }
 
-.header-logo {
-  width: 24px;
-  height: 24px;
-  max-width: 24px;
-  max-height: 24px;
-  border-radius: 5px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
 header h1 {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
   color: var(--text);
   margin: 0;
   line-height: 1;
+  text-shadow:
+    0 0 10px rgba(0, 255, 163, 0.22),
+    0 0 22px rgba(22, 244, 255, 0.08);
 }
 
 .discord-pill {
@@ -222,8 +243,8 @@ header h1 {
 }
 
 .discord-pill:hover {
-  background: rgba(88, 101, 242, 0.25);
-  color: #7289da;
+  background: rgba(22, 244, 255, 0.14);
+  color: var(--info);
 }
 
 .subtitle {
@@ -375,12 +396,13 @@ header h1 {
 .settings-btn:hover {
   color: var(--text);
   border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 255, 163, 0.08);
 }
 
 .settings-btn.active {
   color: var(--text);
   border-color: var(--accent);
-  background: rgba(124, 58, 237, 0.12);
+  background: rgba(0, 255, 163, 0.1);
 }
 
 /* --- Shared close / dismiss button --- */
@@ -605,6 +627,7 @@ header h1 {
 
 .settings-danger:hover {
   background: var(--error-soft);
+  box-shadow: 0 0 14px rgba(255, 77, 109, 0.12);
 }
 
 /* Right-side pills in channel bar */
@@ -618,42 +641,6 @@ header h1 {
   overflow: hidden;
   container-type: inline-size;
 }
-/* Collapse support label to heart-only when the right column gets tight */
-@container (max-width: 170px) {
-  .support-label {
-    display: none;
-  }
-  .channel-support {
-    padding: 3px 6px;
-  }
-}
-
-.channel-support {
-  color: #f472b6;
-  font-size: 11px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  padding: 3px 10px;
-  border: 1px solid rgba(244, 114, 182, 0.35);
-  border-radius: 10px;
-  background: rgba(244, 114, 182, 0.06);
-  transition:
-    background 0.15s,
-    box-shadow 0.15s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.channel-support.compact {
-  padding: 3px 6px;
-}
-
-.channel-support:hover {
-  background: rgba(244, 114, 182, 0.14);
-  box-shadow: 0 0 8px rgba(244, 114, 182, 0.15);
-}
-
 /* Update available pill */
 .update-pill {
   display: inline-flex;
@@ -665,9 +652,9 @@ header h1 {
   text-decoration: none;
   white-space: nowrap;
   padding: 3px 10px;
-  border: 1px solid color-mix(in srgb, var(--info) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info) 45%, transparent);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--info) 6%, transparent);
+  background: color-mix(in srgb, var(--info) 8%, transparent);
   transition:
     background 0.15s,
     box-shadow 0.15s;
@@ -710,10 +697,10 @@ header h1 {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 3px 10px;
-  border: 1px solid rgba(218, 119, 86, 0.22);
+  border: 1px solid rgba(255, 60, 172, 0.24);
   border-radius: 10px;
-  background: rgba(218, 119, 86, 0.08);
-  color: #ffd8cb;
+  background: rgba(255, 60, 172, 0.08);
+  color: #ffd3ef;
   font-family: "Cascadia Code", Consolas, "Courier New", monospace;
   font-size: 11px;
   font-weight: 600;
@@ -740,8 +727,8 @@ header h1 {
   gap: 10px;
   padding: 14px 10px 12px;
   background:
-    linear-gradient(180deg, rgba(124, 58, 237, 0.08), rgba(124, 58, 237, 0)),
-    color-mix(in srgb, var(--bg-header) 92%, black 8%);
+    linear-gradient(180deg, rgba(0, 255, 163, 0.08), rgba(0, 255, 163, 0)),
+    color-mix(in srgb, var(--bg-header) 95%, black 5%);
   border-right: 1px solid var(--border);
   overflow: hidden;
 }
@@ -796,7 +783,7 @@ header h1 {
   border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
   background: linear-gradient(
     180deg,
-    rgba(124, 58, 237, 0.08),
+    rgba(0, 255, 163, 0.08),
     rgba(255, 255, 255, 0.02)
   );
 }
@@ -828,8 +815,8 @@ header h1 {
   justify-content: center;
   flex-shrink: 0;
   color: var(--accent);
-  background: rgba(124, 58, 237, 0.14);
-  border: 1px solid rgba(124, 58, 237, 0.2);
+  background: rgba(0, 255, 163, 0.1);
+  border: 1px solid rgba(0, 255, 163, 0.2);
 }
 
 .room-nav-details {
@@ -905,7 +892,9 @@ header h1 {
 .room-channel-item.active {
   background: color-mix(in srgb, var(--user-color) 13%, var(--bg-header));
   color: var(--user-color);
-  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.16);
+  box-shadow:
+    inset 0 0 0 1px rgba(22, 244, 255, 0.18),
+    0 0 12px rgba(22, 244, 255, 0.06);
 }
 
 .room-channel-info {
@@ -948,7 +937,7 @@ header h1 {
 }
 
 .room-channel-item.room-channel-add:hover {
-  background: rgba(124, 58, 237, 0.1);
+  background: rgba(0, 255, 163, 0.1);
 }
 
 .room-channel-add .room-channel-hash {
@@ -4891,19 +4880,19 @@ footer {
   overflow: visible;
 }
 .hg-svg-layer line {
-  stroke: rgba(124, 58, 237, 0.35);
+  stroke: rgba(0, 255, 163, 0.35);
   stroke-width: 1;
   fill: none;
 }
 .hg-svg-layer circle.hg-arrow-dot {
-  fill: rgba(124, 58, 237, 0.5);
+  fill: rgba(0, 255, 163, 0.5);
 }
 
 /* Spotlight rings on anchor elements (anchored mode only) */
 .hg-spotlight {
   position: fixed;
   z-index: 10000;
-  border: 1.5px solid rgba(124, 58, 237, 0.5);
+  border: 1.5px solid rgba(0, 255, 163, 0.5);
   border-radius: 8px;
   pointer-events: none;
   animation: hgSpotPulse 2s ease-in-out infinite;
@@ -4914,7 +4903,7 @@ footer {
     border-color: rgba(124, 58, 237, 0.5);
   }
   50% {
-    border-color: rgba(124, 58, 237, 0.8);
+    border-color: rgba(0, 255, 163, 0.8);
   }
 }
 
@@ -5479,7 +5468,7 @@ footer {
     box-shadow: none;
   }
   50% {
-    box-shadow: 0 0 8px 2px var(--accent);
+    box-shadow: 0 0 10px 2px var(--accent);
   }
 }
 .help-pulse {

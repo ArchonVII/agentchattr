@@ -247,8 +247,8 @@ function createWindow() {
     y: bounds.y,
     titleBarStyle: "hidden",
     titleBarOverlay: {
-      color: "#1a1a2e",
-      symbolColor: "#e0e0e0",
+      color: "#070d0a",
+      symbolColor: "#d8fff1",
       height: 36,
     },
     webPreferences: {
@@ -303,7 +303,7 @@ function waitForServerPort(
 }
 
 function showStartupError(message) {
-  dialog.showErrorBox("agentchattr desktop", message);
+  dialog.showErrorBox("clatter desktop", message);
 }
 
 async function handleReadySignal() {
