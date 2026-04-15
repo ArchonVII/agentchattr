@@ -1,5 +1,8 @@
 # TODO
 
+- Add theme settings panel with colour override editor and custom theme save/export.
+- Add additional theme adapters (XP.css, TuiCss, Arwes/cyberpunk).
+- Wire boot sequences to a "new terminal with theme" flow.
 - Visually verify the two-column ports lattice layout and user-port classification with real dev servers running.
 - Decide whether the Windows desktop smoke coverage should remain local-only or move into CI.
 - Add browser status/readback primitives if agents need more than open/dock/pop-out URL control.

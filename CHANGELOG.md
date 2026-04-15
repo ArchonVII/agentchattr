@@ -4,6 +4,20 @@
 
 ### Added
 
+- App-wide CSS theme system with adapter stylesheets for NES.css (8-bit pixel), 98.css (Windows 98), system.css (Classic Mac System 6), and Commodore 64.
+- CSS custom property foundation (30 variables) replacing all hardcoded colours in the renderer.
+- Tab bar theme picker dropdown for quick app theme switching.
+- Theme persistence via electron-store — restores on app restart.
+- IPC broadcast for theme sync across popped-out windows.
+- NES and System 6 terminal themes to complement their app-wide counterparts.
+- Terminal theme bridging — new terminals default to the app theme's recommended terminal theme (e.g., Win98 → MS-DOS, C64 → C64).
+- Bundled fonts: Press Start 2P, C64 Pro Mono, PrintChar21.
+
+### Fixed
+
+- Tray test expected stale app name 'agentchattr' instead of 'clatter'.
+- C64 and Apple IIe terminal theme font file references pointed to non-existent files.
+
 - Interactive File Links: Terminal output now identifies file paths and line numbers (e.g., src/main.js:42) as clickable links that open in VS Code with line-level accuracy, falling back to the system default editor.
 - Multi-Layout Terminal View: Introduced dynamic Tabs, Grid, and Floating layout modes for concurrent terminal sessions.
 - Floating Window Manager: Implemented draggable, resizable, and overlapping terminal windows with intelligent stacking (z-index) and focus management.
