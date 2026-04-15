@@ -127,6 +127,14 @@
       "pattern": "(\\[\\d+/\\d+\\]|step\\s+\\d+\\s+of\\s+\\d+|\\(\\d+/\\d+\\))",
       "enabled": true,
       "priority": 3
+    },
+    {
+      "id": "builtin-bridge-test",
+      "name": "Bridge test phrase",
+      "category": "completion",
+      "pattern": "BRIDGE_TEST",
+      "enabled": true,
+      "priority": 1
     }
   ]
 }
