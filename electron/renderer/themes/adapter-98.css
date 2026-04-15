@@ -1,0 +1,157 @@
+/*
+ * adapter-98.css — Windows 98 theme adapter.
+ *
+ * Imports 98.css and maps its 3D bevel aesthetic onto the app's DOM.
+ * Source: https://jdan.github.io/98.css/
+ */
+
+@import "../../node_modules/98.css/style.css";
+
+/* ── Variable overrides ──────────────────────────────────────────────── */
+
+:root[data-theme="win98"] {
+  --bg-app: #008080; /* teal desktop — source: Windows 98 default */
+  --bg-surface: #c0c0c0;
+  --bg-elevated: #c0c0c0;
+  --bg-deep: #c0c0c0;
+  --bg-sunken: #bfbfbf;
+
+  --fg-primary: #000;
+  --fg-secondary: #222;
+  --fg-muted: #444;
+  --fg-dim: #666;
+  --fg-faint: #888;
+
+  --accent: #000080; /* navy — source: Windows 98 title bar */
+  --accent-hover-bg: rgba(0, 0, 128, 0.1);
+  --accent-subtle: rgba(0, 0, 128, 0.08);
+  --accent-danger: #ff0000;
+  --accent-success: #008000;
+
+  --border: #888;
+  --border-strong: #444;
+  --border-grid: #888;
+
+  --font-ui: "Pixelated MS Sans Serif", Arial, sans-serif;
+  --font-mono: "Consolas", "Courier New", monospace;
+  --font-size-base: 11px;
+
+  --shadow-menu: none;
+  --shadow-float: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: light;
+}
+
+/* ── Component overrides ─────────────────────────────────────────────── */
+
+/* 3D bevel on all buttons — source: 98.css box-shadow pattern */
+[data-theme="win98"] .macro-btn,
+[data-theme="win98"] .terminal-toolbar-btn,
+[data-theme="win98"] .terminal-exited-banner button,
+[data-theme="win98"] .browser-pane-button,
+[data-theme="win98"] .quick-launch-folder,
+[data-theme="win98"] .quick-launch-agent-btn {
+  background: #c0c0c0;
+  color: #000;
+  border: none;
+  box-shadow:
+    inset -1px -1px 0 #0a0a0a,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf;
+}
+
+[data-theme="win98"] .macro-btn:hover,
+[data-theme="win98"] .terminal-toolbar-btn:hover {
+  background: #d4d4d4;
+}
+
+[data-theme="win98"] .macro-btn:active,
+[data-theme="win98"] .terminal-toolbar-btn:active {
+  box-shadow:
+    inset 1px 1px 0 #0a0a0a,
+    inset -1px -1px 0 #ffffff,
+    inset 2px 2px 0 #808080,
+    inset -2px -2px 0 #dfdfdf;
+}
+
+/* Tab bar — title bar blue */
+[data-theme="win98"] .tab-bar {
+  background: linear-gradient(
+    90deg,
+    #000080,
+    #1084d0
+  ); /* source: Windows 98 active title bar gradient */
+  border-bottom: 2px solid #808080;
+}
+
+[data-theme="win98"] .tab-button {
+  color: #c0c0c0;
+}
+
+[data-theme="win98"] .tab-button.active {
+  color: #fff;
+  font-weight: bold;
+  border-bottom-color: #fff;
+}
+
+/* Sunken panels for tables and inputs — source: 98.css sunken-panel */
+[data-theme="win98"] .ports-table-wrap,
+[data-theme="win98"] .ports-search,
+[data-theme="win98"] .ports-filter-select {
+  box-shadow:
+    inset -1px -1px 0 #dfdfdf,
+    inset 1px 1px 0 #808080,
+    inset -2px -2px 0 #ffffff,
+    inset 2px 2px 0 #0a0a0a;
+  background: #fff;
+  color: #000;
+}
+
+/* Active tabs — raised look */
+[data-theme="win98"] .terminal-tab.active {
+  color: #000;
+  font-weight: bold;
+  border-bottom: 2px solid #000080;
+}
+
+/* Kill button — red 98-style */
+[data-theme="win98"] .kill-button {
+  background: #c0c0c0;
+  color: #ff0000;
+  border: none;
+  box-shadow:
+    inset -1px -1px 0 #0a0a0a,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf;
+}
+
+/* Browse button — green 98-style */
+[data-theme="win98"] .browse-button {
+  background: #c0c0c0;
+  color: #008000;
+  border: none;
+  box-shadow:
+    inset -1px -1px 0 #0a0a0a,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf;
+}
+
+/* Terminal tab strip — raised surface */
+[data-theme="win98"] .terminals-tab-strip {
+  background: #c0c0c0;
+  border-bottom: 2px solid;
+  border-image: linear-gradient(to bottom, #dfdfdf, #808080) 1;
+}
+
+/* Quick launch bar — sunken */
+[data-theme="win98"] #quick-launch-bar {
+  background: #c0c0c0;
+  box-shadow:
+    inset -1px -1px 0 #dfdfdf,
+    inset 1px 1px 0 #808080;
+}

@@ -1,0 +1,152 @@
+/*
+ * adapter-c64.css — Commodore 64 theme adapter.
+ *
+ * Hand-rolled — no external library. Applies the C64 blue/purple palette
+ * and PETSCII-inspired chrome to the entire app shell.
+ * Colour source: https://www.c64-wiki.com/wiki/Color
+ */
+
+@font-face {
+  font-family: "C64_Pro_Mono";
+  src: url("../../assets/fonts/C64_Pro_Mono-STYLE.woff") format("woff");
+  font-display: swap;
+}
+
+/* ── Variable overrides ──────────────────────────────────────────────── */
+
+:root[data-theme="c64"] {
+  --bg-app: #352879; /* C64 colour 6 — blue (screen default) */
+  --bg-surface: #2a2060;
+  --bg-elevated: #40309a;
+  --bg-deep: #1e1850;
+  --bg-sunken: #181245;
+
+  --fg-primary: #6c5eb5; /* C64 colour 14 — light blue */
+  --fg-secondary: #9a8ed0;
+  --fg-muted: #5a4e99;
+  --fg-dim: #4a3e88;
+  --fg-faint: #3a2e77;
+
+  --accent: #6c5eb5;
+  --accent-hover-bg: rgba(108, 94, 181, 0.2);
+  --accent-subtle: rgba(108, 94, 181, 0.1);
+  --accent-danger: #68372b; /* C64 colour 2 — red */
+  --accent-success: #70a04b; /* C64 colour 5 — green */
+
+  --border: #6c5eb5;
+  --border-strong: #9a8ed0;
+  --border-grid: #6c5eb5;
+
+  --font-ui: "C64_Pro_Mono", monospace;
+  --font-mono: "C64_Pro_Mono", monospace;
+  --font-size-base: 14px;
+
+  --shadow-menu: none;
+  --shadow-float: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}
+
+/* ── Component overrides ─────────────────────────────────────────────── */
+
+/* PETSCII-style pixel borders — source: C64 screen border aesthetic */
+[data-theme="c64"] .macro-btn,
+[data-theme="c64"] .terminal-toolbar-btn,
+[data-theme="c64"] .terminal-exited-banner button,
+[data-theme="c64"] .browser-pane-button,
+[data-theme="c64"] .quick-launch-folder,
+[data-theme="c64"] .quick-launch-agent-btn {
+  background: #352879;
+  color: #6c5eb5;
+  border: 2px solid #6c5eb5;
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow:
+    inset -2px -2px 0 rgba(0, 0, 0, 0.3),
+    inset 2px 2px 0 rgba(108, 94, 181, 0.2);
+}
+
+[data-theme="c64"] .macro-btn:hover,
+[data-theme="c64"] .terminal-toolbar-btn:hover {
+  background: #6c5eb5;
+  color: #352879;
+}
+
+/* Tab bar — deep C64 blue */
+[data-theme="c64"] .tab-bar {
+  background: #1e1850;
+  border-bottom: 4px solid #6c5eb5; /* thick border like C64 screen edge */
+}
+
+[data-theme="c64"] .tab-button {
+  color: #5a4e99;
+  text-transform: uppercase;
+}
+
+[data-theme="c64"] .tab-button.active {
+  color: #6c5eb5;
+  border-bottom: 4px solid #6c5eb5;
+}
+
+/* Table and panels — bordered C64 style */
+[data-theme="c64"] .ports-table-wrap,
+[data-theme="c64"] .ports-empty,
+[data-theme="c64"] .ports-notice {
+  border: 2px solid #6c5eb5;
+  background: #352879;
+}
+
+[data-theme="c64"] .ports-table thead {
+  background: #2a2060;
+}
+
+/* Inputs — C64 blue with light blue border */
+[data-theme="c64"] .ports-search,
+[data-theme="c64"] .ports-filter-select {
+  background: #1e1850;
+  color: #6c5eb5;
+  border: 2px solid #6c5eb5;
+}
+
+/* Kill button — C64 red */
+[data-theme="c64"] .kill-button {
+  background: #352879;
+  color: #68372b;
+  border: 2px solid #68372b;
+}
+
+/* Browse button — C64 green */
+[data-theme="c64"] .browse-button {
+  background: #352879;
+  color: #70a04b;
+  border: 2px solid #70a04b;
+}
+
+/* Terminal tab strip */
+[data-theme="c64"] .terminals-tab-strip {
+  background: #2a2060;
+  border-bottom: 2px solid #6c5eb5;
+}
+
+[data-theme="c64"] .terminal-tab.active {
+  color: #6c5eb5;
+  border-bottom: 4px solid #6c5eb5;
+}
+
+/* Quick launch */
+[data-theme="c64"] #quick-launch-bar {
+  background: #181245;
+  border-bottom: 2px solid #6c5eb5;
+}
+
+/* All text uppercase for C64 authentic feel */
+[data-theme="c64"] .tab-button,
+[data-theme="c64"] .terminal-tab,
+[data-theme="c64"] .arsenal-item,
+[data-theme="c64"] .arsenal-cat-title,
+[data-theme="c64"] .ports-table th {
+  text-transform: uppercase;
+}

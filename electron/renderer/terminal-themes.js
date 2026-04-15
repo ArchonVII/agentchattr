@@ -320,7 +320,7 @@ const THEMES = {
     },
     font: {
       family: "C64_Pro_Mono",
-      file: "C64_Pro_Mono.woff", // NOTE: not yet present in assets/fonts/
+      file: "C64_Pro_Mono-STYLE.woff", // bundled in assets/fonts/ — source: Style (style64.org)
       fallback: "Web437_IBM_VGA_9x16", // fallback also needs loading
       size: 16, // px; matches C64 8×8 character cell scaled ×2 — user instruction
     },
@@ -449,7 +449,7 @@ const THEMES = {
     },
     font: {
       family: "PrintChar21",
-      file: "PrintChar21.woff", // NOTE: not yet present in assets/fonts/
+      file: "PrintChar21.woff", // bundled in assets/fonts/ — source: Online Web Fonts
       fallback: "Web437_IBM_VGA_9x16",
       size: 16, // px — user instruction
     },

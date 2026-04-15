@@ -1,0 +1,97 @@
+/*
+ * adapter-nes.css — NES.css (8-bit pixel) theme adapter.
+ *
+ * Imports NES.css and maps its pixelated aesthetic onto the app's DOM.
+ * Source: https://nostalgic-css.github.io/NES.css/
+ */
+
+@import "../../node_modules/nes.css/css/nes.min.css";
+
+@font-face {
+  font-family: "Press Start 2P";
+  src: url("../../assets/fonts/PressStart2P-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+/* ── Variable overrides ──────────────────────────────────────────────── */
+
+:root[data-theme="nes"] {
+  --bg-app: #212529;
+  --bg-surface: #212529;
+  --bg-elevated: #2a2e33;
+  --bg-deep: #1a1d21;
+  --bg-sunken: #16191c;
+
+  --fg-primary: #fff;
+  --fg-secondary: #c0c0c0;
+  --fg-muted: #9a9a9a;
+  --fg-dim: #6a6a6a;
+  --fg-faint: #4a4a4a;
+
+  --accent: #e76e55;
+  --accent-hover-bg: rgba(231, 110, 85, 0.15);
+  --accent-subtle: rgba(231, 110, 85, 0.1);
+  --accent-danger: #ce372b;
+  --accent-success: #4aa52e;
+
+  --border: #4a4a4a;
+  --border-strong: #6a6a6a;
+  --border-grid: #4a4a4a;
+
+  --font-ui: "Press Start 2P", monospace;
+  --font-mono: "Press Start 2P", monospace;
+  --font-size-base: 10px; /* Press Start 2P renders large — scale down */
+
+  --shadow-menu: none;
+  --shadow-float: none; /* NES: no drop shadows — pixel aesthetic */
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}
+
+/* ── Component overrides ─────────────────────────────────────────────── */
+
+/* NES-style pixel borders on all buttons — source: NES.css box-shadow pattern */
+[data-theme="nes"] .macro-btn,
+[data-theme="nes"] .terminal-toolbar-btn,
+[data-theme="nes"] .terminal-exited-banner button,
+[data-theme="nes"] .browser-pane-button,
+[data-theme="nes"] .quick-launch-folder,
+[data-theme="nes"] .quick-launch-agent-btn {
+  border: none;
+  box-shadow:
+    inset -4px -4px 0px 0px #adafbc,
+    inset 4px 4px 0px 0px #adafbc;
+  image-rendering: pixelated;
+}
+
+[data-theme="nes"] .macro-btn:hover,
+[data-theme="nes"] .terminal-toolbar-btn:hover {
+  box-shadow:
+    inset -4px -4px 0px 0px var(--accent),
+    inset 4px 4px 0px 0px var(--accent);
+}
+
+/* Pixel borders on panels — source: NES.css container pattern */
+[data-theme="nes"] .ports-table-wrap,
+[data-theme="nes"] .ports-empty,
+[data-theme="nes"] .ports-notice {
+  border: 4px solid #fff;
+  box-shadow: inset -4px -4px 0px 0px #adafbc;
+}
+
+/* Tab bar pixel underline instead of smooth line */
+[data-theme="nes"] .tab-button.active {
+  border-bottom: 4px solid var(--accent);
+}
+
+[data-theme="nes"] .terminal-tab.active {
+  border-bottom: 4px solid var(--accent);
+}
+
+/* Table headers — pixel style */
+[data-theme="nes"] .ports-table th {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}

@@ -1,0 +1,159 @@
+/*
+ * adapter-system.css — Classic Mac System 6 theme adapter.
+ *
+ * Imports system.css and maps its 1-bit black & white aesthetic onto
+ * the app's DOM.
+ * Source: https://sakofchit.github.io/system.css/
+ */
+
+@import "../../node_modules/@sakun/system.css/style.css";
+
+/* ── Variable overrides ──────────────────────────────────────────────── */
+
+:root[data-theme="system6"] {
+  --bg-app: #a8a8a8; /* System 6 grey desktop — source: Apple HIG (1987) */
+  --bg-surface: #fff;
+  --bg-elevated: #fff;
+  --bg-deep: #fff;
+  --bg-sunken: #e8e8e8;
+
+  --fg-primary: #000;
+  --fg-secondary: #222;
+  --fg-muted: #555;
+  --fg-dim: #777;
+  --fg-faint: #999;
+
+  --accent: #000;
+  --accent-hover-bg: rgba(0, 0, 0, 0.08);
+  --accent-subtle: rgba(0, 0, 0, 0.05);
+  --accent-danger: #000;
+  --accent-success: #000;
+
+  --border: #000;
+  --border-strong: #000;
+  --border-grid: #000;
+
+  --font-ui:
+    "Chicago_12", "Chicago", Geneva, "Helvetica Neue", Helvetica, sans-serif;
+  --font-mono: "Monaco", "Courier New", monospace;
+  --font-size-base: 12px;
+
+  --shadow-menu: 2px 2px 0 #000; /* Mac classic hard shadow — source: Apple HIG */
+  --shadow-float: 2px 2px 0 #000;
+  --radius: 8px; /* system.css uses rounded button corners — source: Apple HIG */
+  --radius-lg: 8px;
+  --radius-xl: 2px;
+  --color-scheme: light;
+}
+
+/* ── Component overrides ─────────────────────────────────────────────── */
+
+/* Mac-style buttons — solid black border, white fill */
+[data-theme="system6"] .macro-btn,
+[data-theme="system6"] .terminal-toolbar-btn,
+[data-theme="system6"] .terminal-exited-banner button,
+[data-theme="system6"] .browser-pane-button,
+[data-theme="system6"] .quick-launch-folder,
+[data-theme="system6"] .quick-launch-agent-btn {
+  background: #fff;
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+[data-theme="system6"] .macro-btn:hover,
+[data-theme="system6"] .terminal-toolbar-btn:hover {
+  background: #000;
+  color: #fff;
+}
+
+/* Tab bar — white menu bar with black bottom border */
+[data-theme="system6"] .tab-bar {
+  background: #fff;
+  border-bottom: 2px solid #000;
+}
+
+[data-theme="system6"] .tab-button {
+  color: #000;
+  font-weight: bold;
+}
+
+[data-theme="system6"] .tab-button.active {
+  color: #fff;
+  background: #000;
+  border-bottom-color: #000;
+}
+
+/* Panels — white with black borders */
+[data-theme="system6"] .ports-table-wrap,
+[data-theme="system6"] .ports-empty,
+[data-theme="system6"] .ports-notice {
+  border: 2px solid #000;
+  background: #fff;
+  box-shadow: 2px 2px 0 #000;
+}
+
+/* Table header — black bg, white text (inverted bar) */
+[data-theme="system6"] .ports-table thead {
+  background: #000;
+}
+
+[data-theme="system6"] .ports-table th {
+  color: #fff;
+}
+
+/* Inputs — sunken with single pixel border */
+[data-theme="system6"] .ports-search,
+[data-theme="system6"] .ports-filter-select {
+  background: #fff;
+  color: #000;
+  border: 1px solid #000;
+}
+
+/* Terminal tabs — Chicago font, inverted active state */
+[data-theme="system6"] .terminal-tab.active {
+  background: #000;
+  color: #fff;
+  border-bottom-color: #000;
+}
+
+/* Quick launch — grey like the desktop */
+[data-theme="system6"] #quick-launch-bar {
+  background: #e8e8e8;
+  border-bottom: 2px solid #000;
+}
+
+/* Kill button — inverted danger */
+[data-theme="system6"] .kill-button {
+  background: #fff;
+  color: #000;
+  border: 2px solid #000;
+}
+
+[data-theme="system6"] .kill-button:hover {
+  background: #000;
+  color: #fff;
+}
+
+/* Browse button — same treatment */
+[data-theme="system6"] .browse-button {
+  background: #fff;
+  color: #000;
+  border: 2px solid #000;
+}
+
+[data-theme="system6"] .browse-button:hover {
+  background: #000;
+  color: #fff;
+}
+
+/* Mac-style selection — invert, no colour */
+[data-theme="system6"] .ports-table tbody tr:hover {
+  background: #000;
+  color: #fff;
+}
+
+[data-theme="system6"] .ports-table tbody tr:hover td {
+  color: #fff;
+}

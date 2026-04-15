@@ -1,14 +1,21 @@
 "use strict";
 
 /**
- * theme-registry.js — Metadata for all available app-wide themes.
+ * theme-registry.js — App-shell theme catalogue.
  *
- * Each entry describes a theme's identity, adapter CSS path, font
- * requirements, and preview colours for the settings panel.
+ * Each entry describes an app-wide visual theme applied via CSS custom
+ * properties in base.css.  Adapters are CSS files in the themes/ directory
+ * that override the default variables via :root[data-theme="<id>"] selectors.
  *
- * Adding a new theme = adding one entry here + one adapter CSS file.
+ * Fields:
+ *   id        {string}  — matches data-theme attribute value
+ *   name      {string}  — human-readable label shown in the picker
+ *   era       {string|null} — optional era label (e.g. "1984") for retro themes
+ *   adapter   {string|null} — CSS filename relative to themes/ directory, or null
+ *   font      {{ family, file, format }|null} — optional font to load
  */
 
+/** @type {Array<{id:string, name:string, era:string|null, adapter:string|null, font:object|null}>} */
 const APP_THEMES = [
   {
     id: "default",
@@ -60,21 +67,25 @@ const APP_THEMES = [
   },
 ];
 
-/**
- * Get a theme entry by id. Falls back to 'default'.
- * @param {string} id
- * @returns {object}
- */
-function getAppTheme(id) {
-  return APP_THEMES.find((t) => t.id === id) || APP_THEMES[0];
-}
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 /**
- * Get all theme entries.
- * @returns {object[]}
+ * Return all registered app themes.
+ * @returns {typeof APP_THEMES}
  */
 function getAllAppThemes() {
   return APP_THEMES;
 }
 
-module.exports = { getAppTheme, getAllAppThemes };
+/**
+ * Return a single theme by id, falling back to the default theme if not found.
+ * @param {string} id
+ * @returns {typeof APP_THEMES[0]}
+ */
+function getAppTheme(id) {
+  return APP_THEMES.find((t) => t.id === id) ?? APP_THEMES[0];
+}
+
+module.exports = { getAllAppThemes, getAppTheme };

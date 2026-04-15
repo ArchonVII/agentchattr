@@ -48,6 +48,15 @@ function registerIpcHandlers() {
     });
   });
 
+  // Theme broadcast — sync app theme across all windows
+  ipcMain.on("app-theme-changed", (event, themeId) => {
+    BrowserWindow.getAllWindows().forEach((win) => {
+      if (win.webContents !== event.sender) {
+        win.webContents.send("app-theme-changed", themeId);
+      }
+    });
+  });
+
   // H-6 fix: validate PID before calling process.kill()
   ipcMain.handle("kill-process", async (_event, pid) => {
     const safePid = Number.isInteger(pid) && pid > 0 ? pid : null;
