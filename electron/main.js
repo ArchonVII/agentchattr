@@ -5,6 +5,7 @@ const path = require("path");
 const net = require("net");
 const { pathToFileURL } = require("url");
 const { openBrowserWindow } = require("./browser-window");
+const { getAppTheme } = require("./renderer/themes/theme-registry");
 
 // --- Constants (CASK: Constants first) ---
 const REPO_ROOT = path.resolve(__dirname, "..");
@@ -48,13 +49,26 @@ function registerIpcHandlers() {
     });
   });
 
-  // Theme broadcast — sync app theme across all windows
+  // Theme broadcast — sync app theme across all windows and update title bar
   ipcMain.on("app-theme-changed", (event, themeId) => {
     BrowserWindow.getAllWindows().forEach((win) => {
       if (win.webContents !== event.sender) {
         win.webContents.send("app-theme-changed", themeId);
       }
     });
+
+    // Update title bar overlay colour to match the new theme
+    const theme = getAppTheme(themeId);
+    if (theme.preview && mainWindow && !mainWindow.isDestroyed()) {
+      try {
+        mainWindow.setTitleBarOverlay({
+          color: theme.preview.bg,
+          symbolColor: theme.preview.fg,
+        });
+      } catch {
+        // setTitleBarOverlay not supported on all platforms — non-fatal
+      }
+    }
   });
 
   // H-6 fix: validate PID before calling process.kill()
@@ -249,6 +263,14 @@ function createWindow() {
     ? preferences.get("windowBounds")
     : { width: 1200, height: 800 };
 
+  // Read persisted theme to set initial title bar overlay colour
+  const storedThemeId = preferences
+    ? preferences.get("appTheme") || "default"
+    : "default";
+  const initialTheme = getAppTheme(storedThemeId);
+  const overlayBg = initialTheme.preview?.bg || "#070d0a";
+  const overlayFg = initialTheme.preview?.fg || "#d8fff1";
+
   mainWindow = new BrowserWindow({
     width: bounds.width || 1200,
     height: bounds.height || 800,
@@ -256,8 +278,8 @@ function createWindow() {
     y: bounds.y,
     titleBarStyle: "hidden",
     titleBarOverlay: {
-      color: "#070d0a",
-      symbolColor: "#d8fff1",
+      color: overlayBg,
+      symbolColor: overlayFg,
       height: 36,
     },
     webPreferences: {
