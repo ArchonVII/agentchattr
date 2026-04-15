@@ -1207,6 +1207,6 @@ window.Terminals = {
   focus: focusTerminal,
   requestNew: requestNewTerminal,
   toggleArsenal: toggleArsenal,
-  toggleTheme: toggleTheme,
+  applyTheme: applyTheme,
   toggleLayout: toggleLayout,
 };
