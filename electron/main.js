@@ -405,9 +405,29 @@ function shutdownServer() {
 
 function startServer(pythonPath) {
   serverExited = false;
+
+  // Generate fresh theme snapshot before Python boots.
+  // Source: CSS-to-ANSI spec Section 7.1.
+  try {
+    const { execFileSync } = require("child_process");
+    execFileSync("node", ["scripts/generate-theme-snapshot.js"], {
+      cwd: REPO_ROOT,
+      timeout: 5000,
+    });
+  } catch (err) {
+    console.warn("Theme snapshot generation failed (non-fatal):", err.message);
+  }
+
+  // Pass the active theme to Python via environment variable.
+  // Source: CSS-to-ANSI spec Section 7.1.
+  const currentAppThemeId = preferences
+    ? preferences.get("appTheme") || "default"
+    : "default";
+
   serverProcess = spawn(pythonPath, ["run.py"], {
     cwd: REPO_ROOT,
     stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, AGENTCHATTR_THEME: currentAppThemeId },
   });
 
   serverProcess.stdout.on("data", (chunk) =>
