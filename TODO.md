@@ -1,8 +1,12 @@
 # TODO
 
 - Add theme settings panel with colour override editor and custom theme save/export.
-- Add additional theme adapters (XP.css, TuiCss, Arwes/cyberpunk).
+- Add additional theme adapters (XP.css, TuiCss, Arwes/cyberpunk) — update ERA_META in generator when adding.
 - Wire boot sequences to a "new terminal with theme" flow.
+- TUI dashboard v2: live log streaming from Python server via WebSocket or SSE.
+- TUI dashboard: baud_rate effect — simulate slow text rendering for retro themes.
+- TUI dashboard: scanline rendering via alternating dim rows for CRT themes.
+- Add watcher rule for `.bat` errors ("could not be loaded") to render as themed error panels in TUI.
 - Visually verify the two-column ports lattice layout and user-port classification with real dev servers running.
 - Decide whether the Windows desktop smoke coverage should remain local-only or move into CI.
 - Add browser status/readback primitives if agents need more than open/dock/pop-out URL control.

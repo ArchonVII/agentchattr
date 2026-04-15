@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-04-15
+
+### Added
+
+- CSS-to-ANSI Translation Layer: build-time theme snapshot generator (`scripts/generate-theme-snapshot.js`) reads CSS variables, ANSI palettes, and era metadata from the Electron theme system into `data/theme_snapshot.json`.
+- Python ThemeManager (`theme_manager.py`): loads snapshot, builds Rich Theme objects, exposes box style, error icon, banner font, and effects per theme.
+- Python themed console helpers (`theme_console.py`): `render_panel`, `render_error` (with era-appropriate icons), `render_banner` (FIGlet ASCII art), `render_security_warning`.
+- Ink TUI dashboard (`tui/dashboard.jsx`): multi-panel terminal UI with Status, Agents, and Logs panels, styled from the theme snapshot with per-theme border styles.
+- TUI theme context module (`tui/theme.js`): React context provider with Chalk palette helpers, error icons, and spinner type mapping.
+- MacWindow Ink component (`tui/components/MacWindow.jsx`): reusable themed bordered-box component.
+- `GET /api/theme` endpoint for TUI and external consumers.
+- Era metadata in theme snapshot: `bannerFont` (FIGlet), `glyphSet`, `effects` (scanlines, flicker, baud rate, chromatic aberration), `loaderStyle`, `errorIcon`, `focusIndicator`.
+
+### Changed
+
+- All `print()` calls in `run.py`, `mcp_proxy.py`, `config_loader.py` replaced with themed Rich output.
+- Server startup banner now renders as a FIGlet ASCII art header inside a themed Rich panel.
+- Logging now uses `RichHandler` for coloured log levels and rich tracebacks.
+- Electron startup generates a fresh theme snapshot before spawning the Python server and passes the active theme via `AGENTCHATTR_THEME` env var.
+
 ## 2026-04-14
 
 ### Added
