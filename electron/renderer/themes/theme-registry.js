@@ -23,6 +23,47 @@ const APP_THEMES = [
     era: null,
     adapter: null,
     font: null,
+    preview: { bg: "#12121e", fg: "#e0e0e0", accent: "#da7756" },
+  },
+  {
+    id: "nes",
+    name: "NES",
+    era: "8-bit",
+    adapter: "adapter-nes.css",
+    font: {
+      family: "Press Start 2P",
+      file: "PressStart2P-Regular.ttf",
+      format: "truetype",
+    },
+    preview: { bg: "#212529", fg: "#fff", accent: "#e76e55" },
+  },
+  {
+    id: "win98",
+    name: "Windows 98",
+    era: "1998",
+    adapter: "adapter-98.css",
+    font: null,
+    preview: { bg: "#008080", fg: "#000", accent: "#000080" },
+  },
+  {
+    id: "system6",
+    name: "System 6",
+    era: "1988",
+    adapter: "adapter-system.css",
+    font: null,
+    preview: { bg: "#fff", fg: "#000", accent: "#000" },
+  },
+  {
+    id: "c64",
+    name: "Commodore 64",
+    era: "1982",
+    adapter: "adapter-c64.css",
+    font: {
+      family: "C64_Pro_Mono",
+      file: "C64_Pro_Mono-STYLE.woff",
+      format: "woff",
+    },
+    preview: { bg: "#352879", fg: "#6C5EB5", accent: "#6C5EB5" },
   },
 ];
 
