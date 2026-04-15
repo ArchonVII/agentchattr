@@ -321,15 +321,17 @@
       /* --- Floating Mode --- */
       .terminals-wrapper.float-layout .terminal-instance-wrapper {
         position: absolute;
-        box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
         border: 1px solid #2a2a3a;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
         display: flex !important; /* Override other display styles */
         flex-direction: column;
       }
       .terminals-wrapper.float-layout .terminal-instance-wrapper.active {
         border-color: #da7756;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
         z-index: 100 !important; /* Ensure active is on top */
       }
       .terminals-wrapper.float-layout .terminal-toolbar {
@@ -339,7 +341,7 @@
       .terminals-wrapper.float-layout .terminal-surface {
         display: flex !important;
       }
-      
+
       .resize-handle {
         position: absolute;
         width: 10px;
@@ -380,9 +382,15 @@
         border-color: #da7756;
       }
 
-      .macro-btn.blue { border-left: 2px solid #60a5fa; }
-      .macro-btn.green { border-left: 2px solid #4ade80; }
-      .macro-btn.red { border-left: 2px solid #ff6b6b; }
+      .macro-btn.blue {
+        border-left: 2px solid #60a5fa;
+      }
+      .macro-btn.green {
+        border-left: 2px solid #4ade80;
+      }
+      .macro-btn.red {
+        border-left: 2px solid #ff6b6b;
+      }
 
       /* --- Command Arsenal Sidebar --- */
       .terminals-main {
@@ -467,8 +475,12 @@
         flex-shrink: 0;
       }
 
-      .terminal-settings-toggle:hover { color: #da7756; }
-      .terminal-settings-toggle.active { color: #da7756; }
+      .terminal-settings-toggle:hover {
+        color: #da7756;
+      }
+      .terminal-settings-toggle.active {
+        color: #da7756;
+      }
 
       .terminals-tab-strip {
         display: flex;
@@ -1177,6 +1189,8 @@
     <script src="./terminal-presence.js"></script>
     <script src="./terminal-config.js"></script>
     <script src="./terminals.bundle.js"></script>
+    <script src="./bridge-ui.js"></script>
+    <script src="./bridge.bundle.js"></script>
     <script src="./renderer.js"></script>
   </body>
 </html>

@@ -611,6 +611,27 @@ function renderPorts() {
 }
 
 async function handleDesktopCommand(payload) {
+  if (payload?.command === "terminal_focus") {
+    if (payload.terminalId && window._focusEmbeddedTerminal) {
+      window._focusEmbeddedTerminal(payload.terminalId);
+    }
+    return;
+  }
+
+  if (payload?.command === "terminal_kill") {
+    activateTab("chat");
+
+    if (payload.source === "embedded" && payload.terminalId) {
+      window.electronAPI?.closeTerminal?.(payload.terminalId);
+      return;
+    }
+
+    if (payload.pid) {
+      await handleKillProcess(payload.pid);
+    }
+    return;
+  }
+
   const result = window.BrowserPaneState.reduceBrowserCommand(
     state.browserPane,
     payload,

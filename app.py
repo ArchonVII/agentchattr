@@ -45,6 +45,7 @@ session_engine: SessionEngine | None = None
 process_manager = None  # ProcessManager, set by run.py
 config: dict = {}
 ws_clients: set[WebSocket] = set()
+build_info: dict = {}
 
 # --- Security: session token (set by configure()) ---
 session_token: str = ""
@@ -267,11 +268,11 @@ def _install_security_middleware(token: str, cfg: dict):
                 return await call_next(request)
 
             # Agent registration/heartbeat: loopback only (no remote agent minting).
-            if path.startswith(("/api/register", "/api/deregister/", "/api/heartbeat/")):
+            if path.startswith(("/api/register", "/api/deregister/", "/api/heartbeat/", "/api/bridge/")):
                 client_ip = request.client.host if request.client else ""
                 if client_ip not in ("127.0.0.1", "::1", "localhost"):
                     return JSONResponse(
-                        {"error": f"forbidden: agent registration is restricted to local loopback. Source {client_ip} is not allowed."},
+                        {"error": f"forbidden: local control endpoints are restricted to local loopback. Source {client_ip} is not allowed."},
                         status_code=403,
                     )
                 return await call_next(request)
@@ -569,6 +570,11 @@ def configure(cfg: dict, session_token: str = ""):
 
 
 # --- Store → WebSocket bridge ---
+
+
+@app.get("/api/build_info")
+async def get_build_info():
+    return JSONResponse(build_info or {})
 
 _event_loop = None  # set by run.py after starting the event loop
 _last_active_channel: str = "general"  # last channel any message was sent in
@@ -1626,6 +1632,122 @@ async def api_send(request: Request):
 
     msg = store.add(sender, text, channel=channel)
     return JSONResponse(msg)
+
+
+# ---------------------------------------------------------------------------
+# Terminal-to-Chat Bridge
+# ---------------------------------------------------------------------------
+
+# Dedup cache for bridge events — key: hash, value: timestamp.
+_bridge_dedup: dict[str, float] = {}
+# Source: design spec Section 6 — dedup window for identical matches.
+_BRIDGE_DEDUP_WINDOW = 2.0
+
+
+@app.post("/api/bridge/event")
+async def bridge_event(request: Request):
+    """Receive a watcher event from the Electron bridge and inject it
+    into the chat timeline as a type:'bridge' message.
+
+    No auth required — only accessible from localhost (Electron main process).
+    Bridge events do NOT count as hops in the loop guard.
+    """
+    body = await request.json()
+
+    matched_text = body.get("matchedText", "")
+    terminal_id = body.get("terminalId", "")
+    rule_id = body.get("ruleId", "")
+    category = body.get("category", "")
+
+    # Server-side dedup (mirrors Electron-side dedup)
+    import hashlib
+    dedup_key = hashlib.md5(
+        f"{terminal_id}:{rule_id}:{matched_text}".encode()
+    ).hexdigest()
+    now = _time.time()
+    last_seen = _bridge_dedup.get(dedup_key)
+    if last_seen and now - last_seen < _BRIDGE_DEDUP_WINDOW:
+        return JSONResponse({"status": "deduped"})
+    _bridge_dedup[dedup_key] = now
+
+    # Prune stale entries (~1% of calls)
+    import random
+    if random.random() < 0.01:
+        cutoff = now - _BRIDGE_DEDUP_WINDOW * 2
+        stale = [k for k, v in _bridge_dedup.items() if v < cutoff]
+        for k in stale:
+            del _bridge_dedup[k]
+
+    # Resolve sender — prefer agent name, fall back to terminal/session name
+    sender = (
+        body.get("agentName")
+        or body.get("sessionName")
+        or body.get("terminalName")
+        or f"terminal-{terminal_id[:8]}"
+    )
+
+    metadata = {
+        "category": category,
+        "terminal_name": body.get("terminalName", ""),
+        "terminal_id": terminal_id,
+        "session_name": body.get("sessionName", ""),
+        "rule_id": rule_id,
+        "context_lines": body.get("contextLines", []),
+        "source": "watcher",
+    }
+
+    # store.add broadcasts via _on_store_message automatically
+    msg = store.add(
+        sender=sender,
+        text=matched_text,
+        msg_type="bridge",
+        channel="general",
+        metadata=metadata,
+    )
+
+    return JSONResponse(msg)
+
+
+@app.get("/api/bridge/terminals")
+async def bridge_terminals():
+    """Return list of active Electron terminals for the snapshot pull UI.
+    Electron periodically POSTs this data; we cache and serve it."""
+    return JSONResponse(_bridge_terminal_cache)
+
+
+@app.post("/api/bridge/terminals")
+async def bridge_terminals_update(request: Request):
+    """Electron main process pushes terminal list here periodically."""
+    global _bridge_terminal_cache
+    body = await request.json()
+    _bridge_terminal_cache = body.get("terminals", [])
+    return JSONResponse({"status": "ok"})
+
+
+# Cache of active terminals pushed by Electron
+_bridge_terminal_cache: list = []
+
+# Snapshot cache — Electron pushes snapshots here on demand
+_bridge_snapshot_cache: dict[str, list[str]] = {}
+
+
+@app.get("/api/bridge/snapshot/{terminal_id}")
+async def bridge_snapshot(terminal_id: str, lines: int = 50):
+    """Return cached snapshot for a terminal.
+    Electron pushes snapshots via POST /api/bridge/snapshot."""
+    cached = _bridge_snapshot_cache.get(terminal_id, [])
+    return JSONResponse({"lines": cached[-lines:]})
+
+
+@app.post("/api/bridge/snapshot")
+async def bridge_snapshot_push(request: Request):
+    """Electron pushes a terminal's snapshot here."""
+    body = await request.json()
+    tid = body.get("terminalId", "")
+    snapshot_lines = body.get("lines", [])
+    if tid:
+        _bridge_snapshot_cache[tid] = snapshot_lines
+    return JSONResponse({"status": "ok"})
 
 
 @app.get("/api/status")

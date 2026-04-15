@@ -78,7 +78,9 @@ function renderQuickLaunchBar() {
   // Folder shortcuts
   quickLaunchFolders.forEach((folder) => {
     const btn = document.createElement("button");
-    btn.className = "quick-launch-folder" + (selectedLaunchFolder === folder ? " active" : "");
+    btn.className =
+      "quick-launch-folder" +
+      (selectedLaunchFolder === folder ? " active" : "");
     btn.textContent = folder.split(/[\\/]/).pop();
     btn.title = folder;
     btn.onclick = () => {
@@ -157,11 +159,11 @@ function launchAgentTerminal(agentId) {
   }
 
   const command = `${isWin ? "windows\\" : "macos-linux/"}${scriptName}${ext}`;
-  
+
   void requestNewTerminal(null, {
     cwd: selectedLaunchFolder,
     command: command,
-    name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`
+    name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`,
   });
 }
 
@@ -254,7 +256,7 @@ function performResize(e) {
 
   inst.wrapper.style.width = inst.width + "px";
   inst.wrapper.style.height = inst.height + "px";
-  
+
   if (inst.fitTimeout) clearTimeout(inst.fitTimeout);
   inst.fitTimeout = setTimeout(() => inst.fitAddon.fit(), 50);
 }
@@ -402,9 +404,38 @@ function createMacroBar(id) {
     bar.appendChild(btn);
   }
 
+  // Bridge: agent identity dropdown
+  const agentSelect = document.createElement("select");
+  agentSelect.className = "macro-btn";
+  agentSelect.title = "Assign agent identity";
+  agentSelect.innerHTML = `
+    <option value="">Agent...</option>
+    <option value="claude">Claude</option>
+    <option value="codex">Codex</option>
+    <option value="gemini">Gemini</option>
+    <option value="qwen">Qwen</option>
+    <option value="copilot">Copilot</option>
+  `;
+  agentSelect.dataset.terminalId = id;
+  agentSelect.addEventListener("change", (e) => {
+    const agentName = e.target.value || null;
+    window.electronAPI?.setTerminalIdentity(id, agentName, undefined);
+  });
+  bar.appendChild(agentSelect);
+
+  // Bridge: snapshot camera button
+  const snapshotBtn = document.createElement("button");
+  snapshotBtn.className = "macro-btn";
+  snapshotBtn.title = "Send last 50 lines to chat";
+  snapshotBtn.innerHTML = "&#x1F4F7; Snapshot";
+  snapshotBtn.style.marginLeft = "auto";
+  snapshotBtn.addEventListener("click", () => {
+    window.bridgeUI?.requestSnapshot(id);
+  });
+  bar.appendChild(snapshotBtn);
+
   const themeSelect = document.createElement("select");
   themeSelect.className = "macro-btn";
-  themeSelect.style.marginLeft = "auto";
   themeSelect.innerHTML = `
     <option value="default">Default Theme</option>
     <option value="cyberpunk">Cyberpunk</option>
@@ -444,7 +475,7 @@ function toggleLayout() {
   const modes = ["tabs", "grid", "float"];
   const currentIndex = modes.indexOf(layoutMode);
   layoutMode = modes[(currentIndex + 1) % modes.length];
-  
+
   renderLayout();
   renderTabStrip();
 
@@ -472,7 +503,7 @@ function renderLayout() {
     inst.wrapper.style.height = "";
     inst.wrapper.style.zIndex = "";
     if (inst.macroBar) inst.macroBar.style.display = "flex";
-    
+
     if (layoutMode === "tabs") {
       inst.wrapper.style.display = isActive ? "" : "none";
     } else if (layoutMode === "grid") {
@@ -564,11 +595,26 @@ function renderTabStrip() {
   });
   strip.appendChild(addBtn);
 
+  // Bridge: watcher settings gear button
+  const watcherBtn = document.createElement("button");
+  watcherBtn.type = "button";
+  watcherBtn.className = "terminal-settings-toggle";
+  watcherBtn.title = "Watcher Settings";
+  watcherBtn.innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>';
+  watcherBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    window.bridgeUI?.toggleSettings();
+  });
+  strip.appendChild(watcherBtn);
+
   const arsenalBtn = document.createElement("button");
   arsenalBtn.type = "button";
-  arsenalBtn.className = "terminal-settings-toggle" + (arsenalVisible ? " active" : "");
+  arsenalBtn.className =
+    "terminal-settings-toggle" + (arsenalVisible ? " active" : "");
   arsenalBtn.title = "Toggle Arsenal Sidebar";
-  arsenalBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1z"/></svg>';
+  arsenalBtn.innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1zm0 5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-1z"/></svg>';
   arsenalBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     toggleArsenal();
@@ -651,7 +697,7 @@ async function requestNewTerminal(shellId, opts = {}) {
 
   const result = await window.electronAPI.createTerminal({
     shell: shellId || undefined,
-    ...opts
+    ...opts,
   });
 
   if (result?.error) {
@@ -660,12 +706,18 @@ async function requestNewTerminal(shellId, opts = {}) {
   }
 
   if (result?.id) {
-    createXtermInstance(result.id, result.name, result.shell, result.pid);
+    createXtermInstance(
+      result.id,
+      result.name,
+      result.shell,
+      result.pid,
+      result.cwd,
+    );
     focusTerminal(result.id);
   }
 }
 
-function createXtermInstance(id, name, shell, pid) {
+function createXtermInstance(id, name, shell, pid, cwd) {
   const terminal = new Terminal({
     theme: XTERM_THEME,
     fontFamily: 'Consolas, "Courier New", monospace',
@@ -679,6 +731,54 @@ function createXtermInstance(id, name, shell, pid) {
   terminal.loadAddon(fitAddon);
   terminal.loadAddon(new WebLinksAddon());
 
+  // Local File Link Provider
+  // xterm.js v6: provideLinks receives (lineNumber, callback)
+  // where lineNumber is a 1-based buffer row index.
+  terminal.registerLinkProvider({
+    provideLinks(lineNumber, callback) {
+      const buffer = terminal.buffer.active;
+      const bufferLine = buffer.getLine(lineNumber - 1);
+      if (!bufferLine) {
+        callback([]);
+        return;
+      }
+      const line = bufferLine.translateToString(true);
+      // Regex matches:
+      // 1. Absolute paths (Unix/Windows)
+      // 2. Relative paths (./ or ../)
+      // 3. Paths starting with a directory (e.g. src/main.js)
+      // and optional line numbers.
+      const regex =
+        /(?:(?:\/|[A-Za-z]:[\\\/])[\w\-.\\\/]+|(?:\.\.?[\/\\])[\w\-.\\\/]+|[\w\-.]+(?:[\\\/][\w\-.\\\/]+)+)(?::(\d+))?/g;
+      const links = [];
+      let match;
+      while ((match = regex.exec(line)) !== null) {
+        const text = match[0];
+        const lineNum = match[1];
+        const filePath = lineNum ? text.slice(0, text.lastIndexOf(":")) : text;
+
+        const startColumn = match.index + 1;
+        const endColumn = startColumn + text.length;
+
+        links.push({
+          range: {
+            start: { x: startColumn, y: lineNumber },
+            end: { x: endColumn, y: lineNumber },
+          },
+          text,
+          activate: (event, text) => {
+            window.electronAPI?.openTerminalFile?.({
+              path: filePath,
+              line: lineNum,
+              cwd: cwd,
+            });
+          },
+        });
+      }
+      callback(links);
+    },
+  });
+
   const wrapper = document.createElement("div");
   wrapper.className = "terminal-instance-wrapper";
   wrapper.dataset.terminalId = id;
@@ -687,19 +787,19 @@ function createXtermInstance(id, name, shell, pid) {
   const toolbar = document.createElement("div");
   toolbar.className = "terminal-toolbar";
   toolbar.addEventListener("mousedown", (e) => initDrag(e, id));
-  
+
   const resizeHandle = document.createElement("div");
   resizeHandle.className = "resize-handle bottom-right";
   resizeHandle.addEventListener("mousedown", (e) => initResize(e, id));
   wrapper.appendChild(resizeHandle);
-  
+
   const macroBar = createMacroBar(id);
   wrapper.appendChild(macroBar);
 
   const surface = document.createElement("div");
   surface.className = "terminal-surface";
   wrapper.appendChild(surface);
-  
+
   const mainWrapper = getWrapper();
   if (mainWrapper) mainWrapper.appendChild(wrapper);
 
@@ -713,7 +813,73 @@ function createXtermInstance(id, name, shell, pid) {
   terminal.onResize(({ cols, rows }) => {
     window.electronAPI?.resizeTerminal(id, cols, rows);
   });
-  
+
+  // Bridge: right-click "Send to Chat" context menu
+  surface.addEventListener("contextmenu", (e) => {
+    const selection = terminal.getSelection();
+    if (!selection) return; // Only show when text is selected
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Remove any existing context menu
+    const old = document.getElementById("bridge-context-menu");
+    if (old) old.remove();
+
+    const menu = document.createElement("div");
+    menu.id = "bridge-context-menu";
+    menu.style.cssText = `
+      position: fixed;
+      left: ${e.clientX}px;
+      top: ${e.clientY}px;
+      background: #1f1f31;
+      border: 1px solid #2a2a3a;
+      border-radius: 6px;
+      padding: 4px 0;
+      z-index: 10000;
+      min-width: 160px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    `;
+
+    const item = document.createElement("button");
+    item.style.cssText = `
+      display: block; width: 100%; padding: 6px 14px;
+      border: none; background: transparent; color: #e0e0e0;
+      font-size: 13px; font-family: inherit; text-align: left;
+      cursor: pointer;
+    `;
+    item.textContent = "Send to Chat";
+    item.addEventListener("mouseenter", () => {
+      item.style.background = "rgba(218, 119, 86, 0.15)";
+      item.style.color = "#fff2eb";
+    });
+    item.addEventListener("mouseleave", () => {
+      item.style.background = "transparent";
+      item.style.color = "#e0e0e0";
+    });
+    item.addEventListener("click", () => {
+      const text = "```\n" + selection + "\n```";
+      window.electronAPI?.sendSnapshotToChat(id, text, null);
+      menu.remove();
+    });
+    menu.appendChild(item);
+    document.body.appendChild(menu);
+
+    // Close menu on click outside or escape
+    const closeMenu = () => {
+      menu.remove();
+      document.removeEventListener("click", closeMenu);
+      document.removeEventListener("keydown", onEsc);
+    };
+    const onEsc = (ev) => {
+      if (ev.key === "Escape") closeMenu();
+    };
+    setTimeout(() => {
+      document.addEventListener("click", closeMenu);
+      document.addEventListener("keydown", onEsc);
+    }, 0);
+  });
+
   const numInstances = terminalInstances.size;
   const newInstance = {
     terminal,
@@ -734,7 +900,7 @@ function createXtermInstance(id, name, shell, pid) {
     zIndex: highestZ++,
     fitTimeout: null,
   };
-  
+
   terminalInstances.set(id, newInstance);
 
   renderLayout();
@@ -884,6 +1050,39 @@ async function initTerminals() {
 
   window.electronAPI?.onTerminalOutput(handleTerminalOutput);
   window.electronAPI?.onTerminalExited(handleTerminalExited);
+  window.electronAPI?.onBridgeTrace?.((trace) => {
+    console.log("[bridge-trace]", trace);
+  });
+
+  // Bridge: handle agent identity suggestions from auto-detection
+  window.electronAPI?.onIdentitySuggested(
+    ({ terminalId, agentName, terminalName }) => {
+      // Auto-select the agent in the dropdown
+      const inst = terminalInstances.get(terminalId);
+      if (!inst) return;
+      const select = inst.macroBar?.querySelector(
+        `select[data-terminal-id="${terminalId}"]`,
+      );
+      if (select) select.value = agentName;
+
+      // Show a brief toast notification
+      const toast = document.createElement("div");
+      toast.style.cssText = `
+      position: fixed; bottom: 20px; right: 20px; z-index: 10000;
+      background: #1f1f31; border: 1px solid #4ade80; border-radius: 8px;
+      padding: 10px 16px; color: #e0e0e0; font-size: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; gap: 12px;
+      align-items: center;
+    `;
+      toast.innerHTML = `
+      <span>Detected <strong style="color: #4ade80">${agentName}</strong> in ${terminalName || "terminal"}</span>
+      <button style="padding: 3px 8px; border: 1px solid #4ade80; border-radius: 4px; background: transparent; color: #4ade80; cursor: pointer; font-size: 11px;" onclick="window.electronAPI?.setTerminalIdentity('${terminalId}', '${agentName}', undefined); this.parentElement.remove();">Accept</button>
+      <button style="padding: 3px 8px; border: 1px solid #666; border-radius: 4px; background: transparent; color: #888; cursor: pointer; font-size: 11px;" onclick="this.parentElement.remove();">Dismiss</button>
+    `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 10000);
+    },
+  );
 
   const container = getContainer();
   if (container) {
@@ -911,5 +1110,5 @@ window.Terminals = {
   requestNew: requestNewTerminal,
   toggleArsenal: toggleArsenal,
   toggleTheme: toggleTheme,
-  toggleLayout: toggleLayout
+  toggleLayout: toggleLayout,
 };

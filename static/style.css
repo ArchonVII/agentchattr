@@ -702,6 +702,25 @@ header h1 {
   opacity: 1;
 }
 
+.build-stamp-pill {
+  display: inline-flex;
+  align-items: center;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border: 1px solid rgba(218, 119, 86, 0.22);
+  border-radius: 10px;
+  background: rgba(218, 119, 86, 0.08);
+  color: #ffd8cb;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  flex-shrink: 1;
+}
+
 /* --- Content area (timeline + rules sidebar) --- */
 
 #content-area {
@@ -1193,6 +1212,33 @@ header h1 {
 .presence-terminal-item.embedded .presence-terminal-avatar {
   background: rgba(218, 119, 86, 0.15);
   color: #da7756;
+}
+
+.presence-terminal-remove {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 107, 107, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 107, 107, 0.08);
+  color: #ff8a8a;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.presence-terminal-remove:hover {
+  background: rgba(255, 107, 107, 0.16);
+  border-color: rgba(255, 107, 107, 0.34);
+  color: #ffd4d4;
 }
 
 .presence-avatar-wrap {

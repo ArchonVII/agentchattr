@@ -3,7 +3,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "esbuild renderer/terminals.js --bundle --outfile=renderer/terminals.bundle.js --format=iife --platform=browser",
+    "build": "npm run build:terminals && npm run build:bridge",
+    "build:terminals": "esbuild renderer/terminals.js --bundle --outfile=renderer/terminals.bundle.js --format=iife --platform=browser",
+    "build:bridge": "esbuild renderer/bridge/index.jsx --bundle --outfile=renderer/bridge.bundle.js --format=iife --platform=browser --jsx=automatic --loader:.jsx=jsx",
     "prestart": "npm run build",
     "test": "node --test qa/*.test.cjs",
     "smoke:launcher": "node qa/launcher-smoke.cjs",
@@ -16,7 +18,9 @@
     "@xterm/xterm": "^6.0.0",
     "electron": "^35.0.0",
     "electron-store": "^8.2.0",
-    "node-pty": "^1.1.0"
+    "node-pty": "^1.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",

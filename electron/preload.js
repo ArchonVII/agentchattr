@@ -54,6 +54,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   closeTerminal(id) {
     ipcRenderer.send("terminal:close", { id });
   },
+  openTerminalFile(opts) {
+    return ipcRenderer.invoke("terminal:open-file", opts);
+  },
   listShells() {
     return ipcRenderer.invoke("terminal:list-shells");
   },
@@ -65,5 +68,42 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   onTerminalExited(callback) {
     ipcRenderer.on("terminal:exited", (_event, data) => callback(data));
+  },
+
+  // Bridge: watcher events and config
+  onBridgeEvent(callback) {
+    ipcRenderer.on("terminal:bridge-event", (_event, data) => callback(data));
+  },
+  onBridgeTrace(callback) {
+    ipcRenderer.on("terminal:bridge-trace", (_event, data) => callback(data));
+  },
+  onWatcherConfigUpdated(callback) {
+    ipcRenderer.on("terminal:watcher-config-updated", (_event, data) =>
+      callback(data),
+    );
+  },
+  getWatcherConfig() {
+    return ipcRenderer.invoke("terminal:watcher-config-get");
+  },
+  setWatcherConfig(rules) {
+    return ipcRenderer.invoke("terminal:watcher-config-set", rules);
+  },
+  getTerminalSnapshot(id, lineCount) {
+    return ipcRenderer.invoke("terminal:snapshot", { id, lineCount });
+  },
+  sendSnapshotToChat(id, text, agentName) {
+    ipcRenderer.send("terminal:bridge-snapshot-to-chat", {
+      id,
+      text,
+      agentName,
+    });
+  },
+  setTerminalIdentity(id, agentName, sessionName) {
+    ipcRenderer.send("terminal:set-identity", { id, agentName, sessionName });
+  },
+  onIdentitySuggested(callback) {
+    ipcRenderer.on("terminal:identity-suggested", (_event, data) =>
+      callback(data),
+    );
   },
 });

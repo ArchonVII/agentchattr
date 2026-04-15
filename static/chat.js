@@ -389,6 +389,7 @@ function init() {
   Sessions.init();
   Channels.init();
   checkForUpdate();
+  loadBuildStamp();
 
   // Dismiss channel edit controls when clicking outside channel bar
   document.addEventListener("click", (e) => {
@@ -883,6 +884,7 @@ function appendMessage(msg) {
   const msgChannel = msg.channel || "general";
   el.dataset.channel = msgChannel;
   el.dataset.sender = msg.sender || "";
+  el.dataset.msgType = msg.type || "chat";
 
   if (msg.type === "join" || msg.type === "leave") {
     el.classList.add("join-msg");
@@ -1444,6 +1446,7 @@ function getChannelRosterEntries(channel = activeChannel) {
   const participants = new Map();
   const container = document.getElementById("messages");
   const userKey = username.toLowerCase();
+  const latestSenderEvent = new Map();
 
   const upsertParticipant = (rawName) => {
     const name = (rawName || "").trim();
@@ -1510,12 +1513,53 @@ function getChannelRosterEntries(channel = activeChannel) {
   if (container) {
     for (const el of container.children) {
       if ((el.dataset.channel || "general") !== channel) continue;
-      upsertParticipant(el.dataset.sender || "");
+      const sender = (el.dataset.sender || "").trim();
+      const msgType = (el.dataset.msgType || "chat").trim();
+      if (!sender) continue;
+      latestSenderEvent.set(sender.toLowerCase(), msgType);
+      upsertParticipant(sender);
     }
+  }
+
+  const terminalData = Array.isArray(window._terminalData)
+    ? window._terminalData
+    : [];
+  for (const term of terminalData) {
+    const terminalKey = `terminal:${term.id || term.name || term.pid || participants.size}`;
+    const age = _formatTerminalAge(term.startedAt);
+    const pidLabel = term.pid ? `PID ${term.pid}` : "";
+    const sourceLabel =
+      term.source === "embedded" ? "embedded terminal" : "external terminal";
+
+    participants.set(terminalKey, {
+      key: terminalKey,
+      name: term.agentName || term.name || "terminal",
+      displayName: term.agentName || term.name || "Terminal",
+      isSelf: false,
+      isAgent: false,
+      isTerminal: true,
+      available: term.status === "running",
+      busy: false,
+      role: term.shell || "",
+      color: term.source === "embedded" ? "#da7756" : "#78b4dc",
+      meta: [sourceLabel, pidLabel, age].filter(Boolean).join(" · "),
+      terminalId: term.id || null,
+      terminalSource: term.source || "external",
+      pid: term.pid || null,
+    });
+  }
+
+  for (const [key, msgType] of latestSenderEvent.entries()) {
+    if (msgType !== "leave") continue;
+    const entry = participants.get(key);
+    if (!entry) continue;
+    if (entry.isSelf || entry.isAgent || entry.isTerminal) continue;
+    participants.delete(key);
   }
 
   return [...participants.values()].sort((a, b) => {
     if (a.isSelf !== b.isSelf) return a.isSelf ? -1 : 1;
+    if (!!a.isTerminal !== !!b.isTerminal) return a.isTerminal ? 1 : -1;
     if (a.isAgent !== b.isAgent) return a.isAgent ? -1 : 1;
 
     const aState = a.busy ? 0 : a.available ? 1 : 2;
@@ -1537,6 +1581,51 @@ function _formatTerminalAge(timestamp) {
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
+
+async function loadBuildStamp() {
+  const pill = document.getElementById("build-stamp-pill");
+  if (!pill) return;
+
+  try {
+    const response = await fetch("/api/build_info");
+    if (!response.ok) return;
+    const info = await response.json();
+    if (!info || !info.label) return;
+
+    pill.textContent = info.label;
+    pill.title = [
+      info.code || "",
+      info.commit ? `commit ${info.commit}` : "",
+      info.branch ? `branch ${info.branch}` : "",
+      info.worktree ? `worktree ${info.worktree}` : "",
+      info.started_at ? `started ${info.started_at}` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  } catch {
+    // Non-fatal; stamp is informational only.
+  }
+}
+
+function removeTerminalChatter(entry, event) {
+  event?.stopPropagation?.();
+  if (!entry) return;
+
+  const label = entry.displayName || entry.name || "this terminal";
+  const confirmed = window.confirm(
+    `Remove ${label} from chat by terminating its terminal session?`,
+  );
+  if (!confirmed) return;
+
+  window.desktopBridge?.sendCommand?.({
+    command: "terminal_kill",
+    terminalId: entry.terminalId || null,
+    pid: entry.pid || null,
+    source: entry.terminalSource || "external",
+  });
+}
+
+window.removeTerminalChatter = removeTerminalChatter;
 
 function renderChannelRoster() {
   const list = document.getElementById("presence-list");
@@ -1562,116 +1651,66 @@ function renderChannelRoster() {
     if (entry.available) item.classList.add("available");
     if (entry.busy) item.classList.add("working");
     if (entry.isAgent && !entry.available) item.classList.add("offline");
+    if (entry.isTerminal) item.classList.add("presence-terminal-item");
+    if (entry.isTerminal && entry.terminalSource === "embedded") {
+      item.classList.add("embedded");
+    }
 
     const roleHtml = entry.role
       ? `<span class="presence-role">${escapeHtml(entry.role)}</span>`
       : "";
+    const removeButtonHtml = entry.isTerminal
+      ? `<button class="presence-terminal-remove" title="Terminate terminal and remove chatter" aria-label="Terminate terminal and remove chatter">×</button>`
+      : "";
+    const avatarHtml = entry.isTerminal
+      ? `<div class="presence-avatar presence-terminal-avatar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M4.5 6l2.5 2-2.5 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="8.5" y1="10" x2="11" y2="10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </div>`
+      : `<div class="presence-avatar" style="--bubble-color: ${entry.color}; background-color: ${entry.color}">
+          ${getAvatarSvg(entry.name)}
+        </div>`;
 
     item.innerHTML = `
       <div class="presence-avatar-wrap">
-        <div class="presence-avatar" style="--bubble-color: ${entry.color}; background-color: ${entry.color}">
-          ${getAvatarSvg(entry.name)}
-        </div>
+        ${avatarHtml}
         <span class="presence-state-dot"></span>
       </div>
       <div class="presence-body">
         <div class="presence-name-row">
           <span class="presence-name">${escapeHtml(entry.displayName)}</span>
           ${roleHtml}
+          ${removeButtonHtml}
         </div>
         <div class="presence-meta">${escapeHtml(entry.meta)}</div>
       </div>`;
-    list.appendChild(item);
-  }
 
-  // --- Terminal sessions section ---
-  const terminalData = window._terminalData;
-  if (Array.isArray(terminalData) && terminalData.length > 0) {
-    const COLLAPSE_KEY = "agentchattr-terminal-collapsed";
-    const collapsed = localStorage.getItem(COLLAPSE_KEY) === "1";
-
-    const section = document.createElement("div");
-    section.className = "presence-terminal-section";
-
-    const header = document.createElement("button");
-    header.type = "button";
-    header.className = "presence-terminal-header";
-    header.onclick = () => {
-      const next = localStorage.getItem(COLLAPSE_KEY) !== "1";
-      localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
-      renderChannelRoster();
-    };
-
-    const caret = document.createElement("span");
-    caret.className = "presence-terminal-caret";
-    caret.textContent = collapsed ? "\u25b8" : "\u25be";
-    header.appendChild(caret);
-
-    const headerLabel = document.createElement("span");
-    headerLabel.textContent = "Terminals";
-    header.appendChild(headerLabel);
-
-    const badge = document.createElement("span");
-    badge.className = "presence-terminal-badge";
-    badge.textContent = String(terminalData.length);
-    header.appendChild(badge);
-
-    section.appendChild(header);
-
-    if (!collapsed) {
-      // Sort: embedded first, then external; within each group by most recent
-      const sorted = [...terminalData].sort((a, b) => {
-        if (a.source !== b.source) {
-          return a.source === "embedded" ? -1 : 1;
-        }
-        return (b.startedAt || 0) - (a.startedAt || 0);
-      });
-
-      for (const term of sorted) {
-        const item = document.createElement("div");
-        item.className = "presence-item presence-terminal-item";
-        if (term.source === "embedded") item.classList.add("embedded");
-        if (term.status === "running") item.classList.add("available");
-
-        const age = _formatTerminalAge(term.startedAt);
-        const prefix = term.source === "embedded" ? "\u25b6 " : "";
-        const pidLabel = term.pid ? `PID ${term.pid}` : "";
-        const metaParts = [pidLabel, age].filter(Boolean).join(" \u00b7 ");
-
-        item.innerHTML = `
-          <div class="presence-avatar-wrap">
-            <div class="presence-avatar presence-terminal-avatar">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-                <path d="M4.5 6l2.5 2-2.5 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                <line x1="8.5" y1="10" x2="11" y2="10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <span class="presence-state-dot"></span>
-          </div>
-          <div class="presence-body">
-            <div class="presence-name-row">
-              <span class="presence-name">${escapeHtml(prefix + term.name)}</span>
-              <span class="presence-role">${escapeHtml(term.shell)}</span>
-            </div>
-            <div class="presence-meta">${escapeHtml(metaParts)}</div>
-          </div>`;
-
-        if (term.source === "embedded" && term.id) {
-          item.style.cursor = "pointer";
-          item.title = "Focus in Terminals tab";
-          item.addEventListener("click", () => {
-            if (window._focusEmbeddedTerminal) {
-              window._focusEmbeddedTerminal(term.id);
-            }
-          });
-        }
-
-        section.appendChild(item);
+    if (entry.isTerminal) {
+      const removeBtn = item.querySelector(".presence-terminal-remove");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", (event) =>
+          removeTerminalChatter(entry, event),
+        );
       }
     }
 
-    list.appendChild(section);
+    if (
+      entry.isTerminal &&
+      entry.terminalSource === "embedded" &&
+      entry.terminalId &&
+      window._focusEmbeddedTerminal
+    ) {
+      item.style.cursor = "pointer";
+      item.title = "Focus in Terminals tab";
+      item.addEventListener("click", () => {
+        window._focusEmbeddedTerminal(entry.terminalId);
+      });
+    }
+
+    list.appendChild(item);
   }
 }
 
@@ -5030,7 +5069,195 @@ function initHelpTour() {
 
 // --- Start ---
 
+// ---------------------------------------------------------------------------
+// Bridge: Pull from Terminal (snapshot pull into chat composer)
+// ---------------------------------------------------------------------------
+
+function initTerminalSnapshotPull() {
+  // Insert a "Pull from Terminal" button next to the input area
+  const inputEl = document.getElementById("input");
+  if (!inputEl) return;
+
+  const pullBtn = document.createElement("button");
+  pullBtn.type = "button";
+  pullBtn.className = "send-clock";
+  pullBtn.title = "Pull terminal output into message";
+  pullBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+    <path d="M6 9a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3A.5.5 0 0 1 6 9zM3.854 4.146a.5.5 0 1 0-.708.708L4.793 6.5 3.146 8.146a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2z"/>
+    <path d="M2 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H2zm12 1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h12z"/>
+  </svg>`;
+  pullBtn.style.cssText =
+    "padding: 4px 6px; border: none; background: transparent; color: #888; cursor: pointer; border-radius: 4px;";
+
+  // Insert before the send group
+  const sendGroup = inputEl.parentElement?.querySelector(".send-group");
+  if (sendGroup) {
+    sendGroup.parentElement.insertBefore(pullBtn, sendGroup);
+  }
+
+  pullBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    // Remove any existing dropdown
+    const old = document.getElementById("terminal-pull-dropdown");
+    if (old) {
+      old.remove();
+      return;
+    }
+
+    // Fetch terminal list from backend
+    let terminals = [];
+    try {
+      const res = await fetch("/api/bridge/terminals");
+      if (res.ok) terminals = await res.json();
+    } catch {
+      /* ignore */
+    }
+
+    if (terminals.length === 0) {
+      pullBtn.title = "No active terminals";
+      return;
+    }
+
+    // Create dropdown
+    const dropdown = document.createElement("div");
+    dropdown.id = "terminal-pull-dropdown";
+    dropdown.style.cssText = `
+      position: absolute; bottom: 100%; left: 0; margin-bottom: 4px;
+      background: #1f1f31; border: 1px solid #2a2a3a; border-radius: 6px;
+      padding: 4px 0; min-width: 200px; z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    `;
+
+    for (const t of terminals) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.style.cssText = `
+        display: block; width: 100%; padding: 6px 14px; border: none;
+        background: transparent; color: #e0e0e0; font-size: 13px;
+        font-family: inherit; text-align: left; cursor: pointer;
+      `;
+      const label = t.agentName
+        ? `${t.agentName} (${t.sessionName || t.name})`
+        : t.name || t.id.slice(0, 8);
+      item.textContent = label;
+      item.addEventListener("mouseenter", () => {
+        item.style.background = "rgba(218, 119, 86, 0.15)";
+      });
+      item.addEventListener("mouseleave", () => {
+        item.style.background = "transparent";
+      });
+      item.addEventListener("click", async () => {
+        dropdown.remove();
+        try {
+          const res = await fetch(`/api/bridge/snapshot/${t.id}?lines=50`);
+          if (res.ok) {
+            const data = await res.json();
+            const lines = data.lines || [];
+            if (lines.length > 0) {
+              const codeBlock = "```\n" + lines.join("\n") + "\n```";
+              inputEl.value += codeBlock;
+              inputEl.focus();
+              inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+      });
+      dropdown.appendChild(item);
+    }
+
+    pullBtn.style.position = "relative";
+    pullBtn.appendChild(dropdown);
+
+    // Close on outside click
+    setTimeout(() => {
+      const close = () => {
+        dropdown.remove();
+        document.removeEventListener("click", close);
+      };
+      document.addEventListener("click", close);
+    }, 0);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Bridge: render type:"bridge" messages in chat timeline
+// ---------------------------------------------------------------------------
+
+const BRIDGE_CATEGORY_COLOURS = {
+  error: "#ff6b6b",
+  completion: "#4ade80",
+  file_reference: "#60a5fa",
+  progress: "#fbbf24",
+  snapshot: "#c084fc",
+  system: "#888",
+};
+
+function initBridgeMessageRenderer() {
+  // Inject CSS for bridge messages
+  const style = document.createElement("style");
+  style.textContent = `
+    .bridge-msg { border-left: 3px solid #444; padding-left: 10px; margin: 4px 0; }
+    .bridge-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .bridge-icon { font-size: 12px; opacity: 0.7; }
+    .bridge-sender { font-weight: 600; font-size: 12px; }
+    .bridge-session { font-size: 11px; color: #888; }
+    .bridge-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+    .bridge-text { font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 4px; margin: 4px 0; }
+    .bridge-context { margin-top: 4px; }
+    .bridge-context-toggle { font-size: 11px; color: #888; cursor: pointer; border: none; background: transparent; padding: 2px 0; font-family: inherit; }
+    .bridge-context-toggle:hover { color: #da7756; }
+    .bridge-context-lines { display: none; font-family: Consolas, monospace; font-size: 11px; color: #999; white-space: pre-wrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 3px; margin-top: 4px; }
+    .bridge-context-lines.open { display: block; }
+  `;
+  document.head.appendChild(style);
+
+  // Register via the extensible renderer hook
+  if (!window._messageRenderers) window._messageRenderers = {};
+  window._messageRenderers["bridge"] = function (el, msg) {
+    const meta = msg.metadata || {};
+    const category = meta.category || "system";
+    const colour = BRIDGE_CATEGORY_COLOURS[category] || "#888";
+    const sessionName = meta.session_name || meta.terminal_name || "";
+    const contextLines = meta.context_lines || [];
+    const senderColor = getColor(msg.sender);
+
+    el.classList.add("bridge-msg");
+    el.style.borderLeftColor = colour;
+
+    const contextId = `bridge-ctx-${msg.id}`;
+    const contextHtml =
+      contextLines.length > 1
+        ? `<div class="bridge-context">
+          <button class="bridge-context-toggle" onclick="document.getElementById('${contextId}').classList.toggle('open')">
+            context (${contextLines.length} lines)
+          </button>
+          <div id="${contextId}" class="bridge-context-lines">${escapeHtml(contextLines.join("\n"))}</div>
+        </div>`
+        : "";
+
+    el.innerHTML = `
+      <div class="bridge-header">
+        <span class="bridge-icon">&#x1F5A5;</span>
+        <span class="bridge-sender" style="color: ${senderColor}">${escapeHtml(msg.sender)}</span>
+        ${sessionName ? `<span class="bridge-session">${escapeHtml(sessionName)}</span>` : ""}
+        <span class="bridge-badge" style="background: ${colour}22; color: ${colour}">${escapeHtml(category)}</span>
+        <span class="msg-time">${msg.time || ""}</span>
+      </div>
+      <div class="bridge-text">${escapeHtml(msg.text)}</div>
+      ${contextHtml}
+      <div class="msg-actions">
+        <button class="reply-btn" onclick="startReply(${msg.id}, event)">reply</button>
+        <button class="delete-btn" onclick="deleteClick(${msg.id}, event)" title="Delete">del</button>
+      </div>
+    `;
+  };
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   init();
   initHelpTour();
+  initTerminalSnapshotPull();
+  initBridgeMessageRenderer();
 });

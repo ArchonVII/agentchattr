@@ -4,6 +4,7 @@
 
 ### Added
 
+- Interactive File Links: Terminal output now identifies file paths and line numbers (e.g., src/main.js:42) as clickable links that open in VS Code with line-level accuracy, falling back to the system default editor.
 - Multi-Layout Terminal View: Introduced dynamic Tabs, Grid, and Floating layout modes for concurrent terminal sessions.
 - Floating Window Manager: Implemented draggable, resizable, and overlapping terminal windows with intelligent stacking (z-index) and focus management.
 - Command Arsenal Sidebar: Added a collapsible right-hand sidebar for quick-injecting CLI skills and categorized project commands.

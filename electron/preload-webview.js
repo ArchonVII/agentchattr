@@ -1,6 +1,6 @@
 'use strict';
 
-const { ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 const { handleDesktopCommand } = require('./desktop-command-bridge');
 
 function sendNotification(payload) {
@@ -10,6 +10,13 @@ function sendNotification(payload) {
 function sendDesktopCommand(_channel, payload) {
   ipcRenderer.sendToHost('desktop-command', payload);
 }
+
+contextBridge.exposeInMainWorld('desktopBridge', {
+  sendCommand(payload) {
+    if (!payload || typeof payload !== 'object') return;
+    ipcRenderer.sendToHost('desktop-command', payload);
+  },
+});
 
 function checkForNotification(data) {
   if (!data || typeof data !== 'object') {
