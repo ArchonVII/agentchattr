@@ -38,6 +38,7 @@ docs/archive/*
 goals.py
 pr-reviews/
 agentchattr-*.zip
+node_modules/
 electron/node_modules/
 electron/dist/
 electron/config.json
