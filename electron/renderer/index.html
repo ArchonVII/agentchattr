@@ -185,7 +185,7 @@
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
         background: var(--bg-elevated);
-        color: #d6d6e3;
+        color: var(--fg-secondary);
         cursor: pointer;
         font-size: 12px;
       }
@@ -240,8 +240,8 @@
         padding: 3px 10px;
         font-size: 11px;
         background: var(--bg-elevated);
-        color: #aaa;
-        border: 1px solid #333;
+        color: var(--fg-muted);
+        border: 1px solid var(--border);
         border-radius: var(--radius);
         cursor: pointer;
         font-family: inherit;
@@ -252,11 +252,11 @@
         transition: all 0.2s;
       }
       .quick-launch-folder:hover {
-        background: #3a3a4e;
-        color: #fff;
+        background: var(--border-strong);
+        color: var(--fg-primary);
       }
       .quick-launch-folder.active {
-        color: #fff;
+        color: var(--fg-primary);
         background: var(--accent-subtle);
         border-color: var(--accent);
       }
@@ -268,19 +268,19 @@
         font-weight: 700;
         background: var(--bg-elevated);
         color: var(--fg-primary);
-        border: 1px solid #333;
+        border: 1px solid var(--border);
         border-radius: var(--radius);
         cursor: pointer;
         transition: all 0.2s;
       }
       .quick-launch-agent-btn:hover {
-        background: #3a3a4e;
+        background: var(--border-strong);
         border-color: var(--accent);
       }
       .quick-launch-divider {
         width: 1px;
         height: 20px;
-        background: #3a3a4e;
+        background: var(--border-strong);
         margin: 0 4px;
       }
       .quick-launch-perms {
@@ -382,7 +382,7 @@
       }
 
       .macro-btn:hover {
-        background: #3a3a4e;
+        background: var(--border-strong);
         border-color: var(--accent);
       }
 
@@ -512,7 +512,7 @@
 
       .arsenal-item:hover {
         background: var(--accent-subtle);
-        color: #fff;
+        color: var(--fg-primary);
       }
 
       .terminal-settings-toggle {
@@ -812,8 +812,12 @@
       }
 
       .ports-pane-badge.user {
-        background: #2a3a2a;
-        color: #b5ffb5;
+        background: color-mix(
+          in srgb,
+          var(--accent-success) 15%,
+          var(--bg-app)
+        );
+        color: var(--accent-success);
       }
 
       .user-port-desc {
@@ -936,8 +940,8 @@
       }
 
       .ports-notice.error {
-        border-color: #7a3d3d;
-        color: #ffb5b5;
+        border-color: color-mix(in srgb, var(--accent-danger) 40%, transparent);
+        color: var(--accent-danger);
       }
 
       .ports-table-wrap {
