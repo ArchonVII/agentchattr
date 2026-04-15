@@ -119,11 +119,12 @@ const THEMES = {
       toolbarBg: null,
       buttonStyle: "default",
       accentColor: "#da7756",
+      tabIndicatorColor: "#da7756", // matches default accent — design spec
     },
     boot: { lines: [], delay: 0 },
     tuning: {
       lineHeight: 1.2, // xterm default — inherited baseline
-      letterSpacing: 0,
+      letterSpacing: 0, // xterm default — no extra spacing
     },
   },
 
@@ -160,7 +161,7 @@ const THEMES = {
       family: "Consolas",
       file: null,
       fallback: "monospace",
-      size: 14,
+      size: 14, // px; same as default — user instruction
     },
     cursor: { style: "bar", blink: true },
     effects: {
@@ -171,9 +172,13 @@ const THEMES = {
       toolbarBg: null,
       buttonStyle: "default",
       accentColor: "#ff00ff",
+      tabIndicatorColor: "#ff00ff", // matches accent — design spec
     },
     boot: { lines: [], delay: 0 },
-    tuning: { lineHeight: 1.2, letterSpacing: 0 },
+    tuning: {
+      lineHeight: 1.2, // xterm default — inherited baseline
+      letterSpacing: 0, // xterm default — no extra spacing
+    },
   },
 
   // ── MATRIX ───────────────────────────────────────────────────────────────
@@ -209,7 +214,7 @@ const THEMES = {
       family: "Consolas",
       file: null,
       fallback: "monospace",
-      size: 14,
+      size: 14, // px; same as default — user instruction
     },
     cursor: { style: "bar", blink: true },
     effects: {
@@ -220,9 +225,13 @@ const THEMES = {
       toolbarBg: null,
       buttonStyle: "default",
       accentColor: "#00ff41",
+      tabIndicatorColor: "#00ff41", // matches accent — design spec
     },
     boot: { lines: [], delay: 0 },
-    tuning: { lineHeight: 1.2, letterSpacing: 0 },
+    tuning: {
+      lineHeight: 1.2, // xterm default — inherited baseline
+      letterSpacing: 0, // xterm default — no extra spacing
+    },
   },
 
   // ── DRACULA ──────────────────────────────────────────────────────────────
@@ -258,7 +267,7 @@ const THEMES = {
       family: "Consolas",
       file: null,
       fallback: "monospace",
-      size: 14,
+      size: 14, // px; same as default — user instruction
     },
     cursor: { style: "bar", blink: true },
     effects: {
@@ -269,9 +278,13 @@ const THEMES = {
       toolbarBg: null,
       buttonStyle: "default",
       accentColor: "#ff79c6",
+      tabIndicatorColor: "#ff79c6", // matches accent — design spec
     },
     boot: { lines: [], delay: 0 },
-    tuning: { lineHeight: 1.2, letterSpacing: 0 },
+    tuning: {
+      lineHeight: 1.2, // xterm default — inherited baseline
+      letterSpacing: 0, // xterm default — no extra spacing
+    },
   },
 
   // ── COMMODORE 64 ─────────────────────────────────────────────────────────
@@ -320,6 +333,7 @@ const THEMES = {
       toolbarBg: "#2a2060",
       buttonStyle: "pixel",
       accentColor: "#6C5EB5",
+      tabIndicatorColor: "#6C5EB5", // matches C64 border colour — design spec
     },
     boot: {
       lines: [
@@ -384,6 +398,7 @@ const THEMES = {
       toolbarBg: "#111111",
       buttonStyle: "bevel",
       accentColor: "#AAAAAA",
+      tabIndicatorColor: "#AAAAAA", // matches VGA light grey — design spec
     },
     boot: {
       lines: [
@@ -447,6 +462,7 @@ const THEMES = {
       toolbarBg: "#0a1a0a",
       buttonStyle: "default",
       accentColor: "#33FF33",
+      tabIndicatorColor: "#33FF33", // matches phosphor green — design spec
     },
     boot: {
       lines: ["APPLE ][", "", "]"],
@@ -505,6 +521,7 @@ const THEMES = {
       toolbarBg: "#1a1200",
       buttonStyle: "default",
       accentColor: "#FFB000",
+      tabIndicatorColor: "#FFB000", // matches amber phosphor — design spec
     },
     boot: {
       lines: ["SYSTEM READY", ""],
