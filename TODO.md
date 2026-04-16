@@ -7,7 +7,7 @@
 - TUI dashboard: baud_rate effect — simulate slow text rendering for retro themes.
 - TUI dashboard: scanline rendering via alternating dim rows for CRT themes.
 - ~~Add watcher rule for `.bat` errors ("could not be loaded") to render as themed error panels in TUI.~~ Done.
-- Expose REPO_ROOT from Electron main process to renderer via IPC so terminal-config macros don't need hardcoded paths.
+- ~~Expose REPO_ROOT from Electron main process to renderer via IPC so terminal-config macros don't need hardcoded paths.~~ Resolved: terminal-manager now resolves relative commands against REPO_ROOT server-side.
 - Visually verify the two-column ports lattice layout and user-port classification with real dev servers running.
 - Decide whether the Windows desktop smoke coverage should remain local-only or move into CI.
 - Add browser status/readback primitives if agents need more than open/dock/pop-out URL control.

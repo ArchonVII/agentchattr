@@ -2,8 +2,16 @@
 
 ## 2026-04-15
 
+### Fixed
+
+- Agent quick-launch buttons (C/D/G) now resolve script paths against the repo root so `.bat`/`.sh` scripts are found regardless of the terminal's working directory.
+- Quick-launch buttons pre-set `agentName` on the terminal, suppressing the redundant "Detected agent — Accept?" identity confirmation toast.
+- Chat theme bridge expanded from 24 to ~45 variables, fixing washed-out backgrounds and invisible UI elements on light themes (System 6, Windows 98). Now derives colour-scheme-aware alpha tints, semantic soft variants, and info/warning/pending colours.
+
 ### Added
 
+- Terminal presence polling in web chat mode — the roster sidebar now reflects open terminals named by their agent, matching the Electron-embedded behaviour.
+- Clear Chat History button in the chat header bar for quick access (previously buried in Settings panel).
 - CSS-to-ANSI Translation Layer: build-time theme snapshot generator (`scripts/generate-theme-snapshot.js`) reads CSS variables, ANSI palettes, and era metadata from the Electron theme system into `data/theme_snapshot.json`.
 - Python ThemeManager (`theme_manager.py`): loads snapshot, builds Rich Theme objects, exposes box style, error icon, banner font, and effects per theme.
 - Python themed console helpers (`theme_console.py`): `render_panel`, `render_error` (with era-appropriate icons), `render_banner` (FIGlet ASCII art), `render_security_warning`.
