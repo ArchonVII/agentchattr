@@ -42,3 +42,51 @@
   --radius-xl: 0;
   --color-scheme: dark;
 }
+
+[data-theme="c64"] body {
+  text-shadow: none;
+  letter-spacing: 0;
+}
+
+[data-theme="c64"] #app {
+  background: #352879;
+}
+
+[data-theme="c64"] header,
+[data-theme="c64"] footer,
+[data-theme="c64"] #channel-bar {
+  box-shadow: none;
+  border-top: 2px solid #6c5eb5;
+  border-bottom: 4px solid #6c5eb5;
+}
+
+[data-theme="c64"] header h1,
+[data-theme="c64"] .channel-tab,
+[data-theme="c64"] .settings-btn,
+[data-theme="c64"] .chat-bubble,
+[data-theme="c64"] .input-hint {
+  text-transform: uppercase;
+}
+
+[data-theme="c64"] .settings-btn,
+[data-theme="c64"] .channel-tab,
+[data-theme="c64"] .discord-pill,
+[data-theme="c64"] .sidebar-collapse-btn,
+[data-theme="c64"] .chat-bubble,
+[data-theme="c64"] #settings-bar,
+[data-theme="c64"] #launcher-panel,
+[data-theme="c64"] #jobs-panel,
+[data-theme="c64"] .session-launcher-dialog,
+[data-theme="c64"] .convert-job-dialog,
+[data-theme="c64"] .repo-explorer,
+[data-theme="c64"] .repo-top-bar,
+[data-theme="c64"] .repo-commits-panel,
+[data-theme="c64"] .repo-agents-panel,
+[data-theme="c64"] .launcher-card,
+[data-theme="c64"] .job-card,
+[data-theme="c64"] .commit-item,
+[data-theme="c64"] .repo-agent-card {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: none;
+}

@@ -64,3 +64,49 @@
   --radius-xl: 3px;
   --color-scheme: light;
 }
+
+[data-theme="classic"] body {
+  text-shadow: none;
+}
+
+[data-theme="classic"] #app {
+  background: #bfbfbf;
+}
+
+[data-theme="classic"] header,
+[data-theme="classic"] footer,
+[data-theme="classic"] #channel-bar {
+  box-shadow:
+    inset 1px 1px 0 0 #fff,
+    inset -1px -1px 0 0 #999;
+}
+
+[data-theme="classic"] header h1 {
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+[data-theme="classic"] .settings-btn,
+[data-theme="classic"] .channel-tab,
+[data-theme="classic"] .discord-pill,
+[data-theme="classic"] .sidebar-collapse-btn,
+[data-theme="classic"] .chat-bubble,
+[data-theme="classic"] #settings-bar,
+[data-theme="classic"] #launcher-panel,
+[data-theme="classic"] #jobs-panel,
+[data-theme="classic"] .session-launcher-dialog,
+[data-theme="classic"] .convert-job-dialog,
+[data-theme="classic"] .repo-explorer,
+[data-theme="classic"] .repo-top-bar,
+[data-theme="classic"] .repo-commits-panel,
+[data-theme="classic"] .repo-agents-panel,
+[data-theme="classic"] .launcher-card,
+[data-theme="classic"] .job-card,
+[data-theme="classic"] .commit-item,
+[data-theme="classic"] .repo-agent-card {
+  border: 1px solid #111;
+  box-shadow:
+    1px 2px #111,
+    inset 1px 1px 0 0 #fff,
+    inset -1px -1px 0 0 #999;
+}

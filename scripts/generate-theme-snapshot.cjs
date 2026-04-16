@@ -92,6 +92,7 @@ const RICH_BOX = {
   c64: "HEAVY",
   c64css3: "HEAVY",
   psone: "HEAVY",
+  cyberpunk: "HEAVY",
   tui: "SQUARE",
 };
 
@@ -107,6 +108,7 @@ const INK_BORDER = {
   c64: "bold",
   c64css3: "bold",
   psone: "bold",
+  cyberpunk: "bold",
   tui: "single",
 };
 
@@ -239,6 +241,20 @@ const ERA_META = {
       chromatic_aberration: 0,
     },
     loaderStyle: "classic",
+    errorIcon: "stop",
+    focusIndicator: "reverse_video",
+  },
+  cyberpunk: {
+    bannerFont: "speed",
+    glyphSet: "unicode",
+    effects: {
+      bg_glow: "rgba(255,79,216,0.28)",
+      scanline_opacity: 0.04,
+      flicker_intensity: 0.01,
+      baud_rate: 0,
+      chromatic_aberration: 0,
+    },
+    loaderStyle: "dots",
     errorIcon: "stop",
     focusIndicator: "reverse_video",
   },

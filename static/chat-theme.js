@@ -11,6 +11,7 @@ const VALID_CHAT_THEMES = new Set([
   "c64",
   "c64css3",
   "psone",
+  "cyberpunk",
   "tui",
 ]);
 

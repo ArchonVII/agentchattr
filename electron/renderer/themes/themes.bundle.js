@@ -113,6 +113,15 @@
           preview: { bg: "#12151a", fg: "#fff", accent: "#5db2ff" }
         },
         {
+          id: "cyberpunk",
+          name: "Cyberpunk",
+          era: "Neon",
+          adapter: "adapter-cyberpunk.css",
+          font: null,
+          terminalTheme: "cyberpunk",
+          preview: { bg: "#08111f", fg: "#d8f3ff", accent: "#ff4fd8" }
+        },
+        {
           id: "tui",
           name: "TuiCss",
           era: "DOS",
