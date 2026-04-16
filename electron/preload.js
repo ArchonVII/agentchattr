@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { clipboard, contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
   onPortData(callback) {
@@ -34,6 +34,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   setPreference(key, value) {
     return ipcRenderer.invoke("set-preference", key, value);
+  },
+  writeClipboardText(text) {
+    clipboard.writeText(typeof text === "string" ? text : String(text ?? ""));
   },
   showOpenDialog(options) {
     return ipcRenderer.invoke("show-open-dialog", options);

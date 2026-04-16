@@ -12873,6 +12873,7 @@ ${s3.join("\n")}
   var layoutMode = "tabs";
   var arsenalVisible = true;
   var highestZ = 1;
+  var lastCopiedSelection = "";
   var quickLaunchFolders = [];
   var selectedLaunchFolder = null;
   var skipPermissions = true;
@@ -12978,7 +12979,8 @@ ${s3.join("\n")}
     void requestNewTerminal(null, {
       cwd: selectedLaunchFolder,
       command,
-      name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`
+      name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`,
+      agentName: agentId
     });
   }
   function getQuickLaunchState() {
@@ -13488,6 +13490,13 @@ ${s3.join("\n")}
         result.pid,
         result.cwd
       );
+      if (opts.agentName) {
+        const inst = terminalInstances.get(result.id);
+        const select = inst?.macroBar?.querySelector(
+          `select[data-terminal-id="${result.id}"]`
+        );
+        if (select) select.value = opts.agentName;
+      }
       focusTerminal(result.id);
     }
   }
@@ -13570,6 +13579,20 @@ ${s3.join("\n")}
     });
     terminal.onResize(({ cols, rows }) => {
       window.electronAPI?.resizeTerminal(id, cols, rows);
+    });
+    terminal.onSelectionChange(() => {
+      const selection = terminal.getSelection();
+      if (!selection) {
+        lastCopiedSelection = "";
+        return;
+      }
+      if (selection === lastCopiedSelection) return;
+      lastCopiedSelection = selection;
+      try {
+        window.electronAPI?.writeClipboardText?.(selection);
+      } catch (error) {
+        console.warn("Failed to copy terminal selection:", error);
+      }
     });
     surface.addEventListener("contextmenu", (e) => {
       const selection = terminal.getSelection();
