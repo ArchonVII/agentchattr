@@ -1164,31 +1164,6 @@ header h1 {
   color: var(--warning);
 }
 
-.presence-port-kill {
-  margin-left: auto;
-  padding: 2px 8px;
-  border: 1px solid var(--state-danger-border);
-  border-radius: var(--radius-full);
-  background: var(--state-danger-bg);
-  color: var(--state-danger-fg);
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s;
-}
-
-.presence-port-kill:hover {
-  background: var(--state-danger-bg-strong);
-  border-color: var(--state-danger-border-strong);
-  color: var(--state-danger-fg-strong);
-}
-
 .presence-item.available:not(.working) {
   border-color: color-mix(in srgb, var(--success) 22%, transparent);
 }
@@ -1279,16 +1254,21 @@ header h1 {
   color: var(--state-success-fg-strong);
 }
 
-.presence-terminal-remove {
-  margin-left: auto;
-  width: 22px;
-  height: 22px;
+.presence-actions {
+  display: inline-flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.presence-close-btn {
+  width: 20px;
+  height: 20px;
   border: 1px solid var(--state-danger-border);
   border-radius: 999px;
   background: var(--state-danger-bg);
   color: var(--state-danger-fg);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -1300,7 +1280,7 @@ header h1 {
     color 0.15s;
 }
 
-.presence-terminal-remove:hover {
+.presence-close-btn:hover {
   background: var(--state-danger-bg-strong);
   border-color: var(--state-danger-border-strong);
   color: var(--state-danger-fg-strong);
@@ -1356,7 +1336,7 @@ header h1 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .presence-name-row {
@@ -1364,6 +1344,7 @@ header h1 {
   align-items: center;
   gap: 6px;
   min-width: 0;
+  margin-bottom: 1px;
 }
 
 .presence-name {
@@ -1377,15 +1358,15 @@ header h1 {
 }
 
 .presence-role {
-  max-width: 90px;
+  max-width: 76px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 2px 6px;
+  padding: 1px 5px;
   border-radius: var(--radius-full);
   background: var(--surface-hover);
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1393,11 +1374,12 @@ header h1 {
 
 .presence-meta {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 #presence-panel.collapsed {

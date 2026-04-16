@@ -29,9 +29,101 @@ let colorOverrides = JSON.parse(
   localStorage.getItem("agentchattr-color-overrides") || "{}",
 );
 let schedulesList = []; // array of schedule objects from server
+let runtimeUsersByChannel = new Map(); // channel -> Map<senderKey, entry>
+let dismissedRosterEntries = new Set(); // transient dismissals for runtime roster cards
+const repoStatusCache = new Map(); // cwd -> { branch, repo, worktree, pending }
 
 const ROOM_SIDEBAR_COLLAPSE_KEY = "agentchattr-room-sidebar-collapsed";
 const PRESENCE_SIDEBAR_COLLAPSE_KEY = "agentchattr-presence-sidebar-collapsed";
+
+function getRuntimeUsers(channel) {
+  const key = (channel || "general").toLowerCase();
+  let users = runtimeUsersByChannel.get(key);
+  if (!users) {
+    users = new Map();
+    runtimeUsersByChannel.set(key, users);
+  }
+  return users;
+}
+
+function clearRuntimeUsers() {
+  runtimeUsersByChannel = new Map();
+  dismissedRosterEntries = new Set();
+}
+
+function trackRuntimeUser(sender, channel, msgType = "chat") {
+  const name = (sender || "").trim();
+  const targetChannel = (channel || "general").trim() || "general";
+  if (!name || name.toLowerCase() === "system" || resolveAgent(name)) return;
+  if (name.toLowerCase() === username.toLowerCase()) return;
+
+  const key = `user:${targetChannel.toLowerCase()}:${name.toLowerCase()}`;
+  const users = getRuntimeUsers(targetChannel);
+  if (msgType === "leave") {
+    users.delete(key);
+    dismissedRosterEntries.delete(key);
+    return;
+  }
+
+  users.set(key, {
+    key,
+    name,
+    displayName: name,
+    channel: targetChannel,
+    seenAt: Date.now(),
+  });
+  dismissedRosterEntries.delete(key);
+}
+
+function dismissRosterEntry(entry, event) {
+  event?.stopPropagation?.();
+  if (!entry?.key) return;
+  dismissedRosterEntries.add(entry.key);
+  renderChannelRoster();
+}
+
+window.dismissRosterEntry = dismissRosterEntry;
+
+function getPathLeaf(pathValue) {
+  if (!pathValue) return "";
+  return String(pathValue)
+    .replace(/[\\/]+$/, "")
+    .split(/[\\/]/)
+    .filter(Boolean)
+    .pop() || String(pathValue);
+}
+
+function getRepoStatusSummary(cwd) {
+  if (!cwd) return null;
+  return repoStatusCache.get(cwd) || null;
+}
+
+function ensureRepoStatusSummary(cwd) {
+  if (!cwd || repoStatusCache.has(cwd)) return;
+
+  repoStatusCache.set(cwd, { pending: true });
+  fetch(`/api/repo/status?path=${encodeURIComponent(cwd)}`)
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error("repo status unavailable");
+      }
+      const data = await response.json();
+      repoStatusCache.set(cwd, {
+        branch: data.branch || "",
+        repo: data.repo || getPathLeaf(data.repo_root || cwd),
+        worktree: data.worktree || getPathLeaf(data.worktree_path || cwd),
+      });
+      renderChannelRoster();
+    })
+    .catch(() => {
+      repoStatusCache.set(cwd, {
+        branch: "",
+        repo: getPathLeaf(cwd),
+        worktree: getPathLeaf(cwd),
+      });
+      renderChannelRoster();
+    });
+}
 
 // Expose globals that extracted modules (sessions.js, jobs.js) read via window.*
 // Using defineProperty so live values are always returned.
@@ -377,6 +469,10 @@ function init() {
   });
 
   detectPlatform();
+  clearRuntimeUsers();
+  if (username) {
+    trackRuntimeUser(username, activeChannel);
+  }
   fetchRoles();
   connectWebSocket();
   setupInput();
@@ -1085,6 +1181,10 @@ function appendMessage(msg) {
 
   container.appendChild(el);
 
+  if (soundEnabled) {
+    trackRuntimeUser(msg.sender, msgChannel, msg.type || "chat");
+  }
+
   // Collapse consecutive job_created messages into a group
   if (msg.type === "job_created" && window._collapseJobBreadcrumbs) {
     window._collapseJobBreadcrumbs(container, el);
@@ -1510,6 +1610,8 @@ function getChannelRosterEntries(channel = activeChannel) {
     });
   };
 
+  upsertParticipant(username);
+
   if (container) {
     for (const el of container.children) {
       if ((el.dataset.channel || "general") !== channel) continue;
@@ -1517,8 +1619,29 @@ function getChannelRosterEntries(channel = activeChannel) {
       const msgType = (el.dataset.msgType || "chat").trim();
       if (!sender) continue;
       latestSenderEvent.set(sender.toLowerCase(), msgType);
-      upsertParticipant(sender);
+
+      const isSelfSender = sender.toLowerCase() === userKey;
+      if (resolveAgent(sender) || isSelfSender) {
+        upsertParticipant(sender);
+      }
     }
+  }
+
+  for (const entry of getRuntimeUsers(channel).values()) {
+    if (dismissedRosterEntries.has(entry.key)) continue;
+    participants.set(entry.key, {
+      key: entry.key,
+      name: entry.name,
+      displayName: entry.displayName,
+      isSelf: entry.name.toLowerCase() === userKey,
+      isAgent: false,
+      isRuntimeUser: true,
+      available: true,
+      busy: false,
+      role: "",
+      color: getColor(entry.name),
+      meta: "live user",
+    });
   }
 
   const terminalData = Array.isArray(window._terminalData)
@@ -1526,10 +1649,21 @@ function getChannelRosterEntries(channel = activeChannel) {
     : [];
   for (const term of terminalData) {
     const terminalKey = `terminal:${term.id || term.name || term.pid || participants.size}`;
-    const age = _formatTerminalAge(term.startedAt);
-    const pidLabel = term.pid ? `PID ${term.pid}` : "";
+    const repoStatus = getRepoStatusSummary(term.cwd);
+    ensureRepoStatusSummary(term.cwd);
     const sourceLabel =
       term.source === "embedded" ? "embedded terminal" : "external terminal";
+    const metaBits = [];
+    if (term.pid) metaBits.push(`PID ${term.pid}`);
+    if (repoStatus?.branch) metaBits.push(repoStatus.branch);
+    if (repoStatus?.worktree && repoStatus.worktree !== repoStatus.repo) {
+      metaBits.push(`wt ${repoStatus.worktree}`);
+    }
+    if (repoStatus?.repo) {
+      metaBits.push(`repo ${repoStatus.repo}`);
+    } else if (term.cwd) {
+      metaBits.push(`repo ${getPathLeaf(term.cwd)}`);
+    }
 
     participants.set(terminalKey, {
       key: terminalKey,
@@ -1542,7 +1676,7 @@ function getChannelRosterEntries(channel = activeChannel) {
       busy: false,
       role: term.shell || "",
       color: term.source === "embedded" ? "#da7756" : "#78b4dc",
-      meta: [sourceLabel, pidLabel, age].filter(Boolean).join(" · "),
+      meta: metaBits.join(" · ") || sourceLabel,
       terminalId: term.id || null,
       terminalSource: term.source || "external",
       pid: term.pid || null,
@@ -1662,7 +1796,7 @@ function renderChannelRoster() {
 
   if (participants.length === 0) {
     list.innerHTML =
-      '<div class="presence-empty">No one has posted in this channel yet.</div>';
+      '<div class="presence-empty">No active people, terminals, or ports in this channel.</div>';
     return;
   }
 
@@ -1682,10 +1816,15 @@ function renderChannelRoster() {
     const roleHtml = entry.role
       ? `<span class="presence-role">${escapeHtml(entry.role)}</span>`
       : "";
-    const removeButtonHtml = entry.isTerminal
-      ? `<button class="presence-terminal-remove" title="Terminate terminal and remove chatter" aria-label="Terminate terminal and remove chatter">×</button>`
+    const closeButtonTitle = entry.isTerminal
+      ? "Terminate terminal and remove chatter"
       : entry.isPort
-      ? `<button class="presence-port-kill" title="Kill process on port ${entry.port}">Kill</button>`
+        ? `Kill process on port ${entry.port}`
+        : entry.isRuntimeUser && !entry.isSelf
+          ? `Hide ${entry.displayName}`
+          : "";
+    const removeButtonHtml = closeButtonTitle
+      ? `<button class="presence-close-btn" title="${escapeHtml(closeButtonTitle)}" aria-label="${escapeHtml(closeButtonTitle)}">×</button>`
       : "";
     const avatarHtml = entry.isTerminal
       ? `<div class="presence-avatar presence-terminal-avatar">
@@ -1708,13 +1847,19 @@ function renderChannelRoster() {
         <div class="presence-name-row">
           <span class="presence-name">${escapeHtml(entry.displayName)}</span>
           ${roleHtml}
-          ${removeButtonHtml}
         </div>
         <div class="presence-meta">${escapeHtml(entry.meta)}</div>
       </div>`;
 
+    if (removeButtonHtml) {
+      const actionWrap = document.createElement("div");
+      actionWrap.className = "presence-actions";
+      actionWrap.innerHTML = removeButtonHtml;
+      item.appendChild(actionWrap);
+    }
+
     if (entry.isTerminal) {
-      const removeBtn = item.querySelector(".presence-terminal-remove");
+      const removeBtn = item.querySelector(".presence-close-btn");
       if (removeBtn) {
         removeBtn.addEventListener("click", (event) =>
           removeTerminalChatter(entry, event),
@@ -1723,12 +1868,21 @@ function renderChannelRoster() {
     }
 
     if (entry.isPort) {
-      const killBtn = item.querySelector(".presence-port-kill");
+      const killBtn = item.querySelector(".presence-close-btn");
       if (killBtn) {
         killBtn.addEventListener("click", (event) => {
           event.stopPropagation();
           killPort(entry.port, entry.msg_id);
         });
+      }
+    }
+
+    if (entry.isRuntimeUser && !entry.isSelf) {
+      const dismissBtn = item.querySelector(".presence-close-btn");
+      if (dismissBtn) {
+        dismissBtn.addEventListener("click", (event) =>
+          dismissRosterEntry(entry, event),
+        );
       }
     }
 
@@ -2468,6 +2622,7 @@ function applySettings(data) {
     username = data.username;
     document.getElementById("sender-label").textContent = username;
     document.getElementById("setting-username").value = username;
+    trackRuntimeUser(username, activeChannel);
   }
   if (data.font) {
     document.body.classList.remove("font-mono", "font-serif", "font-sans");
@@ -5406,6 +5561,13 @@ let _terminalPresenceTimer = null;
 function initTerminalPresencePolling() {
   // If running inside Electron's webview, skip — the bridge handles it.
   if (window._electronTerminalPresence) return;
+
+  window._terminalData = [];
+  window._activePorts = [];
+  clearRuntimeUsers();
+  if (username) {
+    trackRuntimeUser(username, activeChannel);
+  }
 
   async function poll() {
     try {

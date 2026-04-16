@@ -156,21 +156,19 @@ function launchAgentTerminal(agentId) {
     return;
   }
 
-  const isWin = navigator.userAgent.includes("Windows");
-  const ext = isWin ? ".bat" : ".sh";
-  let scriptName = `start_${agentId}`;
-
-  if (skipPermissions) {
-    if (agentId === "claude") scriptName = "start_claude_skip-permissions";
-    if (agentId === "codex") scriptName = "start_codex_bypass";
-    if (agentId === "gemini") scriptName = "start_gemini_yolo";
+  let command = agentId;
+  if (agentId === "claude" && skipPermissions) {
+    command = "claude --dangerously-skip-permissions";
+  } else if (agentId === "codex" && skipPermissions) {
+    command = "codex --dangerously-bypass-approvals-and-sandbox";
+  } else if (agentId === "gemini" && skipPermissions) {
+    command = "gemini --yolo";
   }
-
-  const command = `${isWin ? "windows\\" : "macos-linux/"}${scriptName}${ext}`;
 
   void requestNewTerminal(null, {
     cwd: selectedLaunchFolder,
-    command: command,
+    command,
+    ensureServer: true,
     name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`,
     agentName: agentId,
   });

@@ -100,3 +100,64 @@
   border: 2px solid #000;
   box-shadow: 2px 2px 0 #000;
 }
+
+[data-theme="system6"] #input-row {
+  align-items: flex-end;
+  gap: 10px;
+}
+
+[data-theme="system6"] #session-launch-btn,
+[data-theme="system6"] #mic,
+[data-theme="system6"] #send,
+[data-theme="system6"] .send-clock {
+  --system6-button-radius: 10px;
+  --system6-button-face: #e8e8e8;
+  --system6-button-outline: #000;
+  min-height: 34px;
+  padding: 0.65em 1.1em;
+  border: 2px solid var(--system6-button-outline);
+  border-radius: var(--system6-button-radius);
+  background: var(--system6-button-face);
+  color: var(--system6-button-outline);
+  box-shadow: 0 4px 0 var(--system6-button-outline);
+  transform: translateY(-2px);
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease,
+    background-color 0.1s ease,
+    color 0.1s ease;
+}
+
+[data-theme="system6"] #session-launch-btn:hover,
+[data-theme="system6"] #mic:hover,
+[data-theme="system6"] #send:hover,
+[data-theme="system6"] .send-clock:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 0 var(--system6-button-outline);
+  background: #f5f5f5;
+  color: #000;
+}
+
+[data-theme="system6"] #session-launch-btn:active,
+[data-theme="system6"] #mic:active,
+[data-theme="system6"] #send:active,
+[data-theme="system6"] .send-clock:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 0 var(--system6-button-outline);
+}
+
+[data-theme="system6"] #session-launch-btn svg,
+[data-theme="system6"] #mic svg,
+[data-theme="system6"] .send-clock svg {
+  display: block;
+}
+
+[data-theme="system6"] .send-group {
+  gap: 8px;
+}
+
+[data-theme="system6"] .send-group.inactive #send,
+[data-theme="system6"] .send-group.inactive .send-clock {
+  opacity: 0.65;
+  box-shadow: 0 3px 0 var(--system6-button-outline);
+}

@@ -130,6 +130,33 @@ function getNextName(shellId) {
   return `${shellId} ${count}`;
 }
 
+function buildShellCommandInput({ shellId, command, ensureServer = false }) {
+  if (!command) return "";
+
+  const trimmed = String(command).trim();
+  if (!trimmed) return "";
+
+  let nextCommand = trimmed;
+
+  if (ensureServer && (shellId === "pwsh" || shellId === "powershell")) {
+    nextCommand =
+      `if (-not (Get-NetTCPConnection -LocalPort ${WEB_UI_PORT} -State Listen -ErrorAction SilentlyContinue)) { Start-Process python -ArgumentList 'run.py' -WorkingDirectory '${REPO_ROOT}' }; ` +
+      nextCommand;
+  }
+
+  const quotedPathMatch = nextCommand.match(/^"(.+?\.(?:bat|cmd|ps1|sh))"$/i);
+  if (quotedPathMatch) {
+    if (shellId === "pwsh" || shellId === "powershell") {
+      return `& ${nextCommand}\r`;
+    }
+    if (shellId === "cmd") {
+      return `call ${nextCommand}\r`;
+    }
+  }
+
+  return `${nextCommand}\r`;
+}
+
 // ---------------------------------------------------------------------------
 // Terminal lifecycle
 // ---------------------------------------------------------------------------
@@ -178,7 +205,13 @@ function createTerminal(opts = {}) {
     if (fs.existsSync(resolvedPath)) {
       cmd = `"${resolvedPath}"`;
     }
-    ptyProcess.write(`${cmd}\r`);
+    ptyProcess.write(
+      buildShellCommandInput({
+        shellId,
+        command: cmd,
+        ensureServer: !!opts.ensureServer,
+      }),
+    );
   }
 
   sessionCounter++;
@@ -190,6 +223,7 @@ function createTerminal(opts = {}) {
     startedAt: Date.now(),
     agentName: opts.agentName || null,
     sessionName: opts.sessionName || `session-${sessionCounter}`,
+    cwd,
   };
 
   terminals.set(id, entry);
@@ -235,15 +269,10 @@ function createTerminal(opts = {}) {
 
   sendToRenderer("terminal:created", result);
   const introLines = [
-    `Session started: ${name}`,
-    `shell: ${shellId}`,
-    `session: ${entry.sessionName}`,
-    `cwd: ${cwd}`,
-    `pid: ${ptyProcess.pid}`,
+    `${shellId} terminal started`,
+    `PID ${ptyProcess.pid}`,
+    `${cwd}`,
   ];
-  if (entry.agentName) {
-    introLines.splice(1, 0, `agent: ${entry.agentName}`);
-  }
   postBridgeEvent({
     terminalId: id,
     terminalName: name,
@@ -314,7 +343,9 @@ function getEmbeddedTerminalData() {
       source: "embedded",
       status: "running",
       startedAt: entry.startedAt,
-      cwd: null,
+      cwd: entry.cwd || null,
+      agentName: entry.agentName || null,
+      sessionName: entry.sessionName || null,
       windowTerminalTab: false,
     });
   }
@@ -363,6 +394,9 @@ function getBridgeTerminals() {
       agentName: entry.agentName,
       sessionName: entry.sessionName,
       pid: entry.pid,
+      cwd: entry.cwd || null,
+      startedAt: entry.startedAt,
+      source: "embedded",
     });
   }
   return result;
@@ -558,4 +592,5 @@ module.exports = {
   getWatcherRules,
   setWatcherRules,
   getBridgeTerminals,
+  buildShellCommandInput,
 };

@@ -2902,6 +2902,12 @@ async def get_repo_status(path: str):
                                              cwd=str(p), text=True)
         # Get current branch
         branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=str(p), text=True).strip()
+        repo_root = Path(
+            subprocess.check_output(
+                ["git", "rev-parse", "--show-toplevel"], cwd=str(p), text=True
+            ).strip()
+        ).resolve()
+        worktree = p
         
         status_list = [line.strip() for line in status_raw.split("\n") if line.strip()]
         
@@ -2919,6 +2925,10 @@ async def get_repo_status(path: str):
             
         return {
             "branch": branch,
+            "repo": repo_root.name,
+            "repo_root": str(repo_root),
+            "worktree": worktree.name,
+            "worktree_path": str(worktree),
             "status": status_list,
             "commits": commit_list
         }
