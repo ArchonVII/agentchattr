@@ -58,3 +58,58 @@
   --radius-xl: 0;
   --color-scheme: light;
 }
+
+[data-theme="win98"] body {
+  text-shadow: none;
+}
+
+[data-theme="win98"] #app {
+  background: #008080;
+}
+
+[data-theme="win98"] header,
+[data-theme="win98"] footer,
+[data-theme="win98"] #channel-bar,
+[data-theme="win98"] #settings-bar,
+[data-theme="win98"] #launcher-panel,
+[data-theme="win98"] #jobs-panel,
+[data-theme="win98"] .session-launcher-dialog,
+[data-theme="win98"] .convert-job-dialog,
+[data-theme="win98"] .repo-explorer,
+[data-theme="win98"] .repo-top-bar,
+[data-theme="win98"] .repo-commits-panel,
+[data-theme="win98"] .repo-agents-panel,
+[data-theme="win98"] .launcher-card,
+[data-theme="win98"] .job-card,
+[data-theme="win98"] .commit-item,
+[data-theme="win98"] .repo-agent-card {
+  border: none;
+  box-shadow:
+    inset -1px -1px 0 #0a0a0a,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf;
+}
+
+[data-theme="win98"] header h1 {
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+[data-theme="win98"] .settings-btn,
+[data-theme="win98"] .channel-tab,
+[data-theme="win98"] .discord-pill,
+[data-theme="win98"] .sidebar-collapse-btn,
+[data-theme="win98"] .chat-bubble {
+  border: none;
+  border-radius: 0;
+  box-shadow:
+    inset -1px -1px 0 #0a0a0a,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf;
+}
+
+[data-theme="win98"] .message.self .chat-bubble {
+  border-radius: 0;
+}

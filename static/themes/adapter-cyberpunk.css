@@ -1,0 +1,145 @@
+/*
+ * Browser-safe cyberpunk theme adapter.
+ */
+
+:root[data-theme="cyberpunk"] {
+  --bg-app: #08111f;
+  --bg-surface: #0d1830;
+  --bg-elevated: #132140;
+  --bg-deep: #060b16;
+  --bg-sunken: #04070e;
+
+  --fg-primary: #d8f3ff;
+  --fg-secondary: #8fb3c9;
+  --fg-muted: #5b7287;
+  --fg-dim: #476072;
+  --fg-faint: #31495b;
+
+  --accent: #ff4fd8;
+  --accent-hover-bg: rgba(255, 79, 216, 0.14);
+  --accent-subtle: rgba(255, 79, 216, 0.1);
+  --accent-danger: #ff5f86;
+  --accent-success: #00ff9f;
+  --accent-info: #00e5ff;
+
+  --border: #214067;
+  --border-strong: #2f5f8f;
+  --border-grid: #17324f;
+  --focus-ring: rgba(0, 229, 255, 0.32);
+  --surface-hover: rgba(0, 229, 255, 0.08);
+  --surface-hover-strong: rgba(255, 79, 216, 0.12);
+  --control-hover-fg: #ffffff;
+  --status-offline: #4a5d70;
+  --state-danger-fg: #ffb2c3;
+  --state-danger-fg-strong: #ffe4eb;
+  --state-danger-bg-hover: #401326;
+  --state-success-fg: #9dffd1;
+  --state-success-fg-strong: #ddffef;
+  --state-success-bg-hover: #083b2c;
+  --panel-shadow-strong:
+    0 0 0 1px rgba(47, 95, 143, 0.4),
+    0 0 28px rgba(0, 229, 255, 0.12),
+    0 0 42px rgba(255, 79, 216, 0.08);
+  --pixel-shadow-dark: rgba(2, 8, 18, 0.78);
+  --pixel-shadow-light: rgba(120, 232, 255, 0.18);
+  --bevel-bg: #132140;
+  --bevel-bg-hover: #1b2c52;
+  --bevel-fg: #d8f3ff;
+  --bevel-shadow-dark: #08111f;
+  --bevel-shadow-light: #3b6fa3;
+  --bevel-shadow-darker: #02060c;
+  --bevel-shadow-lighter: #58d8ff;
+
+  --font-ui: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-display: "Bahnschrift", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-decorative: var(--font-display);
+  --font-mono: Consolas, "Courier New", monospace;
+  --font-size-base: 13px;
+
+  --shadow-menu:
+    0 0 0 1px rgba(47, 95, 143, 0.38),
+    0 16px 36px rgba(0, 0, 0, 0.45);
+  --shadow-float:
+    0 0 0 1px rgba(47, 95, 143, 0.4),
+    0 20px 48px rgba(0, 0, 0, 0.55);
+  --radius: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --color-scheme: dark;
+}
+
+[data-theme="cyberpunk"] body {
+  text-shadow: none;
+}
+
+[data-theme="cyberpunk"] #app {
+  background:
+    radial-gradient(circle at top left, rgba(255, 79, 216, 0.16), transparent 26%),
+    radial-gradient(circle at top right, rgba(0, 229, 255, 0.13), transparent 30%),
+    linear-gradient(180deg, #0b1527 0%, #04070e 100%);
+}
+
+[data-theme="cyberpunk"] #app::before {
+  opacity: 0.08;
+  mix-blend-mode: screen;
+}
+
+[data-theme="cyberpunk"] header,
+[data-theme="cyberpunk"] footer,
+[data-theme="cyberpunk"] #channel-bar {
+  border-color: rgba(0, 229, 255, 0.35);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 79, 216, 0.08),
+    0 0 18px rgba(0, 229, 255, 0.08);
+}
+
+[data-theme="cyberpunk"] header h1 {
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 10px rgba(255, 79, 216, 0.22),
+    0 0 16px rgba(0, 229, 255, 0.18);
+}
+
+[data-theme="cyberpunk"] .settings-btn,
+[data-theme="cyberpunk"] .channel-tab,
+[data-theme="cyberpunk"] .discord-pill,
+[data-theme="cyberpunk"] .sidebar-collapse-btn {
+  border-width: 1px;
+  border-color: rgba(0, 229, 255, 0.42);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 79, 216, 0.1),
+    0 0 12px rgba(0, 229, 255, 0.06);
+}
+
+[data-theme="cyberpunk"] .chat-bubble {
+  border-width: 1px;
+  border-color: rgba(0, 229, 255, 0.3);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 79, 216, 0.08),
+    0 0 12px rgba(0, 229, 255, 0.05);
+}
+
+[data-theme="cyberpunk"] .message.self .chat-bubble {
+  border-color: rgba(255, 79, 216, 0.36);
+}
+
+[data-theme="cyberpunk"] #settings-bar,
+[data-theme="cyberpunk"] #launcher-panel,
+[data-theme="cyberpunk"] #jobs-panel,
+[data-theme="cyberpunk"] .session-launcher-dialog,
+[data-theme="cyberpunk"] .convert-job-dialog,
+[data-theme="cyberpunk"] .repo-explorer,
+[data-theme="cyberpunk"] .repo-top-bar,
+[data-theme="cyberpunk"] .repo-commits-panel,
+[data-theme="cyberpunk"] .repo-agents-panel,
+[data-theme="cyberpunk"] .launcher-card,
+[data-theme="cyberpunk"] .job-card,
+[data-theme="cyberpunk"] .commit-item,
+[data-theme="cyberpunk"] .repo-agent-card {
+  border-color: rgba(0, 229, 255, 0.3);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 79, 216, 0.06),
+    0 0 16px rgba(0, 229, 255, 0.05);
+}

@@ -42,3 +42,51 @@
   --radius-xl: 0;
   --color-scheme: dark;
 }
+
+[data-theme="c64css3"] body {
+  text-shadow: none;
+  letter-spacing: 0;
+}
+
+[data-theme="c64css3"] #app {
+  background: #20398d;
+}
+
+[data-theme="c64css3"] header,
+[data-theme="c64css3"] footer,
+[data-theme="c64css3"] #channel-bar {
+  box-shadow: none;
+  border-top: 4px solid #6076c5;
+  border-bottom: 6px solid #6076c5;
+}
+
+[data-theme="c64css3"] header h1,
+[data-theme="c64css3"] .channel-tab,
+[data-theme="c64css3"] .settings-btn,
+[data-theme="c64css3"] .chat-bubble,
+[data-theme="c64css3"] .input-hint {
+  text-transform: uppercase;
+}
+
+[data-theme="c64css3"] .settings-btn,
+[data-theme="c64css3"] .channel-tab,
+[data-theme="c64css3"] .discord-pill,
+[data-theme="c64css3"] .sidebar-collapse-btn,
+[data-theme="c64css3"] .chat-bubble,
+[data-theme="c64css3"] #settings-bar,
+[data-theme="c64css3"] #launcher-panel,
+[data-theme="c64css3"] #jobs-panel,
+[data-theme="c64css3"] .session-launcher-dialog,
+[data-theme="c64css3"] .convert-job-dialog,
+[data-theme="c64css3"] .repo-explorer,
+[data-theme="c64css3"] .repo-top-bar,
+[data-theme="c64css3"] .repo-commits-panel,
+[data-theme="c64css3"] .repo-agents-panel,
+[data-theme="c64css3"] .launcher-card,
+[data-theme="c64css3"] .job-card,
+[data-theme="c64css3"] .commit-item,
+[data-theme="c64css3"] .repo-agent-card {
+  border-radius: 0;
+  border-width: 3px;
+  box-shadow: none;
+}

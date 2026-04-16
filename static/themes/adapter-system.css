@@ -43,3 +43,60 @@
   --radius-xl: 2px;
   --color-scheme: light;
 }
+
+[data-theme="system6"] body {
+  text-shadow: none;
+}
+
+[data-theme="system6"] #app {
+  background: #a8a8a8;
+}
+
+[data-theme="system6"] header,
+[data-theme="system6"] footer,
+[data-theme="system6"] #channel-bar {
+  background: #fff;
+  border-top: 2px solid #000;
+  border-bottom: 2px solid #000;
+  box-shadow: none;
+}
+
+[data-theme="system6"] header h1 {
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+[data-theme="system6"] .settings-btn,
+[data-theme="system6"] .channel-tab,
+[data-theme="system6"] .discord-pill,
+[data-theme="system6"] .sidebar-collapse-btn,
+[data-theme="system6"] .chat-bubble {
+  background: #fff;
+  border: 2px solid #000;
+  box-shadow: none;
+}
+
+[data-theme="system6"] .settings-btn:hover,
+[data-theme="system6"] .channel-tab.active,
+[data-theme="system6"] .sidebar-collapse-btn:hover {
+  background: #000;
+  color: #fff;
+}
+
+[data-theme="system6"] #settings-bar,
+[data-theme="system6"] #launcher-panel,
+[data-theme="system6"] #jobs-panel,
+[data-theme="system6"] .session-launcher-dialog,
+[data-theme="system6"] .convert-job-dialog,
+[data-theme="system6"] .repo-explorer,
+[data-theme="system6"] .repo-top-bar,
+[data-theme="system6"] .repo-commits-panel,
+[data-theme="system6"] .repo-agents-panel,
+[data-theme="system6"] .launcher-card,
+[data-theme="system6"] .job-card,
+[data-theme="system6"] .commit-item,
+[data-theme="system6"] .repo-agent-card {
+  background: #fff;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
+}

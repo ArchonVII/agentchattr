@@ -45,3 +45,72 @@
   --radius-xl: 0;
   --color-scheme: dark;
 }
+
+[data-theme="nes"] body {
+  text-shadow: none;
+  letter-spacing: 0;
+}
+
+[data-theme="nes"] header,
+[data-theme="nes"] footer,
+[data-theme="nes"] #channel-bar {
+  box-shadow: none;
+  border-top: 4px solid #fff;
+  border-bottom: 4px solid #fff;
+}
+
+[data-theme="nes"] header h1,
+[data-theme="nes"] .channel-tab,
+[data-theme="nes"] .settings-btn,
+[data-theme="nes"] .chat-bubble,
+[data-theme="nes"] .input-hint {
+  text-transform: uppercase;
+}
+
+[data-theme="nes"] .settings-btn,
+[data-theme="nes"] .channel-tab,
+[data-theme="nes"] .discord-pill,
+[data-theme="nes"] .sidebar-collapse-btn {
+  border-width: 4px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+[data-theme="nes"] .chat-bubble {
+  border-width: 4px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+[data-theme="nes"] #settings-bar,
+[data-theme="nes"] #launcher-panel,
+[data-theme="nes"] #jobs-panel,
+[data-theme="nes"] .session-launcher-dialog,
+[data-theme="nes"] .convert-job-dialog,
+[data-theme="nes"] .repo-explorer,
+[data-theme="nes"] .repo-top-bar,
+[data-theme="nes"] .repo-commits-panel,
+[data-theme="nes"] .repo-agents-panel,
+[data-theme="nes"] .launcher-card,
+[data-theme="nes"] .job-card,
+[data-theme="nes"] .commit-item,
+[data-theme="nes"] .repo-agent-card {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+[data-theme="nes"] #settings-bar,
+[data-theme="nes"] #launcher-panel,
+[data-theme="nes"] #jobs-panel,
+[data-theme="nes"] .session-launcher-dialog,
+[data-theme="nes"] .convert-job-dialog,
+[data-theme="nes"] .repo-explorer,
+[data-theme="nes"] .repo-top-bar,
+[data-theme="nes"] .repo-commits-panel,
+[data-theme="nes"] .repo-agents-panel,
+[data-theme="nes"] .launcher-card,
+[data-theme="nes"] .job-card,
+[data-theme="nes"] .commit-item,
+[data-theme="nes"] .repo-agent-card {
+  border-width: 4px;
+}

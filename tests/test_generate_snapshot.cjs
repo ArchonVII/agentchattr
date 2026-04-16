@@ -31,6 +31,7 @@ for (const id of [
   "c64",
   "c64css3",
   "psone",
+  "cyberpunk",
   "tui",
 ]) {
   const t = snapshot.themes[id];

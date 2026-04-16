@@ -1,0 +1,148 @@
+/*
+ * adapter-cyberpunk.css — neon sci-fi shell adapter.
+ *
+ * Maps the existing cyberpunk terminal palette onto the app shell so the
+ * desktop chrome and ports surfaces share the same high-contrast neon look.
+ */
+
+:root[data-theme="cyberpunk"] {
+  --bg-app: #08111f;
+  --bg-surface: #0d1830;
+  --bg-elevated: #132140;
+  --bg-deep: #060b16;
+  --bg-sunken: #04070e;
+
+  --fg-primary: #d8f3ff;
+  --fg-secondary: #8fb3c9;
+  --fg-muted: #5b7287;
+  --fg-dim: #476072;
+  --fg-faint: #31495b;
+
+  --accent: #ff4fd8;
+  --accent-hover-bg: rgba(255, 79, 216, 0.14);
+  --accent-subtle: rgba(255, 79, 216, 0.1);
+  --accent-danger: #ff5f86;
+  --accent-success: #00ff9f;
+  --accent-info: #00e5ff;
+
+  --border: #214067;
+  --border-strong: #2f5f8f;
+  --border-grid: #17324f;
+  --focus-ring: rgba(0, 229, 255, 0.32);
+  --surface-hover: rgba(0, 229, 255, 0.08);
+  --surface-hover-strong: rgba(255, 79, 216, 0.12);
+  --control-hover-fg: #ffffff;
+  --status-offline: #4a5d70;
+  --state-danger-fg: #ffb2c3;
+  --state-danger-fg-strong: #ffe4eb;
+  --state-danger-bg-hover: #401326;
+  --state-success-fg: #9dffd1;
+  --state-success-fg-strong: #ddffef;
+  --state-success-bg-hover: #083b2c;
+  --panel-shadow-strong:
+    0 0 0 1px rgba(47, 95, 143, 0.4),
+    0 0 28px rgba(0, 229, 255, 0.12),
+    0 0 42px rgba(255, 79, 216, 0.08);
+  --pixel-shadow-dark: rgba(2, 8, 18, 0.78);
+  --pixel-shadow-light: rgba(120, 232, 255, 0.18);
+  --bevel-bg: #132140;
+  --bevel-bg-hover: #1b2c52;
+  --bevel-fg: #d8f3ff;
+  --bevel-shadow-dark: #08111f;
+  --bevel-shadow-light: #3b6fa3;
+  --bevel-shadow-darker: #02060c;
+  --bevel-shadow-lighter: #58d8ff;
+
+  --font-ui: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-display: "Bahnschrift", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-decorative: var(--font-display);
+  --font-mono: Consolas, "Courier New", monospace;
+  --font-size-base: 13px;
+  --font-size-caption: 12px;
+  --font-size-chrome: 13px;
+  --font-size-panel-title: 15px;
+  --font-size-title: 18px;
+
+  --shadow-menu:
+    0 0 0 1px rgba(47, 95, 143, 0.38),
+    0 16px 36px rgba(0, 0, 0, 0.45);
+  --shadow-float:
+    0 0 0 1px rgba(47, 95, 143, 0.4),
+    0 20px 48px rgba(0, 0, 0, 0.55);
+  --radius: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --color-scheme: dark;
+}
+
+[data-theme="cyberpunk"] .macro-btn,
+[data-theme="cyberpunk"] .terminal-toolbar-btn,
+[data-theme="cyberpunk"] .terminal-exited-banner button,
+[data-theme="cyberpunk"] .browser-pane-button,
+[data-theme="cyberpunk"] .quick-launch-folder,
+[data-theme="cyberpunk"] .quick-launch-agent-btn {
+  border: 1px solid rgba(0, 229, 255, 0.48);
+  background:
+    linear-gradient(180deg, rgba(255, 79, 216, 0.09), rgba(0, 229, 255, 0.04)),
+    rgba(6, 11, 22, 0.9);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 79, 216, 0.12),
+    0 0 14px rgba(0, 229, 255, 0.08);
+  color: var(--fg-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[data-theme="cyberpunk"] .macro-btn:hover,
+[data-theme="cyberpunk"] .terminal-toolbar-btn:hover {
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 79, 216, 0.18),
+    0 0 18px rgba(255, 79, 216, 0.18);
+}
+
+[data-theme="cyberpunk"] .ports-table-wrap,
+[data-theme="cyberpunk"] .ports-empty,
+[data-theme="cyberpunk"] .ports-notice {
+  border: 1px solid rgba(0, 229, 255, 0.34);
+  background:
+    linear-gradient(180deg, rgba(19, 33, 64, 0.96), rgba(6, 11, 22, 0.96));
+  box-shadow: var(--panel-shadow-strong);
+}
+
+[data-theme="cyberpunk"] .tab-button.active,
+[data-theme="cyberpunk"] .terminal-tab.active {
+  border-bottom: 2px solid var(--accent);
+  box-shadow: inset 0 -1px 0 rgba(0, 229, 255, 0.5);
+}
+
+[data-theme="cyberpunk"] .ports-table th {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+[data-theme="cyberpunk"] .ports-title,
+[data-theme="cyberpunk"] .ports-pane-title,
+[data-theme="cyberpunk"] .browser-pane-title,
+[data-theme="cyberpunk"] .arsenal-header {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[data-theme="cyberpunk"] .kill-button {
+  border-color: var(--accent-danger) !important;
+  color: var(--accent-danger) !important;
+}
+
+[data-theme="cyberpunk"] .browse-button {
+  border-color: var(--accent-success) !important;
+  color: var(--accent-success) !important;
+}
+
+[data-theme="cyberpunk"] input,
+[data-theme="cyberpunk"] select {
+  background: rgba(6, 11, 22, 0.92) !important;
+  border-color: rgba(0, 229, 255, 0.35) !important;
+  color: var(--fg-primary) !important;
+}

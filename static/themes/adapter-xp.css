@@ -36,3 +36,48 @@
   --radius-xl: 6px;
   --color-scheme: light;
 }
+
+[data-theme="winxp"] body {
+  text-shadow: none;
+}
+
+[data-theme="winxp"] #app {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25), transparent 18%),
+    linear-gradient(180deg, #5f8fd3 0%, #3a6ea5 100%);
+}
+
+[data-theme="winxp"] header,
+[data-theme="winxp"] footer,
+[data-theme="winxp"] #channel-bar {
+  border-color: #0b2f73;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="winxp"] header h1 {
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+[data-theme="winxp"] .settings-btn,
+[data-theme="winxp"] .channel-tab,
+[data-theme="winxp"] .discord-pill,
+[data-theme="winxp"] .sidebar-collapse-btn,
+[data-theme="winxp"] .chat-bubble,
+[data-theme="winxp"] #settings-bar,
+[data-theme="winxp"] #launcher-panel,
+[data-theme="winxp"] #jobs-panel,
+[data-theme="winxp"] .session-launcher-dialog,
+[data-theme="winxp"] .convert-job-dialog,
+[data-theme="winxp"] .repo-explorer,
+[data-theme="winxp"] .repo-top-bar,
+[data-theme="winxp"] .repo-commits-panel,
+[data-theme="winxp"] .repo-agents-panel,
+[data-theme="winxp"] .launcher-card,
+[data-theme="winxp"] .job-card,
+[data-theme="winxp"] .commit-item,
+[data-theme="winxp"] .repo-agent-card {
+  background: linear-gradient(180deg, #fffdfa 0%, #e7f1fb 52%, #d7e6f7 100%);
+  border: 1px solid #245edb;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
