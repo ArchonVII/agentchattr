@@ -170,7 +170,14 @@ function createTerminal(opts = {}) {
 
   // If a command was specified, write it to the terminal.
   if (opts.command) {
-    ptyProcess.write(`${opts.command}\r`);
+    // Resolve relative script paths against the repo root so that
+    // quick-launch buttons work regardless of the terminal's cwd.
+    let cmd = opts.command;
+    const resolvedPath = path.resolve(REPO_ROOT, cmd);
+    if (fs.existsSync(resolvedPath)) {
+      cmd = `"${resolvedPath}"`;
+    }
+    ptyProcess.write(`${cmd}\r`);
   }
 
   sessionCounter++;

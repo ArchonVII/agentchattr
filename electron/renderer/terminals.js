@@ -35,6 +35,7 @@ let availableShells = [];
 let layoutMode = "tabs"; // "tabs", "grid", or "float"
 let arsenalVisible = true;
 let highestZ = 1; // z-index counter for floating mode
+let lastCopiedSelection = "";
 
 // Quick Launch state
 let quickLaunchFolders = [];
@@ -171,6 +172,7 @@ function launchAgentTerminal(agentId) {
     cwd: selectedLaunchFolder,
     command: command,
     name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`,
+    agentName: agentId,
   });
 }
 
@@ -866,6 +868,15 @@ async function requestNewTerminal(shellId, opts = {}) {
       result.pid,
       result.cwd,
     );
+    // If agentName was provided (e.g. quick-launch buttons), auto-select the
+    // identity dropdown so the watcher toast doesn't fire redundantly.
+    if (opts.agentName) {
+      const inst = terminalInstances.get(result.id);
+      const select = inst?.macroBar?.querySelector(
+        `select[data-terminal-id="${result.id}"]`,
+      );
+      if (select) select.value = opts.agentName;
+    }
     focusTerminal(result.id);
   }
 }
@@ -971,6 +982,21 @@ function createXtermInstance(id, name, shell, pid, cwd) {
 
   terminal.onResize(({ cols, rows }) => {
     window.electronAPI?.resizeTerminal(id, cols, rows);
+  });
+
+  terminal.onSelectionChange(() => {
+    const selection = terminal.getSelection();
+    if (!selection) {
+      lastCopiedSelection = "";
+      return;
+    }
+    if (selection === lastCopiedSelection) return;
+    lastCopiedSelection = selection;
+    try {
+      window.electronAPI?.writeClipboardText?.(selection);
+    } catch (error) {
+      console.warn("Failed to copy terminal selection:", error);
+    }
   });
 
   // Bridge: right-click "Send to Chat" context menu

@@ -5256,9 +5256,40 @@ function initBridgeMessageRenderer() {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Terminal presence polling (web mode)
+// ---------------------------------------------------------------------------
+// In Electron, terminal-presence.js injects _terminalData via the webview.
+// In web-only mode, we poll /api/bridge/terminals so the roster stays current.
+
+let _terminalPresenceTimer = null;
+
+function initTerminalPresencePolling() {
+  // If running inside Electron's webview, skip — the bridge handles it.
+  if (window._electronTerminalPresence) return;
+
+  async function poll() {
+    try {
+      const res = await fetch("/api/bridge/terminals");
+      if (!res.ok) return;
+      const terminals = await res.json();
+      if (!Array.isArray(terminals)) return;
+      window._terminalData = terminals;
+      renderChannelRoster();
+    } catch {
+      // Non-fatal — backend may not be running the bridge.
+    }
+  }
+
+  // Initial fetch, then poll every 5 seconds.
+  void poll();
+  _terminalPresenceTimer = setInterval(poll, 5000);
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   init();
   initHelpTour();
   initTerminalSnapshotPull();
   initBridgeMessageRenderer();
+  initTerminalPresencePolling();
 });
