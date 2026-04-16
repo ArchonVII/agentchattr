@@ -2,6 +2,12 @@
  * Browser-safe PSone theme adapter.
  */
 
+@font-face {
+  font-family: "Final Fantasy Script Collection - Final Fantasy VII";
+  src: url("/static/themes/Final_Fantasy_VII.woff") format("woff");
+  font-display: swap;
+}
+
 :root[data-theme="psone"] {
   --bg-app: #12151a;
   --bg-surface: #1e232b;
@@ -35,4 +41,54 @@
   --radius-lg: 0;
   --radius-xl: 0;
   --color-scheme: dark;
+}
+
+[data-theme="psone"] body {
+  text-shadow: none;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="psone"] #app {
+  background:
+    radial-gradient(circle at top, rgba(93, 178, 255, 0.14), transparent 28%),
+    linear-gradient(180deg, #0f1420 0%, #050709 100%);
+}
+
+[data-theme="psone"] #app::before {
+  opacity: 0;
+}
+
+[data-theme="psone"] header,
+[data-theme="psone"] footer,
+[data-theme="psone"] #channel-bar {
+  box-shadow: none;
+  border-color: var(--border-strong);
+}
+
+[data-theme="psone"] header h1 {
+  font-family: "Final Fantasy Script Collection - Final Fantasy VII", "Play",
+    sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.65);
+}
+
+[data-theme="psone"] .settings-btn,
+[data-theme="psone"] .channel-tab,
+[data-theme="psone"] .discord-pill,
+[data-theme="psone"] .sidebar-collapse-btn {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: none;
+}
+
+[data-theme="psone"] .chat-bubble {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: none;
+}
+
+[data-theme="psone"] .message.self .chat-bubble {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }

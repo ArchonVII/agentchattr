@@ -42,3 +42,48 @@
   --radius-xl: 0;
   --color-scheme: dark;
 }
+
+[data-theme="tui"] body {
+  text-shadow: none;
+  letter-spacing: 0;
+}
+
+[data-theme="tui"] #app {
+  background: #0000aa;
+}
+
+[data-theme="tui"] #app::before {
+  opacity: 0.06;
+  mix-blend-mode: normal;
+}
+
+[data-theme="tui"] header,
+[data-theme="tui"] footer,
+[data-theme="tui"] #channel-bar {
+  box-shadow: none;
+  border-top: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+}
+
+[data-theme="tui"] header h1,
+[data-theme="tui"] .channel-tab,
+[data-theme="tui"] .settings-btn,
+[data-theme="tui"] .chat-bubble,
+[data-theme="tui"] .input-hint {
+  text-transform: uppercase;
+}
+
+[data-theme="tui"] .settings-btn,
+[data-theme="tui"] .channel-tab,
+[data-theme="tui"] .discord-pill,
+[data-theme="tui"] .sidebar-collapse-btn {
+  border-width: 2px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+[data-theme="tui"] .chat-bubble {
+  border-width: 2px;
+  border-radius: 0;
+  box-shadow: none;
+}
