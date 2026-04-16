@@ -29,10 +29,32 @@
   --accent-subtle: rgba(17, 17, 17, 0.05);
   --accent-danger: #111;
   --accent-success: #111;
+  --accent-info: #111;
 
   --border: #111;
   --border-strong: #111;
   --border-grid: #777;
+  --focus-ring: rgba(17, 17, 17, 0.25);
+  --surface-hover: rgba(255, 255, 255, 0.18);
+  --surface-hover-strong: rgba(255, 255, 255, 0.28);
+  --control-hover-fg: #111;
+  --status-offline: #8b8b8b;
+  --state-danger-fg: #111;
+  --state-danger-fg-strong: #ffffff;
+  --state-danger-bg-hover: #777;
+  --state-success-fg: #111;
+  --state-success-fg-strong: #ffffff;
+  --state-success-bg-hover: #777;
+  --panel-shadow-strong: 1px 2px #111;
+  --pixel-shadow-dark: #777;
+  --pixel-shadow-light: #fff;
+  --bevel-bg: #dedede;
+  --bevel-bg-hover: #e8e8e8;
+  --bevel-fg: #111;
+  --bevel-shadow-dark: #777;
+  --bevel-shadow-light: #fff;
+  --bevel-shadow-darker: #aaa;
+  --bevel-shadow-lighter: #ddd;
 
   --font-ui: "ChicagoFLF", Geneva, "Times New Roman", serif;
   --font-mono: Monaco, "Courier New", monospace;

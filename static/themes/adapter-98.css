@@ -20,10 +20,32 @@
   --accent-subtle: rgba(0, 0, 128, 0.08);
   --accent-danger: #ff0000;
   --accent-success: #008000;
+  --accent-info: #000080;
 
   --border: #888;
   --border-strong: #444;
   --border-grid: #888;
+  --focus-ring: rgba(0, 0, 128, 0.35);
+  --surface-hover: rgba(255, 255, 255, 0.28);
+  --surface-hover-strong: rgba(255, 255, 255, 0.4);
+  --control-hover-fg: #000000;
+  --status-offline: #666666;
+  --state-danger-fg: #ff0000;
+  --state-danger-fg-strong: #990000;
+  --state-danger-bg-hover: #d4d0c8;
+  --state-success-fg: #008000;
+  --state-success-fg-strong: #005a00;
+  --state-success-bg-hover: #d4d0c8;
+  --panel-shadow-strong: none;
+  --pixel-shadow-dark: #808080;
+  --pixel-shadow-light: #ffffff;
+  --bevel-bg: #c0c0c0;
+  --bevel-bg-hover: #d4d0c8;
+  --bevel-fg: #000000;
+  --bevel-shadow-dark: #808080;
+  --bevel-shadow-light: #ffffff;
+  --bevel-shadow-darker: #404040;
+  --bevel-shadow-lighter: #dfdfdf;
 
   --font-ui: "Pixelated MS Sans Serif", Arial, sans-serif;
   --font-mono: Consolas, "Courier New", monospace;

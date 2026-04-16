@@ -25,10 +25,32 @@
   --accent-subtle: rgba(93, 178, 255, 0.1);
   --accent-danger: #ff5d5d; /* controller 'O' red */
   --accent-success: #5dff9e; /* controller 'Triangle' green */
+  --accent-info: #5db2ff;
 
   --border: #3a4453;
   --border-strong: #4a5a6d;
   --border-grid: #3a4453;
+  --focus-ring: rgba(93, 178, 255, 0.35);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-hover-strong: rgba(255, 255, 255, 0.12);
+  --control-hover-fg: #ffffff;
+  --status-offline: #5a6574;
+  --state-danger-fg: #ff8c8c;
+  --state-danger-fg-strong: #ffe0e0;
+  --state-danger-bg-hover: #3d1414;
+  --state-success-fg: #8dffbb;
+  --state-success-fg-strong: #d8ffe7;
+  --state-success-bg-hover: #133321;
+  --panel-shadow-strong: 4px 4px 0 #000;
+  --pixel-shadow-dark: rgba(0, 0, 0, 0.45);
+  --pixel-shadow-light: rgba(255, 255, 255, 0.18);
+  --bevel-bg: #282e38;
+  --bevel-bg-hover: #353d49;
+  --bevel-fg: #ffffff;
+  --bevel-shadow-dark: #0d1116;
+  --bevel-shadow-light: #ffffff;
+  --bevel-shadow-darker: #000000;
+  --bevel-shadow-lighter: #6a7688;
 
   --font-ui: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   --font-display: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;

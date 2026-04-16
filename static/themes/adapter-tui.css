@@ -26,10 +26,32 @@
   --accent-subtle: rgba(255, 255, 85, 0.1);
   --accent-danger: #ff5555;
   --accent-success: #55ff55;
+  --accent-info: #55ffff;
 
   --border: #ffffff;
   --border-strong: #ffff55;
   --border-grid: #ffffff;
+  --focus-ring: rgba(255, 255, 85, 0.4);
+  --surface-hover: rgba(255, 255, 255, 0.15);
+  --surface-hover-strong: rgba(255, 255, 255, 0.25);
+  --control-hover-fg: #000000;
+  --status-offline: #555555;
+  --state-danger-fg: #ffffff;
+  --state-danger-fg-strong: #ffffff;
+  --state-danger-bg-hover: #aa0000;
+  --state-success-fg: #ffffff;
+  --state-success-fg-strong: #ffffff;
+  --state-success-bg-hover: #00aa00;
+  --panel-shadow-strong: none;
+  --pixel-shadow-dark: #000000;
+  --pixel-shadow-light: #ffffff;
+  --bevel-bg: #aaaaaa;
+  --bevel-bg-hover: #ffffff;
+  --bevel-fg: #000000;
+  --bevel-shadow-dark: #000000;
+  --bevel-shadow-light: #ffffff;
+  --bevel-shadow-darker: #000000;
+  --bevel-shadow-lighter: #ffffff;
 
   --font-ui: "Perfect DOS VGA 437 Win", monospace;
   --font-mono: "Perfect DOS VGA 437 Win", monospace;
