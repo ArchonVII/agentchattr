@@ -2,6 +2,12 @@
  * Browser-safe Commodore 64 theme adapter.
  */
 
+@font-face {
+  font-family: "C64_Pro_Mono";
+  src: url("/static/themes/C64_Pro_Mono-STYLE.woff") format("woff");
+  font-display: swap;
+}
+
 :root[data-theme="c64"] {
   --bg-app: #352879;
   --bg-surface: #2a2060;

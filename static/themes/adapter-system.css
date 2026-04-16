@@ -2,6 +2,12 @@
  * Browser-safe Classic Mac System 6 theme adapter.
  */
 
+@font-face {
+  font-family: "ChicagoFLF";
+  src: url("/static/themes/ChicagoFLF.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root[data-theme="system6"] {
   --bg-app: #a8a8a8;
   --bg-surface: #fff;
@@ -25,8 +31,8 @@
   --border-strong: #000;
   --border-grid: #000;
 
-  --font-ui:
-    "Chicago_12", "Chicago", Geneva, "Helvetica Neue", Helvetica, sans-serif;
+  --font-ui: "ChicagoFLF", "Chicago", Geneva, "Helvetica Neue", Helvetica,
+    sans-serif;
   --font-mono: "Monaco", "Courier New", monospace;
   --font-size-base: 12px;
 
