@@ -69,7 +69,7 @@ function configureWebview() {
   );
 }
 
-async function applyChatWebviewTheme() {
+async function applyChatWebviewTheme(attempt = 0) {
   if (!state.webviewReady || !window.ChatThemeBridge) {
     return;
   }
@@ -78,7 +78,12 @@ async function applyChatWebviewTheme() {
   const script = window.ChatThemeBridge.buildApplyChatThemeScript(themeId);
 
   try {
-    await elements.chatWebview.executeJavaScript(script, true);
+    const applied = await elements.chatWebview.executeJavaScript(script, true);
+    if (applied === false && attempt < 10) {
+      setTimeout(() => {
+        void applyChatWebviewTheme(attempt + 1);
+      }, 100);
+    }
   } catch (error) {
     console.error("Unable to apply app theme to chat webview:", error);
   }

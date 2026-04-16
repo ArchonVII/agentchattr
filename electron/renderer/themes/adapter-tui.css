@@ -1,11 +1,9 @@
 /*
  * adapter-tui.css — TuiCss (Classic DOS/Turbo Vision) theme adapter.
  *
- * Imports TuiCss and maps its Norton Commander / BIOS aesthetic onto the app's DOM.
+ * Maps the TuiCss / Norton Commander aesthetic onto the app's DOM.
  * Source: https://github.com/vinibiavatti1/TuiCss
  */
-
-@import "../../node_modules/tuicss/dist/tuicss.min.css";
 
 @font-face {
   font-family: "Perfect DOS VGA 437 Win";

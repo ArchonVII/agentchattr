@@ -1,0 +1,44 @@
+/*
+ * Browser-safe TuiCss theme adapter.
+ */
+
+@font-face {
+  font-family: "Perfect DOS VGA 437 Win";
+  src: url("/static/themes/Perfect DOS VGA 437 Win.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root[data-theme="tui"] {
+  --bg-app: #0000aa;
+  --bg-surface: #0000aa;
+  --bg-elevated: #aaaaaa;
+  --bg-deep: #000080;
+  --bg-sunken: #000055;
+
+  --fg-primary: #ffffff;
+  --fg-secondary: #aaaaaa;
+  --fg-muted: #555555;
+  --fg-dim: #555555;
+  --fg-faint: #0000aa;
+
+  --accent: #ffff55;
+  --accent-hover-bg: rgba(255, 255, 85, 0.2);
+  --accent-subtle: rgba(255, 255, 85, 0.1);
+  --accent-danger: #ff5555;
+  --accent-success: #55ff55;
+
+  --border: #ffffff;
+  --border-strong: #ffff55;
+  --border-grid: #ffffff;
+
+  --font-ui: "Perfect DOS VGA 437 Win", monospace;
+  --font-mono: "Perfect DOS VGA 437 Win", monospace;
+  --font-size-base: 14px;
+
+  --shadow-menu: none;
+  --shadow-float: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}

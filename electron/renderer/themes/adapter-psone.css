@@ -1,11 +1,9 @@
 /*
  * adapter-psone.css — PSone.css (90s PlayStation) theme adapter.
  *
- * Imports PSone.css and maps its retro console aesthetic onto the app's DOM.
+ * Uses a project-local mapping of the PSone aesthetic onto the app's DOM.
  * Source: https://github.com/micah5/PSone.css
  */
-
-@import "./PSone.min.css";
 
 /* ── Variable overrides ──────────────────────────────────────────────── */
 

@@ -19,7 +19,7 @@ console.assert(snapshot.generated, "missing generated timestamp");
 console.assert(snapshot.themes, "missing themes object");
 
 const ids = Object.keys(snapshot.themes);
-console.assert(ids.length >= 9, `expected >=9 themes, got ${ids.length}`);
+console.assert(ids.length >= 10, `expected >=10 themes, got ${ids.length}`);
 
 for (const id of [
   "default",
@@ -31,6 +31,7 @@ for (const id of [
   "c64",
   "c64css3",
   "psone",
+  "tui",
 ]) {
   const t = snapshot.themes[id];
   console.assert(t, `missing theme: ${id}`);
