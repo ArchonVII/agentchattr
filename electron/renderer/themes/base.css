@@ -43,10 +43,21 @@
   --status-offline: #555;
   --state-danger-fg: #ffb5b5;
   --state-danger-fg-strong: #ffd3c8;
+  --state-danger-bg: color-mix(in srgb, var(--accent-danger) 12%, transparent);
+  --state-danger-bg-strong: color-mix(in srgb, var(--accent-danger) 20%, transparent);
+  --state-danger-border: color-mix(in srgb, var(--accent-danger) 28%, transparent);
+  --state-danger-border-strong: color-mix(in srgb, var(--accent-danger) 42%, transparent);
   --state-danger-bg-hover: #3a1f1f;
   --state-success-fg: #b5ffb5;
   --state-success-fg-strong: #c8ffd3;
+  --state-success-bg: color-mix(in srgb, var(--accent-success) 14%, transparent);
+  --state-success-bg-strong: color-mix(in srgb, var(--accent-success) 24%, transparent);
   --state-success-bg-hover: #1f3a1f;
+  --state-info-bg: color-mix(in srgb, var(--accent-info) 12%, transparent);
+  --state-info-border: color-mix(in srgb, var(--accent-info) 34%, transparent);
+  --state-info-border-strong: color-mix(in srgb, var(--accent-info) 56%, transparent);
+  --state-info-fg: color-mix(in srgb, var(--accent-info) 74%, var(--fg-primary));
+  --text-on-accent: #ffffff;
 
   /* ── Special chrome treatments ───────────────────────────── */
   --panel-shadow-strong: 0 8px 40px rgba(0, 0, 0, 0.5);

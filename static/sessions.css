@@ -15,7 +15,11 @@
 #session-bar.hidden { display: none; }
 
 #session-bar.session-elsewhere {
-    background: linear-gradient(90deg, #161624 0%, #1b1b2b 100%);
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--bg-msg) 74%, var(--bg-input)) 0%,
+        color-mix(in srgb, var(--bg-elevated) 78%, var(--bg-msg)) 100%
+    );
     border-bottom-color: var(--border-strong);
 }
 
@@ -54,8 +58,8 @@
 
 .session-jump-btn {
     background: none;
-    border: 1px solid rgba(124, 156, 255, 0.25);
-    color: #a8b7ff;
+    border: 1px solid var(--state-info-border);
+    color: var(--state-info-fg);
     font-size: var(--fs-md);
     font-weight: var(--fw-semibold);
     padding: 3px var(--space-md);
@@ -66,13 +70,13 @@
 }
 
 .session-jump-btn:hover {
-    background: rgba(124, 156, 255, 0.12);
-    border-color: #7c9cff;
+    background: var(--state-info-bg);
+    border-color: var(--state-info-border-strong);
 }
 
 .session-end-btn {
     background: none;
-    border: 1px solid rgba(248, 113, 113, 0.25);
+    border: 1px solid var(--state-danger-border);
     color: var(--error-color);
     font-size: var(--fs-md);
     font-weight: var(--fw-semibold);
@@ -155,7 +159,7 @@
 .session-launcher-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--bg-overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -277,18 +281,18 @@
     font-weight: var(--fw-semibold);
     padding: 3px 10px;
     border-radius: var(--radius-full);
-    border: 1px solid rgba(248, 113, 113, 0.35);
-    background: rgba(248, 113, 113, 0.08);
-    color: #fca5a5;
+    border: 1px solid var(--state-danger-border-strong);
+    background: var(--state-danger-bg);
+    color: var(--state-danger-fg);
     cursor: pointer;
 }
 
 .session-tmpl-delete:hover {
-    background: rgba(248, 113, 113, 0.16);
+    background: var(--state-danger-bg-strong);
 }
 
 .session-tmpl-delete.confirming {
-    background: rgba(248, 113, 113, 0.16);
+    background: var(--state-danger-bg-strong);
 }
 
 .session-tmpl-delete-confirm {
@@ -303,7 +307,7 @@
     border-radius: var(--radius-sm);
     background: var(--accent-soft);
     color: var(--accent);
-    border: 1px solid rgba(124, 58, 237, 0.25);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 /* Session banners in timeline */
@@ -315,13 +319,18 @@
 }
 
 .session-banner-start {
-    background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.08), transparent);
-    border: 1px solid rgba(124, 58, 237, 0.19);
+    background: linear-gradient(90deg, transparent, var(--state-info-bg), transparent);
+    border: 1px solid var(--state-info-border);
 }
 
 .session-banner-end {
-    background: linear-gradient(90deg, transparent, rgba(85, 85, 112, 0.08), transparent);
-    border: 1px solid rgba(85, 85, 112, 0.19);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in srgb, var(--text-dim) 10%, transparent),
+        transparent
+    );
+    border: 1px solid color-mix(in srgb, var(--text-dim) 22%, transparent);
 }
 
 /* Cast preview step */
@@ -434,8 +443,13 @@
 .session-start-btn:hover { opacity: 0.85; }
 
 .session-banner-phase {
-    background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.03), transparent);
-    border: 1px dashed rgba(124, 58, 237, 0.15);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in srgb, var(--state-info-bg) 56%, transparent),
+        transparent
+    );
+    border: 1px dashed color-mix(in srgb, var(--state-info-border) 72%, transparent);
     font-size: var(--fs-sm);
     color: var(--text-dim);
 }
@@ -443,7 +457,7 @@
 /* Output highlighting */
 .session-output {
     border-left: 3px solid var(--accent);
-    background: rgba(124, 58, 237, 0.03);
+    background: color-mix(in srgb, var(--state-info-bg) 56%, transparent);
 }
 
 .session-output-flash {
@@ -452,7 +466,7 @@
 
 @keyframes session-output-pulse {
     0% { background: var(--accent-hover); }
-    100% { background: rgba(124, 58, 237, 0.03); }
+    100% { background: color-mix(in srgb, var(--state-info-bg) 56%, transparent); }
 }
 
 .session-output-link {
@@ -480,8 +494,8 @@
 }
 
 .session-draft-invalid .session-proposal-card {
-    border-color: rgba(248, 113, 113, 0.38);
-    background: rgba(248, 113, 113, 0.06);
+    border-color: var(--state-danger-border-strong);
+    background: var(--state-danger-bg);
 }
 
 .session-draft-superseded .session-proposal-card {
@@ -546,9 +560,9 @@
 }
 
 .session-draft-btn-save.saved {
-    background: rgba(124, 58, 237, 0.14);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
     color: var(--accent);
-    border-color: rgba(124, 58, 237, 0.35);
+    border-color: color-mix(in srgb, var(--accent) 38%, transparent);
     cursor: default;
 }
 
