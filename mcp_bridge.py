@@ -113,6 +113,10 @@ _MCP_INSTRUCTIONS = (
     "A task is scoped if it has: 1) Concrete outcome, 2) Specific boundary, 3) Clear done criteria, 4) Explicit owner/intention, and 5) Appropriate size. "
     "If these 5 checks do not pass, do NOT propose a job; instead, reply in chat to ask for clarification. "
     "This prevents over-use of the jobs feature for vague requests.\n\n"
+    "CRITICAL — Visual Verification:\n"
+    "When you create a screenshot to verify something visually, use chat_verify_screenshot. "
+    "This posts the image with a descriptive caption of what you see. "
+    "The human can 'dispute' your interpretation if they disagree, which will trigger you with their feedback.\n\n"
     "To post a suggestion (Accept/Dismiss card) in a job, prefix your message with [suggestion]: "
     "chat_send(job_id=N, message='[suggestion] I recommend we refactor the auth module'). "
     "The human can Accept (triggers you with context) or Dismiss."
@@ -185,6 +189,31 @@ def _resolve_tool_identity(
     return provided, None
 
 
+def _handle_image_upload(image_path: str) -> tuple[list[dict] | None, str | None]:
+    \"\"\"Helper to copy a local image to the uploads directory and return attachment metadata.\"\"\"
+    if not image_path:
+        return None, None
+    import shutil
+    import uuid
+    from pathlib import Path
+    src = Path(image_path)
+    if not src.exists():
+        return None, f"Image not found: {image_path}"
+    if src.suffix.lower() not in ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'):
+        return None, f"Unsupported image type: {src.suffix}"
+    
+    # Get upload dir from config (fall back to ./uploads)
+    raw_dir = "./uploads"
+    if config and "images" in config:
+        raw_dir = config["images"].get("upload_dir", raw_dir)
+    upload_dir = Path(raw_dir)
+    
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid.uuid4().hex[:8]}{src.suffix}"
+    shutil.copy2(str(src), str(upload_dir / filename))
+    return [{"name": src.name, "url": f"/uploads/{filename}"}], None
+
+
 def chat_send(
     sender: str,
     message: str,
@@ -195,7 +224,7 @@ def chat_send(
     job_id: int = 0,
     ctx: Context | None = None,
 ) -> str:
-    """Send a message to the agentchattr chat. Use your name as sender (claude/codex/user).
+    \"\"\"Send a message to the agentchattr chat. Use your name as sender (claude/codex/user).
     Optionally attach a local image by providing image_path (absolute path).
     Optionally reply to a message by providing reply_to (message ID).
     Optionally specify a channel (default: 'general').
@@ -203,57 +232,45 @@ def chat_send(
     IMPORTANT: Always include the choices parameter. When asking a yes/no or
     multiple-choice question, provide the options so the user can respond with
     a single click:
-      chat_send(sender="claude", message="Should I merge?", choices=["Yes", "No", "Show diff first"])
+      chat_send(sender=\"claude\", message=\"Should I merge?\", choices=[\"Yes\", \"No\", \"Show diff first\"])
     For normal messages without choices, pass choices=[]:
-      chat_send(sender="claude", message="Done.", choices=[])"""
-    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=True)
+      chat_send(sender=\"claude\", message=\"Done.\", choices=[])\"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=True)
     if err:
         return err
     # Block pending instances (identity not yet confirmed)
     if registry and registry.is_pending(sender):
-        return "Error: identity not confirmed. Call chat_claim(sender=your_base_name) to get your identity."
+        return \"Error: identity not confirmed. Call chat_claim(sender=your_base_name) to get your identity.\"
     # Block base family names when multi-instance is active
     # (but allow if sender is a registered+active instance — e.g. slot-1 'claude' that already claimed)
     if registry and sender in registry.get_bases() and registry.family_instance_count(sender) >= 2:
         inst = registry.get_instance(sender)
-        if not inst or inst.get("state") != "active":
-            return (f"Error: multiple {sender} instances are registered. "
-                    f"Call chat_claim(sender='{sender}') to get your unique identity, then use the confirmed_name as sender.")
+        if not inst or inst.get(\"state\") != \"active\":
+            return (f\"Error: multiple {sender} instances are registered. \"
+                    f\"Call chat_claim(sender='{sender}') to get your unique identity, then use the confirmed_name as sender.\")
     # Block unregistered agent names (stale identity from resumed session)
     if registry and registry.is_agent_family(sender) and not registry.is_registered(sender):
-        return f"Error: sender '{sender}' is not registered. Call chat_claim(sender=your_base_name) to get your identity."
+        return f\"Error: sender '{sender}' is not registered. Call chat_claim(sender=your_base_name) to get your identity.\"
     if not message.strip() and not image_path:
-        return "Empty message, not sent."
+        return \"Empty message, not sent.\"
 
     # Job-scoped send: post into a job conversation instead of main timeline
     if job_id and jobs:
         # Detect suggestion type from [suggestion] prefix
         text = message.strip()
-        msg_type = "chat"
-        if text.lower().startswith("[suggestion]"):
-            msg_type = "suggestion"
-            text = text[len("[suggestion]"):].strip()
+        msg_type = \"chat\"
+        if text.lower().startswith(\"[suggestion]\"):
+            msg_type = \"suggestion\"
+            text = text[len(\"[suggestion]\"):].strip()
         # Handle image attachment for job messages
-        job_attachments = None
-        if image_path:
-            import shutil, uuid
-            src = Path(image_path)
-            if not src.exists():
-                return f"Image not found: {image_path}"
-            if src.suffix.lower() not in ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'):
-                return f"Unsupported image type: {src.suffix}"
-            raw_dir = "./uploads"
-            if config and "images" in config:
-                raw_dir = config["images"].get("upload_dir", raw_dir)
-            upload_dir = Path(raw_dir)
-            upload_dir.mkdir(parents=True, exist_ok=True)
-            filename = f"{uuid.uuid4().hex[:8]}{src.suffix}"
-            shutil.copy2(str(src), str(upload_dir / filename))
-            job_attachments = [{"name": src.name, "url": f"/uploads/{filename}"}]
+        job_attachments, err = _handle_image_upload(image_path)
+        if err:
+            return err
+            
         msg = jobs.add_message(job_id, sender, text, msg_type=msg_type,
                                attachments=job_attachments)
         if msg is None:
-            return f"Error: job #{job_id} not found."
+            return f\"Error: job #{job_id} not found.\"
         with _presence_lock:
             _presence[sender] = time.time()
 
@@ -261,7 +278,7 @@ def chat_send(
         if router and agents:
             job = jobs.get(job_id)
             if job:
-                job_channel = job.get("channel", "general")
+                job_channel = job.get(\"channel\", \"general\")
                 raw_targets = router.get_targets(sender, text, job_channel)
                 targets = []
                 for t in raw_targets:
@@ -270,52 +287,34 @@ def chat_send(
                     else:
                         targets.append(t)
                 targets = list(dict.fromkeys(targets))
-                chat_msg = f"{sender}: {text}" if text else ""
+                chat_msg = f\"{sender}: {text}\" if text else \"\"
                 for target in targets:
                     if registry:
                         inst = registry.get_instance(target)
-                        if inst and inst.get("state") == "pending":
+                        if inst and inst.get(\"state\") == \"pending\":
                             continue
                     if agents.is_available(target):
                         agents.trigger_sync(target, message=chat_msg,
                                             channel=job_channel, job_id=job_id)
 
-        return f"Sent to job #{job_id} (msg_id={msg['id']})" + (
-            " [suggestion]" if msg_type == "suggestion" else "")
+        return f\"Sent to job #{job_id} (msg_id={msg['id']})\" + (
+            \" [suggestion]\" if msg_type == \"suggestion\" else \"\")
 
-    attachments = []
-    if image_path:
-        import shutil
-        import uuid
-        from pathlib import Path
-        src = Path(image_path)
-        if not src.exists():
-            return f"Image not found: {image_path}"
-        if src.suffix.lower() not in ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'):
-            return f"Unsupported image type: {src.suffix}"
-        
-        # Get upload dir from config (fall back to ./uploads)
-        raw_dir = "./uploads"
-        if config and "images" in config:
-            raw_dir = config["images"].get("upload_dir", raw_dir)
-        upload_dir = Path(raw_dir)
-        
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        filename = f"{uuid.uuid4().hex[:8]}{src.suffix}"
-        shutil.copy2(str(src), str(upload_dir / filename))
-        attachments.append({"name": src.name, "url": f"/uploads/{filename}"})
+    attachments, err = _handle_image_upload(image_path)
+    if err:
+        return err
 
     reply_id = reply_to if reply_to >= 0 else None
     if reply_id is not None and store.get_by_id(reply_id) is None:
-        return f"Message #{reply_to} not found."
+        return f\"Message #{reply_to} not found.\"
 
     # Determine message type and metadata based on choices
-    msg_type = "chat"
+    msg_type = \"chat\"
     metadata = None
     clean_choices = [c for c in (choices if choices else []) if isinstance(c, str) and c.strip()]
     if clean_choices:
-        msg_type = "decision"
-        metadata = {"choices": clean_choices, "resolved": False}
+        msg_type = \"decision\"
+        metadata = {\"choices\": clean_choices, \"resolved\": False}
 
     msg = store.add(sender, message.strip(), attachments=attachments,
                     reply_to=reply_id, channel=channel,
@@ -323,17 +322,57 @@ def chat_send(
     _update_cursor(sender, [msg], channel)
     with _presence_lock:
         _presence[sender] = time.time()
-    return f"Sent (id={msg['id']})"
+    return f\"Sent (id={msg['id']})\"
+
+
+def chat_verify_screenshot(
+    sender: str,
+    image_path: str,
+    caption: str,
+    channel: str = \"general\",
+    ctx: Context | None = None,
+) -> str:
+    \"\"\"Post a screenshot for visual verification with a descriptive caption.
+    The human can 'dispute' your interpretation if they disagree.
+
+    Args:
+        sender: Your agent name
+        image_path: Absolute path to the screenshot image
+        caption: Descriptive context of what you see/are doing in the picture
+        channel: Channel to post in (default: 'general')
+    \"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=True)
+    if err:
+        return err
+    if not image_path:
+        return \"Error: image_path is required.\"
+    
+    attachments, err = _handle_image_upload(image_path)
+    if err:
+        return err
+
+    msg = store.add(
+        sender, caption.strip(),
+        msg_type=\"screenshot_verification\",
+        attachments=attachments,
+        channel=channel,
+        metadata={\"disputed\": False, \"status\": \"pending\"}
+    )
+    
+    _update_cursor(sender, [msg], channel)
+    with _presence_lock:
+        _presence[sender] = time.time()
+    return f\"Screenshot posted for verification (id={msg['id']})\"
 
 
 def chat_propose_job(
     sender: str,
     title: str,
-    body: str = "",
-    channel: str = "general",
+    body: str = \"\",
+    channel: str = \"general\",
     ctx: Context | None = None,
 ) -> str:
-    """Propose a job for human approval. Posts a proposal card in the timeline.
+    \"\"\"Propose a job for human approval. Posts a proposal card in the timeline.
     The human can Accept (creates the job) or Dismiss. Agents must NOT create jobs
     directly — always propose and let the human decide.
 
@@ -341,120 +380,120 @@ def chat_propose_job(
         title: Short job title (max 80 chars)
         body: Detailed description of the work (max 1000 chars)
         channel: Channel to post the proposal in
-    """
-    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=True)
+    \"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=True)
     if err:
         return err
     if not title.strip():
-        return "Error: title is required."
+        return \"Error: title is required.\"
     title = title.strip()[:80]
-    body = (body or "").strip()[:1000]
+    body = (body or \"\").strip()[:1000]
 
     msg = store.add(
-        sender, f"Job proposal: {title}",
-        msg_type="job_proposal",
+        sender, f\"Job proposal: {title}\",
+        msg_type=\"job_proposal\",
         channel=channel,
-        metadata={"title": title, "body": body, "status": "pending"},
+        metadata={\"title\": title, \"body\": body, \"status\": \"pending\"},
     )
     _update_cursor(sender, [msg], channel)
     with _presence_lock:
         _presence[sender] = time.time()
-    return f"Proposed job (msg_id={msg['id']}): {title}"
+    return f\"Proposed job (msg_id={msg['id']}): {title}\"
 
 
 def _resolve_attachments(attachments: list[dict]) -> list[dict]:
-    """Add absolute file_path to attachments so agents can read images."""
+    \"\"\"Add absolute file_path to attachments so agents can read images.\"\"\"
     if not attachments:
         return attachments
-    raw_dir = "./uploads"
-    if config and "images" in config:
-        raw_dir = config["images"].get("upload_dir", raw_dir)
+    raw_dir = \"./uploads\"
+    if config and \"images\" in config:
+        raw_dir = config[\"images\"].get(\"upload_dir\", raw_dir)
     upload_dir = Path(raw_dir).resolve()
     resolved = []
     for att in attachments:
         a = dict(att)
-        url = a.get("url", "")
-        if url.startswith("/uploads/"):
-            filename = url.split("/")[-1]
-            a["file_path"] = str(upload_dir / filename)
+        url = a.get(\"url\", \"\")
+        if url.startswith(\"/uploads/\"):
+            filename = url.split(\"/\")[-1]
+            a[\"file_path\"] = str(upload_dir / filename)
         resolved.append(a)
     return resolved
 
 
 def _serialize_messages(msgs: list[dict]) -> str:
-    """Serialize store messages into MCP chat_read output shape."""
+    \"\"\"Serialize store messages into MCP chat_read output shape.\"\"\"
     out = []
     for m in msgs:
         entry = {
-            "id": m["id"],
-            "sender": m["sender"],
-            "text": m["text"],
-            "type": m["type"],
-            "time": m["time"],
-            "channel": m.get("channel", "general"),
+            \"id\": m[\"id\"],
+            \"sender\": m[\"sender\"],
+            \"text\": m[\"text\"],
+            \"type\": m[\"type\"],
+            \"time\": m[\"time\"],
+            \"channel\": m.get(\"channel\", \"general\"),
         }
-        if m.get("attachments"):
-            entry["attachments"] = _resolve_attachments(m["attachments"])
-        if m.get("reply_to") is not None:
-            entry["reply_to"] = m["reply_to"]
+        if m.get(\"attachments\"):
+            entry[\"attachments\"] = _resolve_attachments(m[\"attachments\"])
+        if m.get(\"reply_to\") is not None:
+            entry[\"reply_to\"] = m[\"reply_to\"]
         out.append(entry)
-    return json.dumps(out, ensure_ascii=False) if out else ""
+    return json.dumps(out, ensure_ascii=False) if out else \"\"
 
 
 def _load_cursors():
-    """Load cursor state from disk (called by run.py after store init)."""
+    \"\"\"Load cursor state from disk (called by run.py after store init).\"\"\"
     global _cursors
     if _CURSORS_FILE is None or not _CURSORS_FILE.exists():
         return
     try:
-        data = json.loads(_CURSORS_FILE.read_text("utf-8"))
+        data = json.loads(_CURSORS_FILE.read_text(\"utf-8\"))
         with _cursors_lock:
             _cursors.update(data)
     except Exception:
-        log.warning("Failed to load cursor state from %s", _CURSORS_FILE)
+        log.warning(\"Failed to load cursor state from %s\", _CURSORS_FILE)
 
 
 def _save_cursors():
-    """Persist cursor state to disk atomically (write temp + rename)."""
+    \"\"\"Persist cursor state to disk atomically (write temp + rename).\"\"\"
     if _CURSORS_FILE is None:
         return
     try:
         with _cursors_lock:
             snapshot = dict(_cursors)
         _CURSORS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        tmp = _CURSORS_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(snapshot), "utf-8")
+        tmp = _CURSORS_FILE.with_suffix(\".tmp\")
+        tmp.write_text(json.dumps(snapshot), \"utf-8\")
         os.replace(tmp, _CURSORS_FILE)  # atomic on POSIX
     except Exception:
-        log.warning("Failed to save cursor state to %s", _CURSORS_FILE)
+        log.warning(\"Failed to save cursor state to %s\", _CURSORS_FILE)
 
 
 def _load_roles():
-    """Load persisted roles from disk."""
+    \"\"\"Load persisted roles from disk.\"\"\"
     global _roles
     if _ROLES_FILE is None or not _ROLES_FILE.exists():
         return
     try:
-        _roles = json.loads(_ROLES_FILE.read_text("utf-8"))
+        _roles = json.loads(_ROLES_FILE.read_text(\"utf-8\"))
     except Exception:
-        log.warning("Failed to load roles from %s", _ROLES_FILE)
+        log.warning(\"Failed to load roles from %s\", _ROLES_FILE)
 
 
 def _save_roles():
-    """Persist roles to disk atomically."""
+    \"\"\"Persist roles to disk atomically.\"\"\"
     if _ROLES_FILE is None:
         return
     try:
         _ROLES_FILE.parent.mkdir(parents=True, exist_ok=True)
-        tmp = _ROLES_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(_roles), "utf-8")
+        tmp = _ROLES_FILE.with_suffix(\".tmp\")
+        tmp.write_text(json.dumps(_roles), \"utf-8\")
         os.replace(tmp, _ROLES_FILE)
     except Exception:
-        log.warning("Failed to save roles to %s", _ROLES_FILE)
+        log.warning(\"Failed to save roles to %s\", _ROLES_FILE)
 
 
 def set_role(name: str, role: str):
-    """Set or clear an agent's role. Empty string clears."""
+    \"\"\"Set or clear an agent's role. Empty string clears.\"\"\"
     if role:
         _roles[name] = role
     else:
@@ -463,17 +502,17 @@ def set_role(name: str, role: str):
 
 
 def get_role(name: str) -> str:
-    """Get an agent's current role, or empty string."""
-    return _roles.get(name, "")
+    \"\"\"Get an agent's current role, or empty string.\"\"\"
+    return _roles.get(name, \"\")
 
 
 def get_all_roles() -> dict[str, str]:
-    """All active roles."""
+    \"\"\"All active roles.\"\"\"
     return dict(_roles)
 
 
 def migrate_identity(old_name: str, new_name: str):
-    """Migrate all runtime state when an agent is renamed (presence, cursors, activity, roles)."""
+    \"\"\"Migrate all runtime state when an agent is renamed (presence, cursors, activity, roles).\"\"\"
     with _presence_lock:
         if old_name in _presence:
             _presence[new_name] = _presence.pop(old_name)
@@ -492,7 +531,7 @@ def migrate_identity(old_name: str, new_name: str):
 
 
 def purge_identity(name: str):
-    """Remove all runtime state for a deregistered agent (presence, activity, cursors, roles)."""
+    \"\"\"Remove all runtime state for a deregistered agent (presence, activity, cursors, roles).\"\"\"
     with _presence_lock:
         _presence.pop(name, None)
         _activity.pop(name, None)
@@ -506,7 +545,7 @@ def purge_identity(name: str):
 
 
 def migrate_cursors_rename(old_name: str, new_name: str):
-    """Move cursor entries from old channel name to new channel name."""
+    \"\"\"Move cursor entries from old channel name to new channel name.\"\"\"
     with _cursors_lock:
         for agent_cursors in _cursors.values():
             if old_name in agent_cursors:
@@ -515,7 +554,7 @@ def migrate_cursors_rename(old_name: str, new_name: str):
 
 
 def migrate_cursors_delete(channel: str):
-    """Remove cursor entries for a deleted channel."""
+    \"\"\"Remove cursor entries for a deleted channel.\"\"\"
     with _cursors_lock:
         for agent_cursors in _cursors.values():
             agent_cursors.pop(channel, None)
@@ -524,22 +563,22 @@ def migrate_cursors_delete(channel: str):
 
 def _update_cursor(sender: str, msgs: list[dict], channel: str | None):
     if sender and msgs:
-        ch_key = channel if channel else "__all__"
+        ch_key = channel if channel else \"__all__\"
         with _cursors_lock:
             agent_cursors = _cursors.setdefault(sender, {})
-            agent_cursors[ch_key] = msgs[-1]["id"]
+            agent_cursors[ch_key] = msgs[-1][\"id\"]
         _save_cursors()
 
 
 def chat_read(
-    sender: str = "",
+    sender: str = \"\",
     since_id: int = 0,
     limit: int = 20,
-    channel: str = "",
+    channel: str = \"\",
     job_id: int = 0,
     ctx: Context | None = None,
 ) -> str:
-    """Read chat messages. Returns JSON array with: id, sender, text, type, time, channel.
+    \"\"\"Read chat messages. Returns JSON array with: id, sender, text, type, time, channel.
 
     Smart defaults:
     - First call with sender: returns last `limit` messages (full context).
@@ -548,8 +587,8 @@ def chat_read(
     - Omit sender to always get the last `limit` messages (no cursor).
     - Pass channel to filter by channel name (default: all channels).
     - Pass job_id to read a specific job. Job reads return a header entry first,
-      including title and body, followed by the thread messages."""
-    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=False)
+      including title and body, followed by the thread messages.\"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=False)
     if err:
         return err
 
@@ -558,35 +597,35 @@ def chat_read(
         job = jobs.get(job_id)
         msgs = jobs.get_messages(job_id)
         if job is None or msgs is None:
-            return f"Error: job #{job_id} not found."
-        title = (job.get("title") or "").strip()
-        body = (job.get("body") or "").strip()
-        header_text = f"Job: {title}" if title else f"Job #{job_id}"
+            return f\"Error: job #{job_id} not found.\"
+        title = (job.get(\"title\") or \"\").strip()
+        body = (job.get(\"body\") or \"\").strip()
+        header_text = f\"Job: {title}\" if title else f\"Job #{job_id}\"
         if body:
-            header_text += f"\nDescription: {body}"
+            header_text += f\"\\nDescription: {body}\"
         out = [{
-            "id": -1,
-            "sender": "system",
-            "text": header_text,
-            "type": "job_header",
-            "time": "",
-            "job_id": job_id,
-            "title": title,
-            "body": body,
-            "status": job.get("status", ""),
-            "channel": job.get("channel", ""),
-            "created_by": job.get("created_by", ""),
-            "assignee": job.get("assignee", ""),
+            \"id\": -1,
+            \"sender\": \"system\",
+            \"text\": header_text,
+            \"type\": \"job_header\",
+            \"time\": \"\",
+            \"job_id\": job_id,
+            \"title\": title,
+            \"body\": body,
+            \"status\": job.get(\"status\", \"\"),
+            \"channel\": job.get(\"channel\", \"\"),
+            \"created_by\": job.get(\"created_by\", \"\"),
+            \"assignee\": job.get(\"assignee\", \"\"),
         }]
         for m in msgs:
-            entry = {"id": m["id"], "sender": m["sender"], "text": m["text"],
-                     "time": m.get("time", ""), "job_id": job_id}
-            if m.get("attachments"):
-                entry["attachments"] = _resolve_attachments(m["attachments"])
-            if m.get("type"):
-                entry["type"] = m["type"]
-            if m.get("resolved"):
-                entry["resolved"] = m["resolved"]
+            entry = {\"id\": m[\"id\"], \"sender\": m[\"sender\"], \"text\": m[\"text\"],
+                     \"time\": m.get(\"time\", \"\"), \"job_id\": job_id}
+            if m.get(\"attachments\"):
+                entry[\"attachments\"] = _resolve_attachments(m[\"attachments\"])
+            if m.get(\"type\"):
+                entry[\"type\"] = m[\"type\"]
+            if m.get(\"resolved\"):
+                entry[\"resolved\"] = m[\"resolved\"]
             out.append(entry)
         return json.dumps(out, ensure_ascii=False)
 
@@ -594,7 +633,7 @@ def chat_read(
     if since_id:
         msgs = store.get_since(since_id, channel=ch)
     elif sender:
-        ch_key = ch if ch else "__all__"
+        ch_key = ch if ch else \"__all__\"
         with _cursors_lock:
             agent_cursors = _cursors.get(sender, {})
             cursor = agent_cursors.get(ch_key, 0)
@@ -614,13 +653,13 @@ def chat_read(
         _empty_read_count[sender] = _empty_read_count.get(sender, 0) + 1
         n = _empty_read_count[sender]
         if n == 1:
-            serialized = "No new messages. Do not poll — wait for your next prompt."
+            serialized = \"No new messages. Do not poll — wait for your next prompt.\"
         elif n == 2:
-            serialized = ("No new messages. You have read with no results twice — "
-                          "stop polling and wait for a trigger.")
+            serialized = (\"No new messages. You have read with no results twice — \"
+                          \"stop polling and wait for a trigger.\")
         else:
-            serialized = ("No new messages. STOP. Repeated empty reads waste tokens. "
-                          "Wait for your next prompt.")
+            serialized = (\"No new messages. STOP. Repeated empty reads waste tokens. \"
+                          \"Wait for your next prompt.\")
     elif sender:
         _empty_read_count[sender] = 0
 
@@ -630,24 +669,24 @@ def chat_read(
         if multi:
             inst = registry.get_instance(sender)
             if inst:
-                breadcrumb = f"[identity: {inst['name']} | label: {inst['label']}]"
-                serialized = f"{breadcrumb}\n{serialized}"
+                breadcrumb = f\"[identity: {inst['name']} | label: {inst['label']}]\"
+                serialized = f\"{breadcrumb}\\n{serialized}\"
     return serialized
 
 
 def chat_resync(
     sender: str,
     limit: int = 50,
-    channel: str = "",
+    channel: str = \"\",
     ctx: Context | None = None,
 ) -> str:
-    """Explicit full-context fetch.
+    \"\"\"Explicit full-context fetch.
 
     Returns the latest `limit` messages and resets the sender cursor
     to the latest returned message id.
     Pass channel to filter by channel name (default: all channels).
-    """
-    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=True)
+    \"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=True)
     if err:
         return err
     ch = channel if channel else None
@@ -657,37 +696,37 @@ def chat_resync(
     return serialized
 
 
-def chat_join(name: str, channel: str = "general", ctx: Context | None = None) -> str:
-    """Announce that you've connected to agentchattr."""
-    name, err = _resolve_tool_identity(name, ctx, field_name="name", required=True)
+def chat_join(name: str, channel: str = \"general\", ctx: Context | None = None) -> str:
+    \"\"\"Announce that you've connected to agentchattr.\"\"\"
+    name, err = _resolve_tool_identity(name, ctx, field_name=\"name\", required=True)
     if err:
         return err
     # Block pending instances (identity not yet confirmed)
     if registry and registry.is_pending(name):
-        return "Error: identity not confirmed. Call chat_claim(sender=your_base_name) to get your identity."
+        return \"Error: identity not confirmed. Call chat_claim(sender=your_base_name) to get your identity.\"
     # Block base family names when multi-instance is active
     # (but allow if name is a registered+active instance — e.g. slot-1 'claude' that already claimed)
     if registry and name in registry.get_bases() and registry.family_instance_count(name) >= 2:
         inst = registry.get_instance(name)
-        if not inst or inst.get("state") != "active":
-            return (f"Error: multiple {name} instances registered. "
-                    f"Call chat_claim(sender='{name}') to get your unique identity first.")
+        if not inst or inst.get(\"state\") != \"active\":
+            return (f\"Error: multiple {name} instances registered. \"
+                    f\"Call chat_claim(sender='{name}') to get your unique identity first.\")
     # Block unregistered agent names (stale identity from resumed session)
     if registry and registry.is_agent_family(name) and not registry.is_registered(name):
-        return f"Error: '{name}' is not registered. Call chat_claim(sender=your_base_name) to get your identity."
-    store.add(name, f"{name} is online", msg_type="join", channel="general")
+        return f\"Error: '{name}' is not registered. Call chat_claim(sender=your_base_name) to get your identity.\"
+    store.add(name, f\"{name} is online\", msg_type=\"join\", channel=\"general\")
     online = _get_online()
-    return f"Joined. Online: {', '.join(online)}"
+    return f\"Joined. Online: {', '.join(online)}\"
 
 
 def chat_who() -> str:
-    """Check who's currently online in agentchattr."""
+    \"\"\"Check who's currently online in agentchattr.\"\"\"
     online = _get_online()
-    return f"Online: {', '.join(online)}" if online else "Nobody online."
+    return f\"Online: {', '.join(online)}\" if online else \"Nobody online.\"
 
 
 def _touch_presence(name: str):
-    """Update presence timestamp — called on any MCP tool use."""
+    \"\"\"Update presence timestamp — called on any MCP tool use.\"\"\"
     with _presence_lock:
         _presence[name] = time.time()
 
@@ -709,7 +748,7 @@ def set_active(name: str, active: bool):
     with _presence_lock:
         _activity[name] = active
         if active:
-            _activity_ts[name] = __import__("time").time()
+            _activity_ts[name] = __import__(\"time\").time()
 
 
 def is_active(name: str) -> bool:
@@ -728,220 +767,219 @@ def is_active(name: str) -> bool:
 def chat_rules(
     action: str,
     sender: str,
-    rule: str = "",
-    reason: str = "",
-    channel: str = "general",
+    rule: str = \"\",
+    reason: str = \"\",
+    channel: str = \"general\",
     ctx: Context | None = None,
 ) -> str:
-    """Manage shared rules — the working style for your agents. Agents can list and propose; humans approve via the web UI.
+    \"\"\"Manage shared rules — the working style for your agents. Agents can list and propose; humans approve via the web UI.
 
     Actions:
       - list: Returns active rules (the current working style).
       - propose: Propose a new rule for human approval. Requires rule text + sender + channel.
 
     Pass channel to place the proposal card in the correct chat channel (default: 'general').
-    Agents cannot activate, edit, or delete rules — only humans can do that from the web UI."""
-    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=False)
+    Agents cannot activate, edit, or delete rules — only humans can do that from the web UI.\"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=False)
     if err:
         return err
     action = action.strip().lower()
 
-    if action == "list":
+    if action == \"list\":
         active = rules.active_list()
-        if not active["rules"]:
-            return "No active rules."
-        lines = [f"Active rules (epoch {active['epoch']}):"]
-        for i, r in enumerate(active["rules"], 1):
-            lines.append(f"  {i}. {r}")
-        return "\n".join(lines)
+        if not active[\"rules\"]:
+            return \"No active rules.\"
+        lines = [f\"Active rules (epoch {active['epoch']}):\"]
+        for i, r in enumerate(active[\"rules\"], 1):
+            lines.append(f\"  {i}. {r}\")
+        return \"\\n\".join(lines)
 
-    if action == "propose":
+    if action == \"propose\":
         if not rule.strip():
-            return "Error: rule text is required."
+            return \"Error: rule text is required.\"
         if not sender.strip():
-            return "Error: sender is required."
+            return \"Error: sender is required.\"
         result = rules.propose(rule, sender, reason)
         if result is None:
-            return "Error: too many rules."
+            return \"Error: too many rules.\"
         # Add proposal card to chat timeline
         if store:
             store.add(
-                sender, f"Rule proposal: {result['text']}",
-                msg_type="rule_proposal",
-                channel=channel or "general",
-                metadata={"rule_id": result["id"], "text": result["text"], "status": "pending"},
+                sender, f\"Rule proposal: {result['text']}\",
+                msg_type=\"rule_proposal\",
+                channel=channel or \"general\",
+                metadata={\"rule_id\": result[\"id\"], \"text\": result[\"text\"], \"status\": \"pending\"},
             )
-        return f"Proposed rule #{result['id']}: '{result['text']}'. Human will review in the Rules panel."
+        return f\"Proposed rule #{result['id']}: '{result['text']}'. Human will review in the Rules panel.\"
 
-    if action in ("activate", "edit", "delete"):
-        return f"Error: '{action}' is only available to humans via the web UI."
+    if action in (\"activate\", \"edit\", \"delete\"):
+        return f\"Error: '{action}' is only available to humans via the web UI.\"
 
-    return f"Unknown action: {action}. Valid actions: list, propose."
+    return f\"Unknown action: {action}. Valid actions: list, propose.\"
 
 
 def chat_decision(
     action: str,
     sender: str,
-    decision: str = "",
-    reason: str = "",
+    decision: str = \"\",
+    reason: str = \"\",
     ctx: Context | None = None,
 ) -> str:
-    """Backward-compatible alias for chat_rules. Use chat_rules instead."""
+    \"\"\"Backward-compatible alias for chat_rules. Use chat_rules instead.\"\"\"
     return chat_rules(action=action, sender=sender, rule=decision, reason=reason, ctx=ctx)
 
 
 # --- Server instances ---
 
-def chat_set_hat(sender: str, svg: str, target: str = "", ctx: Context | None = None) -> str:
-    """Set your avatar hat. Pass an SVG string (viewBox "0 0 32 16", max 5KB).
+def chat_set_hat(sender: str, svg: str, target: str = \"\", ctx: Context | None = None) -> str:
+    \"\"\"Set your avatar hat. Pass an SVG string (viewBox \"0 0 32 16\", max 5KB).
     The hat will appear above your avatar in chat. To remove, users can drag it to the trash.
     Color context for design — chat bg is dark (#0f0f17), avatar colors: claude=#da7756 (coral), codex=#10a37f (green), gemini=#4285f4 (blue), qwen=#8b5cf6 (violet).
-    Optional: pass target to set a hat on another agent (e.g. target="qwen")."""
-    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=True)
+    Optional: pass target to set a hat on another agent (e.g. target=\"qwen\").\"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=True)
     if err:
         return err
     hat_owner = target.strip() if target.strip() else sender
     import app
     err = app.set_agent_hat(hat_owner, svg)
     if err:
-        return f"Error: {err}"
+        return f\"Error: {err}\"
     if hat_owner != sender:
-        return f"Hat set for {hat_owner} (by {sender})!"
-    return f"Hat set for {sender}!"
+        return f\"Hat set for {hat_owner} (by {sender})!\"
+    return f\"Hat set for {sender}!\"
 
 
-def chat_claim(sender: str, name: str = "", ctx: Context | None = None) -> str:
-    """Claim your identity in a multi-instance setup.
+def chat_claim(sender: str, name: str = \"\", ctx: Context | None = None) -> str:
+    \"\"\"Claim your identity in a multi-instance setup.
 
     - Without name: accept the auto-assigned identity and unlock chat_send.
     - With name: reclaim a previous identity (e.g. from a breadcrumb after /resume).
 
     Your sender must be your current registered name (the one assigned at registration).
-    The identity breadcrumb in chat_read responses shows your current identity."""
-    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=True)
+    The identity breadcrumb in chat_read responses shows your current identity.\"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=True)
     if err:
         return err
     if not registry:
-        return "Error: registry not available."
+        return \"Error: registry not available.\"
     target = name.strip() if name.strip() else None
     result = registry.claim(sender, target)
     if isinstance(result, str):
-        return f"Error: {result}"
+        return f\"Error: {result}\"
     # Touch presence with the CONFIRMED name (may differ from sender)
-    confirmed = result.get("name", sender)
+    confirmed = result.get(\"name\", sender)
     _touch_presence(confirmed)
-    return json.dumps({"confirmed_name": confirmed, "label": result.get("label", ""), "base": result.get("base", "")})
+    return json.dumps({\"confirmed_name\": confirmed, \"label\": result.get(\"label\", \"\"), \"base\": result.get(\"base\", \"\")})
 
 
 def chat_channels() -> str:
-    """List all available channels. Returns a JSON array of channel names."""
-    channels = room_settings.get("channels", ["general"]) if room_settings else ["general"]
+    \"\"\"List all available channels. Returns a JSON array of channel names.\"\"\"
+    channels = room_settings.get(\"channels\", [\"general\"]) if room_settings else [\"general\"]
     return json.dumps(channels)
 
 
 def chat_summary(
     action: str,
     sender: str,
-    text: str = "",
-    channel: str = "",
+    text: str = \"\",
+    channel: str = \"\",
     ctx: Context | None = None,
 ) -> str:
-    """Read or write per-channel summaries. Summaries help agents catch up quickly.
+    \"\"\"Read or write per-channel summaries. Summaries help agents catch up quickly.
 
     Actions:
       - read: Get the current summary for a channel (default: sender's last active channel).
       - write: Update the channel summary. Requires text (max 1000 chars).
 
     Keep summaries factual and concise (under 150 words). Focus on decisions made,
-    tasks completed, and open questions."""
-    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=False)
+    tasks completed, and open questions.\"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=False)
     if err:
         return err
     action = action.strip().lower()
-    channel = (channel or "general").strip()
+    channel = (channel or \"general\").strip()
 
-    if action == "read":
+    if action == \"read\":
         entry = summaries.get(channel)
         if not entry:
-            return json.dumps({"channel": channel, "text": None, "message": f"No summary for #{channel} yet — one hasn't been written."})
-        return json.dumps(entry, ensure_ascii=False)
+            return json.dumps({\"channel\": channel, \"text\": None, \"message\": f\"No summary for #{channel} yet — one hasn't been written.\"})\n        return json.dumps(entry, ensure_ascii=False)
 
-    if action == "write":
+    if action == \"write\":
         if not text.strip():
-            return "Error: text is required."
+            return \"Error: text is required.\"
         if len(text.strip()) > 1000:
-            return "Error: summary too long (max 1000 characters)."
+            return \"Error: summary too long (max 1000 characters).\"
         # Get the latest message ID for staleness tracking
         latest_id = 0
         if store:
             recent = store.get_recent(1, channel=channel)
             if recent:
-                latest_id = recent[-1]["id"]
+                latest_id = recent[-1][\"id\"]
         result = summaries.write(channel, text, sender, message_id=latest_id)
         if result is None:
-            return "Error: failed to write summary."
+            return \"Error: failed to write summary.\"
         # Post a visual summary message to the timeline
         if store:
-            store.add(sender, text.strip(), msg_type="summary", channel=channel)
-        return f"Summary for #{channel} updated ({len(text.strip())} chars)."
+            store.add(sender, text.strip(), msg_type=\"summary\", channel=channel)
+        return f\"Summary for #{channel} updated ({len(text.strip())} chars).\"
 
-    return f"Unknown action: {action}. Valid actions: read, write."
+    return f\"Unknown action: {action}. Valid actions: read, write.\"
 
 
 def _emit_desktop_command(payload: dict) -> bool:
-    """Broadcast a desktop-only command to connected Electron webviews."""
+    \"\"\"Broadcast a desktop-only command to connected Electron webviews.\"\"\"
     try:
         import app as _app
 
-        loop = getattr(_app, "_event_loop", None)
+        loop = getattr(_app, \"_event_loop\", None)
         if not loop:
             return False
-        raw = json.dumps({"type": "desktop_command", "data": payload})
+        raw = json.dumps({\"type\": \"desktop_command\", \"data\": payload})
         asyncio.run_coroutine_threadsafe(_app._broadcast(raw), loop)
         return True
     except Exception:
-        log.exception("Failed to emit desktop command")
+        log.exception(\"Failed to emit desktop command\")
         return False
 
 
 def browser_open(
     sender: str,
     url: str,
-    target: str = "docked",
+    target: str = \"docked\",
     ctx: Context | None = None,
 ) -> str:
-    """Open an HTTP(S) URL in the Electron desktop app, docked or in a window."""
-    sender, err = _resolve_tool_identity(sender, ctx, field_name="sender", required=True)
+    \"\"\"Open an HTTP(S) URL in the Electron desktop app, docked or in a window.\"\"\"
+    sender, err = _resolve_tool_identity(sender, ctx, field_name=\"sender\", required=True)
     if err:
         return err
 
-    raw_url = (url or "").strip()
+    raw_url = (url or \"\").strip()
     if not raw_url:
-        return "Error: url is required."
+        return \"Error: url is required.\"
 
-    target_mode = (target or "docked").strip().lower()
-    if target_mode not in ("docked", "window"):
-        return "Error: target must be 'docked' or 'window'"
+    target_mode = (target or \"docked\").strip().lower()
+    if target_mode not in (\"docked\", \"window\"):
+        return \"Error: target must be 'docked' or 'window'\"
 
     parsed = urlparse(raw_url)
-    if parsed.scheme not in ("http", "https"):
-        return "Error: url must start with http:// or https://"
+    if parsed.scheme not in (\"http\", \"https\"):
+        return \"Error: url must start with http:// or https://\"
     if not parsed.netloc:
-        return "Error: url must include a host."
+        return \"Error: url must include a host.\"
 
     payload = {
-        "command": "browser_open",
-        "url": raw_url,
-        "target": target_mode,
-        "requested_by": sender,
+        \"command\": \"browser_open\",
+        \"url\": raw_url,
+        \"target\": target_mode,
+        \"requested_by\": sender,
     }
     if not _emit_desktop_command(payload):
-        return "Error: desktop command bridge unavailable."
+        return \"Error: desktop command bridge unavailable.\"
 
     _touch_presence(sender)
-    if target_mode == "window":
-        return f"Requested browser pop-out: {raw_url}"
-    return f"Requested docked browser open: {raw_url}"
+    if target_mode == \"window\":
+        return f\"Requested browser pop-out: {raw_url}\"
+    return f\"Requested docked browser open: {raw_url}\"
 
 
 def browser_popout(
@@ -949,23 +987,23 @@ def browser_popout(
     url: str,
     ctx: Context | None = None,
 ) -> str:
-    """Open an HTTP(S) URL in a separate Electron browser window."""
-    return browser_open(sender=sender, url=url, target="window", ctx=ctx)
+    \"\"\"Open an HTTP(S) URL in a separate Electron browser window.\"\"\"
+    return browser_open(sender=sender, url=url, target=\"window\", ctx=ctx)
 
 
 _ALL_TOOLS = [
     chat_send, chat_read, chat_resync, chat_join, chat_who, chat_rules, chat_decision,
     chat_channels, chat_set_hat, chat_claim, chat_summary, chat_propose_job,
-    browser_open, browser_popout,
+    browser_open, browser_popout, chat_verify_screenshot,
 ]
 
 
 def _create_server(port: int) -> FastMCP:
     server = FastMCP(
-        "agentchattr",
-        host="127.0.0.1",
+        \"agentchattr\",
+        host=\"127.0.0.1\",
         port=port,
-        log_level="ERROR",
+        log_level=\"ERROR\",
         instructions=_MCP_INSTRUCTIONS,
     )
     for func in _ALL_TOOLS:
@@ -981,11 +1019,10 @@ mcp_sse = _create_server(39779)   # SSE for Gemini
 
 
 def run_http_server():
-    """Block — run streamable-http MCP in a background thread."""
-    mcp_http.run(transport="streamable-http")
+    \"\"\"Block — run streamable-http MCP in a background thread.\"\"\"
+    mcp_http.run(transport=\"streamable-http\")
 
 
 def run_sse_server():
-    """Block — run SSE MCP in a background thread."""
-    mcp_sse.run(transport="sse")
-
+    \"\"\"Block — run SSE MCP in a background thread.\"\"\"
+    mcp_sse.run(transport=\"sse\")
