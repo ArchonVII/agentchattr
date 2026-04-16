@@ -229,19 +229,14 @@ function collectChatThemeVars(readCssVar) {
   return nextVars;
 }
 
-function buildApplyChatThemeScript(vars) {
-  const payload = JSON.stringify(vars || {});
+function buildApplyChatThemeScript(themeId) {
+  const payload = JSON.stringify(themeId || "default");
   return `
     (() => {
-      const vars = ${payload};
-      const root = document.documentElement;
-      Object.entries(vars).forEach(([name, value]) => {
-        if (typeof value === "string" && value) {
-          root.style.setProperty(name, value);
-        }
-      });
-      root.setAttribute("data-electron-theme-bridge", "true");
-      return true;
+      if (typeof window.applySharedTheme === "function") {
+        return window.applySharedTheme(${payload});
+      }
+      return false;
     })();
   `;
 }

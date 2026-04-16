@@ -1,0 +1,41 @@
+/*
+ * Browser-safe NES theme adapter.
+ *
+ * Intentionally limited to shared CSS custom properties. The chat page keeps
+ * its own component/layout rules and only consumes the palette and typography.
+ */
+
+:root[data-theme="nes"] {
+  --bg-app: #212529;
+  --bg-surface: #212529;
+  --bg-elevated: #2a2e33;
+  --bg-deep: #1a1d21;
+  --bg-sunken: #16191c;
+
+  --fg-primary: #fff;
+  --fg-secondary: #c0c0c0;
+  --fg-muted: #9a9a9a;
+  --fg-dim: #6a6a6a;
+  --fg-faint: #4a4a4a;
+
+  --accent: #e76e55;
+  --accent-hover-bg: rgba(231, 110, 85, 0.15);
+  --accent-subtle: rgba(231, 110, 85, 0.1);
+  --accent-danger: #ce372b;
+  --accent-success: #4aa52e;
+
+  --border: #4a4a4a;
+  --border-strong: #6a6a6a;
+  --border-grid: #4a4a4a;
+
+  --font-ui: "Press Start 2P", monospace;
+  --font-mono: "Press Start 2P", monospace;
+  --font-size-base: 10px;
+
+  --shadow-menu: none;
+  --shadow-float: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}

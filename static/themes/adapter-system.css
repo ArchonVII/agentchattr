@@ -1,0 +1,39 @@
+/*
+ * Browser-safe Classic Mac System 6 theme adapter.
+ */
+
+:root[data-theme="system6"] {
+  --bg-app: #a8a8a8;
+  --bg-surface: #fff;
+  --bg-elevated: #fff;
+  --bg-deep: #fff;
+  --bg-sunken: #e8e8e8;
+
+  --fg-primary: #000;
+  --fg-secondary: #222;
+  --fg-muted: #555;
+  --fg-dim: #777;
+  --fg-faint: #999;
+
+  --accent: #000;
+  --accent-hover-bg: rgba(0, 0, 0, 0.08);
+  --accent-subtle: rgba(0, 0, 0, 0.05);
+  --accent-danger: #000;
+  --accent-success: #000;
+
+  --border: #000;
+  --border-strong: #000;
+  --border-grid: #000;
+
+  --font-ui:
+    "Chicago_12", "Chicago", Geneva, "Helvetica Neue", Helvetica, sans-serif;
+  --font-mono: "Monaco", "Courier New", monospace;
+  --font-size-base: 12px;
+
+  --shadow-menu: 2px 2px 0 #000;
+  --shadow-float: 2px 2px 0 #000;
+  --radius: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 2px;
+  --color-scheme: light;
+}

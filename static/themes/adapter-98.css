@@ -1,0 +1,38 @@
+/*
+ * Browser-safe Windows 98 theme adapter.
+ */
+
+:root[data-theme="win98"] {
+  --bg-app: #008080;
+  --bg-surface: #c0c0c0;
+  --bg-elevated: #c0c0c0;
+  --bg-deep: #c0c0c0;
+  --bg-sunken: #bfbfbf;
+
+  --fg-primary: #000;
+  --fg-secondary: #222;
+  --fg-muted: #444;
+  --fg-dim: #666;
+  --fg-faint: #888;
+
+  --accent: #000080;
+  --accent-hover-bg: rgba(0, 0, 128, 0.1);
+  --accent-subtle: rgba(0, 0, 128, 0.08);
+  --accent-danger: #ff0000;
+  --accent-success: #008000;
+
+  --border: #888;
+  --border-strong: #444;
+  --border-grid: #888;
+
+  --font-ui: "Pixelated MS Sans Serif", Arial, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
+  --font-size-base: 11px;
+
+  --shadow-menu: none;
+  --shadow-float: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: light;
+}

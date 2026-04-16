@@ -1,0 +1,38 @@
+/*
+ * Browser-safe Commodore 64 theme adapter.
+ */
+
+:root[data-theme="c64"] {
+  --bg-app: #352879;
+  --bg-surface: #2a2060;
+  --bg-elevated: #40309a;
+  --bg-deep: #1e1850;
+  --bg-sunken: #181245;
+
+  --fg-primary: #6c5eb5;
+  --fg-secondary: #9a8ed0;
+  --fg-muted: #5a4e99;
+  --fg-dim: #4a3e88;
+  --fg-faint: #3a2e77;
+
+  --accent: #6c5eb5;
+  --accent-hover-bg: rgba(108, 94, 181, 0.2);
+  --accent-subtle: rgba(108, 94, 181, 0.1);
+  --accent-danger: #68372b;
+  --accent-success: #70a04b;
+
+  --border: #6c5eb5;
+  --border-strong: #9a8ed0;
+  --border-grid: #6c5eb5;
+
+  --font-ui: "C64_Pro_Mono", monospace;
+  --font-mono: "C64_Pro_Mono", monospace;
+  --font-size-base: 14px;
+
+  --shadow-menu: none;
+  --shadow-float: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}

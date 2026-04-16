@@ -39,15 +39,8 @@ test("collectChatThemeVars maps app-shell variables onto chat theme tokens", () 
 });
 
 test("buildApplyChatThemeScript writes the mapped variables into the chat document", () => {
-  const script = buildApplyChatThemeScript({
-    "--bg": "#12121e",
-    "--accent": "#da7756",
-  });
+  const script = buildApplyChatThemeScript("win98");
 
-  assert.match(script, /document\.documentElement/);
-  assert.match(script, /--bg/);
-  assert.match(script, /#12121e/);
-  assert.match(script, /--accent/);
-  assert.match(script, /#da7756/);
-  assert.match(script, /data-electron-theme-bridge/);
+  assert.match(script, /applySharedTheme/);
+  assert.match(script, /win98/);
 });
