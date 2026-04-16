@@ -27,6 +27,7 @@
   --accent: #00ffa3;
   --accent-soft: rgba(0, 255, 163, 0.14);
   --accent-hover: rgba(0, 255, 163, 0.22);
+  --accent-info: #16f4ff;
   --user-color: #16f4ff;
   --system-color: #3d7d6d;
 
@@ -51,6 +52,40 @@
   --white-10: rgba(255, 255, 255, 0.1);
   --white-12: rgba(255, 255, 255, 0.12);
   --white-15: rgba(255, 255, 255, 0.15);
+
+  /* --- Shared chrome semantics --- */
+  --surface-hover: rgba(255, 255, 255, 0.05);
+  --surface-hover-strong: rgba(255, 255, 255, 0.08);
+  --control-hover-fg: var(--text);
+  --status-offline: #555;
+  --focus-ring: color-mix(in srgb, var(--accent) 50%, transparent);
+  --heading-glow-soft: rgba(0, 255, 163, 0.22);
+  --heading-glow-strong: rgba(22, 244, 255, 0.08);
+  --header-shadow-top: rgba(0, 255, 163, 0.08);
+  --header-shadow-depth: rgba(0, 0, 0, 0.45);
+  --hero-gradient-top: rgba(22, 244, 255, 0.08);
+  --hero-gradient-bottom: rgba(255, 60, 172, 0.08);
+  --hero-gradient-accent: rgba(0, 255, 163, 0.04);
+  --scanline-color: rgba(255, 255, 255, 0.02);
+  --state-danger-fg: #ff8a8a;
+  --state-danger-fg-strong: #ffd4d4;
+  --state-danger-bg: rgba(255, 107, 107, 0.08);
+  --state-danger-bg-strong: rgba(255, 107, 107, 0.16);
+  --state-danger-border: rgba(255, 107, 107, 0.18);
+  --state-danger-border-strong: rgba(255, 107, 107, 0.34);
+  --state-success-fg: #78b4dc;
+  --state-success-fg-strong: #da7756;
+  --state-success-bg: rgba(120, 180, 220, 0.15);
+  --state-success-bg-strong: rgba(218, 119, 86, 0.15);
+  --state-info-bg: rgba(124, 58, 237, 0.1);
+  --state-info-border: rgba(124, 58, 237, 0.5);
+  --state-info-border-strong: rgba(124, 58, 237, 0.9);
+  --state-info-fg: rgba(167, 139, 250, 0.9);
+  --help-panel-bg: rgba(15, 15, 23, 0.98);
+  --help-panel-border: var(--border);
+  --help-title-fg: #e0e0f0;
+  --help-muted-fg: rgba(106, 106, 128, 0.7);
+  --panel-shadow-strong: 0 12px 48px rgba(0, 0, 0, 0.6);
 
   /* --- Space --- */
   --space-xs: 4px;
@@ -115,7 +150,7 @@
 /* --- Font themes --- */
 
 body {
-  font-size: 14px;
+  font-size: var(--font-size-base, 14px);
   background: var(--bg);
   color: var(--text);
   height: 100vh;
@@ -125,18 +160,16 @@ body {
 
 body,
 body.font-sans {
-  font-family:
-    "Inter",
-    "Segoe UI",
-    system-ui,
-    -apple-system,
-    sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui, "Segoe UI", system-ui, sans-serif);
+  font-size: var(--font-size-base, 14px);
 }
 
 body.font-mono {
-  font-family:
-    "Cascadia Code", "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-family: var(--font-mono, monospace);
+}
+
+body.font-serif {
+  font-family: var(--font-display, var(--font-ui, serif));
 }
 
 body.high-contrast {
@@ -154,9 +187,9 @@ body.high-contrast {
   height: 100vh;
   position: relative;
   background:
-    radial-gradient(circle at top center, rgba(22, 244, 255, 0.08), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(255, 60, 172, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(0, 255, 163, 0.04), transparent 16%),
+    radial-gradient(circle at top center, var(--hero-gradient-top), transparent 30%),
+    radial-gradient(circle at bottom right, var(--hero-gradient-bottom), transparent 28%),
+    linear-gradient(180deg, var(--hero-gradient-accent), transparent 16%),
     var(--bg);
 }
 
@@ -167,8 +200,8 @@ body.high-contrast {
   pointer-events: none;
   background:
     linear-gradient(
-      rgba(255, 255, 255, 0.02) 0,
-      rgba(255, 255, 255, 0.02) 1px,
+      var(--scanline-color) 0,
+      var(--scanline-color) 1px,
       transparent 1px,
       transparent 3px
     );
@@ -187,8 +220,8 @@ header {
   background: var(--bg-header);
   border-bottom: none;
   box-shadow:
-    0 1px 0 rgba(0, 255, 163, 0.08),
-    0 10px 24px rgba(0, 0, 0, 0.45);
+    0 1px 0 var(--header-shadow-top),
+    0 10px 24px var(--header-shadow-depth);
   flex-shrink: 0;
   z-index: 2;
 }
@@ -208,8 +241,8 @@ header h1 {
   margin: 0;
   line-height: 1;
   text-shadow:
-    0 0 10px rgba(0, 255, 163, 0.22),
-    0 0 22px rgba(22, 244, 255, 0.08);
+    0 0 10px var(--heading-glow-soft),
+    0 0 22px var(--heading-glow-strong);
 }
 
 .discord-pill {
@@ -243,7 +276,7 @@ header h1 {
 }
 
 .discord-pill:hover {
-  background: rgba(22, 244, 255, 0.14);
+  background: color-mix(in srgb, var(--accent-info) 14%, transparent);
   color: var(--info);
 }
 
@@ -289,7 +322,7 @@ header h1 {
   width: 8px;
   height: 8px;
   border-radius: var(--radius-full);
-  background: #555;
+  background: var(--status-offline);
   transition: background 0.3s;
 }
 
@@ -297,7 +330,7 @@ header h1 {
   background: var(--online);
 }
 .status-pill.offline .status-dot {
-  background: #555;
+  background: var(--status-offline);
 }
 
 .status-pill.offline {
@@ -360,10 +393,10 @@ header h1 {
   padding: 1.5px;
   background: conic-gradient(
     from var(--border-angle),
-    var(--agent-color, #4ade80),
+    var(--agent-color, var(--success)),
     transparent 40%,
     transparent 60%,
-    var(--agent-color, #4ade80)
+    var(--agent-color, var(--success))
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
@@ -396,13 +429,13 @@ header h1 {
 .settings-btn:hover {
   color: var(--text);
   border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(0, 255, 163, 0.08);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .settings-btn.active {
   color: var(--text);
   border-color: var(--accent);
-  background: rgba(0, 255, 163, 0.1);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 /* --- Shared close / dismiss button --- */
@@ -697,11 +730,11 @@ header h1 {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 3px 10px;
-  border: 1px solid rgba(255, 60, 172, 0.24);
+  border: 1px solid color-mix(in srgb, var(--pending) 24%, transparent);
   border-radius: 10px;
-  background: rgba(255, 60, 172, 0.08);
-  color: #ffd3ef;
-  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  background: color-mix(in srgb, var(--pending) 8%, transparent);
+  color: color-mix(in srgb, var(--pending) 35%, white);
+  font-family: var(--font-mono, monospace);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -885,7 +918,7 @@ header h1 {
 }
 
 .room-channel-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-hover);
   color: var(--text);
 }
 
@@ -893,8 +926,8 @@ header h1 {
   background: color-mix(in srgb, var(--user-color) 13%, var(--bg-header));
   color: var(--user-color);
   box-shadow:
-    inset 0 0 0 1px rgba(22, 244, 255, 0.18),
-    0 0 12px rgba(22, 244, 255, 0.06);
+    inset 0 0 0 1px color-mix(in srgb, var(--user-color) 18%, transparent),
+    0 0 12px color-mix(in srgb, var(--user-color) 6%, transparent);
 }
 
 .room-channel-info {
@@ -1176,15 +1209,15 @@ header h1 {
 }
 
 .presence-terminal-item {
-  border-color: rgba(120, 180, 220, 0.15);
+  border-color: var(--state-success-bg);
 }
 
 .presence-terminal-item.embedded {
-  border-color: rgba(218, 119, 86, 0.22);
+  border-color: color-mix(in srgb, var(--state-success-fg-strong) 22%, transparent);
 }
 
 .presence-terminal-item.available .presence-state-dot {
-  background: var(--green, #4ade80);
+  background: var(--green, var(--success));
 }
 
 .presence-terminal-avatar {
@@ -1194,23 +1227,23 @@ header h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(120, 180, 220, 0.15);
-  color: #78b4dc;
+  background: var(--state-success-bg);
+  color: var(--state-success-fg);
 }
 
 .presence-terminal-item.embedded .presence-terminal-avatar {
-  background: rgba(218, 119, 86, 0.15);
-  color: #da7756;
+  background: var(--state-success-bg-strong);
+  color: var(--state-success-fg-strong);
 }
 
 .presence-terminal-remove {
   margin-left: auto;
   width: 22px;
   height: 22px;
-  border: 1px solid rgba(255, 107, 107, 0.18);
+  border: 1px solid var(--state-danger-border);
   border-radius: 999px;
-  background: rgba(255, 107, 107, 0.08);
-  color: #ff8a8a;
+  background: var(--state-danger-bg);
+  color: var(--state-danger-fg);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
@@ -1225,9 +1258,9 @@ header h1 {
 }
 
 .presence-terminal-remove:hover {
-  background: rgba(255, 107, 107, 0.16);
-  border-color: rgba(255, 107, 107, 0.34);
-  color: #ffd4d4;
+  background: var(--state-danger-bg-strong);
+  border-color: var(--state-danger-border-strong);
+  color: var(--state-danger-fg-strong);
 }
 
 .presence-avatar-wrap {
@@ -2301,7 +2334,7 @@ main#timeline {
 .msg-hashtag {
   color: var(--accent);
   font-weight: 500;
-  background: rgba(124, 58, 237, 0.1);
+  background: var(--state-info-bg);
   padding: 1px 4px;
   border-radius: 3px;
   cursor: default;
@@ -2433,7 +2466,7 @@ main#timeline {
   border-radius: var(--radius-sm);
   cursor: pointer;
   border: 1px solid var(--accent);
-  background: rgba(124, 58, 237, 0.1);
+  background: var(--state-info-bg);
   color: var(--accent);
   transition:
     background 0.15s,
@@ -2982,8 +3015,8 @@ main#timeline {
 .proposal-card {
   max-width: 690px;
   width: 100%;
-  background: rgba(124, 58, 237, 0.06);
-  border: 1px solid rgba(124, 58, 237, 0.15);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
   border-radius: var(--radius-lg);
   padding: 12px 16px;
 }
@@ -3075,7 +3108,7 @@ main#timeline {
 }
 .proposal-request-changes:hover {
   color: var(--accent);
-  background: rgba(124, 58, 237, 0.08);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .proposal-dismiss {
@@ -4900,10 +4933,10 @@ footer {
 @keyframes hgSpotPulse {
   0%,
   100% {
-    border-color: rgba(124, 58, 237, 0.5);
+    border-color: var(--state-info-border);
   }
   50% {
-    border-color: rgba(0, 255, 163, 0.8);
+    border-color: color-mix(in srgb, var(--accent) 80%, transparent);
   }
 }
 
@@ -4937,8 +4970,8 @@ footer {
   max-width: 300px;
   flex-shrink: 0;
   pointer-events: auto;
-  background: rgba(15, 15, 23, 0.97);
-  border: 1px solid var(--border, #2a2a3e);
+  background: color-mix(in srgb, var(--help-panel-bg) 99%, transparent);
+  border: 1px solid var(--help-panel-border);
   border-radius: 12px;
   padding: 14px 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -4988,10 +5021,10 @@ footer {
   max-width: 440px;
   max-height: 85vh;
   overflow-y: auto;
-  background: rgba(15, 15, 23, 0.98);
-  border: 1px solid var(--border, #2a2a3e);
+  background: var(--help-panel-bg);
+  border: 1px solid var(--help-panel-border);
   border-radius: 14px;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--panel-shadow-strong);
   pointer-events: auto;
   animation: hgCardIn 0.3s ease both;
 }
@@ -5009,14 +5042,14 @@ footer {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: rgba(15, 15, 23, 0.98);
-  border-bottom: 1px solid var(--border, #2a2a3e);
+  background: var(--help-panel-bg);
+  border-bottom: 1px solid var(--help-panel-border);
   z-index: 1;
 }
 .hg-modal-title {
   font-size: 13px;
   font-weight: 600;
-  color: #e0e0f0;
+  color: var(--help-title-fg);
 }
 .hg-modal-close {
   background: none;
@@ -5042,7 +5075,7 @@ footer {
 .hg-module-title {
   font-size: 13px;
   font-weight: 600;
-  color: #e0e0f0;
+  color: var(--help-title-fg);
   margin-bottom: 6px;
   display: flex;
   align-items: baseline;
@@ -5063,7 +5096,7 @@ footer {
 .hg-module-tip {
   font-size: 11px;
   line-height: 1.5;
-  color: rgba(106, 106, 128, 0.7);
+  color: var(--help-muted-fg);
   margin: 8px 0 0;
 }
 .hg-module-tip strong {
@@ -5112,10 +5145,10 @@ footer {
   padding: 1.5px;
   background: conic-gradient(
     from var(--border-angle, 0deg),
-    #34d399,
+    var(--success),
     transparent 40%,
     transparent 60%,
-    #34d399
+    var(--success)
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
@@ -5176,11 +5209,11 @@ footer {
   top: 8px;
   right: 10px;
   padding: 2px 8px;
-  background: rgba(124, 58, 237, 0.1);
-  border: 1px solid rgba(124, 58, 237, 0.5);
+  background: var(--state-info-bg);
+  border: 1px solid var(--state-info-border);
   border-radius: 4px;
   font-size: 10px;
-  color: rgba(167, 139, 250, 0.9);
+  color: var(--state-info-fg);
   font-weight: 500;
   white-space: nowrap;
   animation: hgPillPulse 2.5s ease-in-out infinite;
@@ -5188,11 +5221,11 @@ footer {
 @keyframes hgPillPulse {
   0%,
   100% {
-    border-color: rgba(124, 58, 237, 0.5);
+    border-color: var(--state-info-border);
   }
   50% {
-    border-color: rgba(124, 58, 237, 0.9);
-    box-shadow: 0 0 8px rgba(124, 58, 237, 0.15);
+    border-color: var(--state-info-border-strong);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--state-info-border-strong) 30%, transparent);
   }
 }
 
@@ -5220,7 +5253,7 @@ footer {
   font-size: 14px;
 }
 .hg-mock-panel-badge {
-  background: var(--accent, #7c3aed);
+  background: var(--accent);
   color: #fff;
   font-size: 9px;
   padding: 1px 5px;
@@ -5275,12 +5308,12 @@ footer {
   color: var(--text);
 }
 .hg-toggle-done {
-  background: var(--success-soft, rgba(52, 211, 153, 0.2));
-  color: var(--success, #34d399);
+  background: var(--success-soft);
+  color: var(--success);
 }
 .hg-toggle-archived {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--danger, #ef4444);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  color: var(--danger);
 }
 
 /* Rule card mock */
@@ -5302,7 +5335,7 @@ footer {
   margin-top: 5px;
 }
 .hg-mock-rule-dot.active {
-  background: var(--success, #34d399);
+  background: var(--success);
 }
 .hg-mock-rule-dot.draft {
   background: var(--text-dim, #6a6a80);
@@ -5364,8 +5397,8 @@ footer {
 .hg-custom-session {
   margin-top: 8px;
   padding: 8px 12px;
-  background: var(--accent-soft, rgba(124, 58, 237, 0.15));
-  border: 1px solid rgba(124, 58, 237, 0.25);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   border-radius: 8px;
   font-size: 11px;
   line-height: 1.5;

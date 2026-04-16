@@ -16,6 +16,15 @@ test("collectChatThemeVars maps app-shell variables onto chat theme tokens", () 
       "--bg-deep": "#171726",
       "--border": "#2a2a3a",
       "--border-strong": "#3a3a4a",
+      "--surface-hover": "rgba(255, 255, 255, 0.05)",
+      "--control-hover-fg": "#fff2eb",
+      "--state-danger-fg": "#ffb5b5",
+      "--panel-shadow-strong": "0 8px 40px rgba(0, 0, 0, 0.5)",
+      "--font-ui": "\"Perfect DOS VGA 437 Win\", monospace",
+      "--font-display": "\"Perfect DOS VGA 437 Win\", monospace",
+      "--font-decorative": "\"Perfect DOS VGA 437 Win\", monospace",
+      "--font-mono": "\"Perfect DOS VGA 437 Win\", monospace",
+      "--font-size-base": "14px",
       "--fg-primary": "#e0e0e0",
       "--fg-secondary": "#b4b4c3",
       "--fg-muted": "#888",
@@ -31,6 +40,13 @@ test("collectChatThemeVars maps app-shell variables onto chat theme tokens", () 
   assert.equal(CHAT_THEME_TOKEN_MAP["--bg"], "--bg-app");
   assert.equal(vars["--bg"], "#12121e");
   assert.equal(vars["--bg-header"], "#1a1a2e");
+  assert.equal(vars["--surface-hover"], "rgba(255, 255, 255, 0.05)");
+  assert.equal(vars["--control-hover-fg"], "#fff2eb");
+  assert.equal(vars["--state-danger-fg"], "#ffb5b5");
+  assert.equal(vars["--panel-shadow-strong"], "0 8px 40px rgba(0, 0, 0, 0.5)");
+  assert.equal(vars["--font-ui"], "\"Perfect DOS VGA 437 Win\", monospace");
+  assert.equal(vars["--font-mono"], "\"Perfect DOS VGA 437 Win\", monospace");
+  assert.equal(vars["--font-size-base"], "14px");
   assert.equal(vars["--text"], "#e0e0e0");
   assert.equal(vars["--text-dim"], "#b4b4c3");
   assert.equal(vars["--accent"], "#da7756");

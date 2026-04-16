@@ -1508,8 +1508,6 @@ function getChannelRosterEntries(channel = activeChannel) {
     });
   };
 
-  upsertParticipant(username);
-
   if (container) {
     for (const el of container.children) {
       if ((el.dataset.channel || "general") !== channel) continue;
@@ -5205,11 +5203,11 @@ function initBridgeMessageRenderer() {
     .bridge-sender { font-weight: 600; font-size: 12px; }
     .bridge-session { font-size: 11px; color: #888; }
     .bridge-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
-    .bridge-text { font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 4px; margin: 4px 0; }
+    .bridge-text { font-family: var(--font-mono, monospace); font-size: 12px; white-space: pre-wrap; word-break: break-all; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 4px; margin: 4px 0; }
     .bridge-context { margin-top: 4px; }
     .bridge-context-toggle { font-size: 11px; color: #888; cursor: pointer; border: none; background: transparent; padding: 2px 0; font-family: inherit; }
     .bridge-context-toggle:hover { color: #da7756; }
-    .bridge-context-lines { display: none; font-family: Consolas, monospace; font-size: 11px; color: #999; white-space: pre-wrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 3px; margin-top: 4px; }
+    .bridge-context-lines { display: none; font-family: var(--font-mono, monospace); font-size: 11px; color: #999; white-space: pre-wrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 3px; margin-top: 4px; }
     .bridge-context-lines.open { display: block; }
   `;
   document.head.appendChild(style);

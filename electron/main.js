@@ -1,10 +1,11 @@
-const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, screen } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const net = require("net");
 const { pathToFileURL } = require("url");
 const { openBrowserWindow } = require("./browser-window");
+const { normaliseWindowBounds } = require("./window-bounds");
 const { getAppTheme } = require("./renderer/themes/theme-registry");
 const { WEB_UI_PORT } = require("./default-ports");
 
@@ -260,9 +261,8 @@ function createWindow() {
     return;
   }
 
-  const bounds = preferences
-    ? preferences.get("windowBounds")
-    : { width: 1200, height: 800 };
+  const savedBounds = preferences ? preferences.get("windowBounds") : null;
+  const bounds = normaliseWindowBounds(savedBounds, screen.getAllDisplays());
 
   // Read persisted theme to set initial title bar overlay colour
   const storedThemeId = preferences
@@ -288,6 +288,13 @@ function createWindow() {
       webviewTag: true,
     },
   });
+
+  if (
+    preferences &&
+    JSON.stringify(savedBounds || null) !== JSON.stringify(bounds)
+  ) {
+    preferences.set("windowBounds", bounds);
+  }
 
   mainWindow.loadURL(pathToFileURL(RENDERER_ENTRY).toString());
 

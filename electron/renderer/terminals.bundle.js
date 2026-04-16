@@ -12448,7 +12448,7 @@ ${s3.join("\n")}
     padding: 16px;
     width: 260px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    font-family: "Segoe UI", Tahoma, sans-serif;
+    font-family: var(--font-ui, "Segoe UI", Tahoma, sans-serif);
     font-size: 12px;
     color: #ccc;
   `;

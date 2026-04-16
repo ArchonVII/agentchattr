@@ -108,7 +108,7 @@ const styles = {
     background: "#12121e",
     color: "#e0e0e0",
     fontSize: "12px",
-    fontFamily: "Consolas, monospace",
+    fontFamily: "var(--font-mono, monospace)",
     boxSizing: "border-box",
     outline: "none",
   },

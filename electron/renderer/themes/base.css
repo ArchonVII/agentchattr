@@ -28,11 +28,37 @@
   --accent-subtle: rgba(218, 119, 86, 0.15); /* table row hover */
   --accent-danger: #ff6b6b; /* kill button, errors */
   --accent-success: #4ade80; /* browse button, connected */
+  --accent-info: #60a5fa; /* info actions */
 
   /* ── Borders ──────────────────────────────────────────────── */
   --border: #2a2a3a; /* standard border */
   --border-strong: #3a3a4a; /* popover, emphasis */
   --border-grid: #2a2a3a; /* grid layout lines */
+  --focus-ring: color-mix(in srgb, var(--accent) 55%, transparent);
+
+  /* ── Semantic chrome states ──────────────────────────────── */
+  --surface-hover: rgba(255, 255, 255, 0.05);
+  --surface-hover-strong: rgba(255, 255, 255, 0.08);
+  --control-hover-fg: #fff2eb;
+  --status-offline: #555;
+  --state-danger-fg: #ffb5b5;
+  --state-danger-fg-strong: #ffd3c8;
+  --state-danger-bg-hover: #3a1f1f;
+  --state-success-fg: #b5ffb5;
+  --state-success-fg-strong: #c8ffd3;
+  --state-success-bg-hover: #1f3a1f;
+
+  /* ── Special chrome treatments ───────────────────────────── */
+  --panel-shadow-strong: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --pixel-shadow-dark: rgba(0, 0, 0, 0.3);
+  --pixel-shadow-light: rgba(255, 255, 255, 0.1);
+  --bevel-bg: #c0c0c0;
+  --bevel-bg-hover: #d0d0d0;
+  --bevel-fg: #000;
+  --bevel-shadow-dark: #808080;
+  --bevel-shadow-light: #ffffff;
+  --bevel-shadow-darker: #404040;
+  --bevel-shadow-lighter: #dfdfdf;
 
   /* ── Typography ───────────────────────────────────────────── */
   --font-ui: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
