@@ -109,3 +109,36 @@
   border-radius: 0;
   box-shadow: none;
 }
+
+[data-theme="tui"] #settings-bar,
+[data-theme="tui"] #launcher-panel,
+[data-theme="tui"] #jobs-panel,
+[data-theme="tui"] .session-launcher-dialog,
+[data-theme="tui"] .convert-job-dialog,
+[data-theme="tui"] .repo-explorer,
+[data-theme="tui"] .repo-top-bar,
+[data-theme="tui"] .repo-commits-panel,
+[data-theme="tui"] .repo-agents-panel,
+[data-theme="tui"] .launcher-card,
+[data-theme="tui"] .job-card,
+[data-theme="tui"] .commit-item,
+[data-theme="tui"] .repo-agent-card {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+[data-theme="tui"] #settings-bar,
+[data-theme="tui"] #launcher-panel,
+[data-theme="tui"] #jobs-panel,
+[data-theme="tui"] .session-launcher-dialog,
+[data-theme="tui"] .convert-job-dialog,
+[data-theme="tui"] .repo-explorer,
+[data-theme="tui"] .repo-top-bar,
+[data-theme="tui"] .repo-commits-panel,
+[data-theme="tui"] .repo-agents-panel,
+[data-theme="tui"] .launcher-card,
+[data-theme="tui"] .job-card,
+[data-theme="tui"] .commit-item,
+[data-theme="tui"] .repo-agent-card {
+  border-width: 2px;
+}

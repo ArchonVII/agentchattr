@@ -5,6 +5,12 @@
  * its own component/layout rules and only consumes the palette and typography.
  */
 
+@font-face {
+  font-family: "Press Start 2P";
+  src: url("/static/themes/PressStart2P-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root[data-theme="nes"] {
   --bg-app: #212529;
   --bg-surface: #212529;
