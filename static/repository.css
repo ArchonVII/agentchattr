@@ -191,6 +191,16 @@
   color: var(--text);
 }
 
+.commit-author {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.repo-empty-note {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
 .status-list {
   font-family: var(--font-mono);
   font-size: 12px;

@@ -5386,24 +5386,6 @@ const BRIDGE_CATEGORY_COLOURS = {
 };
 
 function initBridgeMessageRenderer() {
-  // Inject CSS for bridge messages
-  const style = document.createElement("style");
-  style.textContent = `
-    .bridge-msg { border-left: 3px solid #444; padding-left: 10px; margin: 4px 0; }
-    .bridge-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .bridge-icon { font-size: 12px; opacity: 0.7; }
-    .bridge-sender { font-weight: 600; font-size: 12px; }
-    .bridge-session { font-size: 11px; color: #888; }
-    .bridge-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
-    .bridge-text { font-family: var(--font-mono, monospace); font-size: 12px; white-space: pre-wrap; word-break: break-all; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 4px; margin: 4px 0; }
-    .bridge-context { margin-top: 4px; }
-    .bridge-context-toggle { font-size: 11px; color: #888; cursor: pointer; border: none; background: transparent; padding: 2px 0; font-family: inherit; }
-    .bridge-context-toggle:hover { color: #da7756; }
-    .bridge-context-lines { display: none; font-family: var(--font-mono, monospace); font-size: 11px; color: #999; white-space: pre-wrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 3px; margin-top: 4px; }
-    .bridge-context-lines.open { display: block; }
-  `;
-  document.head.appendChild(style);
-
   // Register via the extensible renderer hook
   if (!window._messageRenderers) window._messageRenderers = {};
   
@@ -5461,9 +5443,6 @@ function initBridgeMessageRenderer() {
         </div>
         <div class="msg-text"></div>
       </div>
-      <div class="msg-actions">
-        <button class="delete-btn" onclick="deleteClick(${msg.id}, event)" title="Delete">del</button>
-      </div>
     `;
     el.querySelector(".msg-text").appendChild(card);
   };
@@ -5503,9 +5482,6 @@ function initBridgeMessageRenderer() {
         </div>
         <div class="msg-text"></div>
       </div>
-      <div class="msg-actions">
-        <button class="delete-btn" onclick="deleteClick(${msg.id}, event)" title="Delete">del</button>
-      </div>
     `;
     el.querySelector(".msg-text").appendChild(card);
   };
@@ -5517,9 +5493,13 @@ function initBridgeMessageRenderer() {
     const sessionName = meta.session_name || meta.terminal_name || "";
     const contextLines = meta.context_lines || [];
     const senderColor = getColor(msg.sender);
+    const showSession =
+      sessionName &&
+      sessionName.toLowerCase() !== msg.sender.toLowerCase();
+    const showCategory = category && category !== "system";
 
     el.classList.add("bridge-msg");
-    el.style.borderLeftColor = colour;
+    el.style.setProperty("--bridge-accent", colour);
 
     const contextId = `bridge-ctx-${msg.id}`;
     const contextHtml =
@@ -5533,18 +5513,15 @@ function initBridgeMessageRenderer() {
         : "";
 
     el.innerHTML = `
-      <div class="bridge-header">
-        <span class="bridge-icon">&#x1F5A5;</span>
-        <span class="bridge-sender" style="color: ${senderColor}">${escapeHtml(msg.sender)}</span>
-        ${sessionName ? `<span class="bridge-session">${escapeHtml(sessionName)}</span>` : ""}
-        <span class="bridge-badge" style="background: ${colour}22; color: ${colour}">${escapeHtml(category)}</span>
-        <span class="msg-time">${msg.time || ""}</span>
-      </div>
-      <div class="bridge-text">${escapeHtml(msg.text)}</div>
-      ${contextHtml}
-      <div class="msg-actions">
-        <button class="reply-btn" onclick="startReply(${msg.id}, event)">reply</button>
-        <button class="delete-btn" onclick="deleteClick(${msg.id}, event)" title="Delete">del</button>
+      <div class="chat-bubble bridge-bubble" style="--bubble-color: ${senderColor}">
+        <div class="bridge-header">
+          <span class="bridge-sender" style="color: ${senderColor}">${escapeHtml(msg.sender)}</span>
+          ${showSession ? `<span class="bridge-session">${escapeHtml(sessionName)}</span>` : ""}
+          ${showCategory ? `<span class="bridge-badge" style="background: ${colour}22; color: ${colour}">${escapeHtml(category)}</span>` : ""}
+          <span class="msg-time">${msg.time || ""}</span>
+        </div>
+        <div class="bridge-text">${escapeHtml(msg.text)}</div>
+        ${contextHtml}
       </div>
     `;
   };

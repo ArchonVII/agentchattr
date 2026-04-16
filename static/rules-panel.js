@@ -553,9 +553,9 @@ function startDeleteRule(id) {
   actions.dataset.confirming = "1";
   actions.style.opacity = "1";
   actions.innerHTML = `
-        <span style="font-size:11px;color:var(--error-color);white-space:nowrap;margin-right:4px">Delete?</span>
-        <button class="confirm-yes" style="background:var(--error-color);color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit" onclick="deleteRule(${id})">Yes</button>
-        <button class="confirm-no" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit" onclick="cancelDeleteRule(${id})">No</button>
+        <span class="rule-delete-label">Delete?</span>
+        <button class="confirm-yes" onclick="deleteRule(${id})">Yes</button>
+        <button class="confirm-no" onclick="cancelDeleteRule(${id})">No</button>
     `;
 }
 

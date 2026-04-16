@@ -6,17 +6,21 @@ const Repository = (() => {
   let currentPath = '';
   let isActive = false;
   let editedFiles = new Map(); // path -> { agent, time, color }
+  let initialized = false;
 
   function init() {
+    if (initialized) return;
+    initialized = true;
+
     const viewChatBtn = document.getElementById('view-chat-btn');
     const viewRepoBtn = document.getElementById('view-repo-btn');
     const refreshBtn = document.getElementById('refresh-repo-btn');
     const spawnBtn = document.getElementById('spawn-agent-repo-btn');
 
-    if (viewChatBtn) viewChatBtn.onclick = () => showView('chat');
-    if (viewRepoBtn) viewRepoBtn.onclick = () => showView('repo');
-    if (refreshBtn) refreshBtn.onclick = refreshRepo;
-    if (spawnBtn) spawnBtn.onclick = spawnAgent;
+    if (viewChatBtn) viewChatBtn.addEventListener('click', () => showView('chat'));
+    if (viewRepoBtn) viewRepoBtn.addEventListener('click', () => showView('repo'));
+    if (refreshBtn) refreshBtn.addEventListener('click', refreshRepo);
+    if (spawnBtn) spawnBtn.addEventListener('click', spawnAgent);
 
     // Listen for agent messages to detect file edits
     Hub.on('message', (msg) => {
@@ -43,6 +47,7 @@ const Repository = (() => {
           if (res.ok) {
               const settings = await res.json();
               currentPath = settings.default_cwd || '.';
+              _broadcastProjectContext();
           }
       } catch (err) {
           console.error('Failed to fetch settings:', err);
@@ -58,6 +63,7 @@ const Repository = (() => {
 
     if (view === 'repo') {
       isActive = true;
+      document.body.dataset.sidebarView = 'repo';
       chatBtn.classList.remove('active');
       repoBtn.classList.add('active');
       timeline.classList.add('hidden');
@@ -67,6 +73,7 @@ const Repository = (() => {
       refreshRepo();
     } else {
       isActive = false;
+      document.body.dataset.sidebarView = 'chat';
       chatBtn.classList.add('active');
       repoBtn.classList.remove('active');
       timeline.classList.remove('hidden');
@@ -90,9 +97,11 @@ const Repository = (() => {
       if (statusRes.ok) {
         const statusData = await statusRes.json();
         renderStatus(statusData);
+        _broadcastProjectContext(statusData);
       } else {
         const errData = await statusRes.json();
         renderStatus({ error: errData.error || 'Failed to get status' });
+        _broadcastProjectContext();
       }
 
       if (filesRes.ok) {
@@ -106,6 +115,19 @@ const Repository = (() => {
     }
   }
 
+  function _broadcastProjectContext(statusData = null) {
+    window.dispatchEvent(
+      new CustomEvent('project-context-changed', {
+        detail: {
+          cwd: currentPath || '.',
+          repo: statusData?.repo || '',
+          branch: statusData?.branch || '',
+          worktree: statusData?.worktree || '',
+        },
+      }),
+    );
+  }
+
   function renderStatus(data) {
     const branchLabel = document.getElementById('repo-branch-name');
     const commitsList = document.getElementById('repo-commits-list');
@@ -113,7 +135,7 @@ const Repository = (() => {
 
     if (data.error) {
         branchLabel.textContent = 'None';
-        commitsList.innerHTML = `<div style="color: var(--text-dim); font-size: 12px;">${data.error}</div>`;
+        commitsList.innerHTML = `<div class="repo-empty-note">${data.error}</div>`;
         statusList.innerHTML = '';
         return;
     }
@@ -129,12 +151,11 @@ const Repository = (() => {
           <span class="commit-date">${c.date}</span>
         </div>
         <div class="commit-subject">${c.subject}</div>
-        <div class="commit-author" style="font-size: 10px; color: var(--text-dim)">${c.author}</div>
+        <div class="commit-author">${c.author}</div>
       `;
       commitsList.appendChild(item);
     });
 
-    const statusList = document.getElementById('repo-status-list');
     statusList.innerHTML = '';
     data.status.forEach(line => {
       const div = document.createElement('div');
@@ -267,7 +288,16 @@ const Repository = (() => {
     }
   }
 
-  return { init, showView };
+  function getCurrentPath() {
+    return currentPath;
+  }
+
+  return { init, showView, getCurrentPath };
 })();
 
-window.addEventListener('DOMContentLoaded', Repository.init);
+window.Repository = Repository;
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', Repository.init, { once: true });
+} else {
+  Repository.init();
+}

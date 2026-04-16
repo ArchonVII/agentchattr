@@ -12726,6 +12726,15 @@ ${s3.join("\n")}
           preview: { bg: "#12151a", fg: "#fff", accent: "#5db2ff" }
         },
         {
+          id: "cyberpunk",
+          name: "Cyberpunk",
+          era: "Neon",
+          adapter: "adapter-cyberpunk.css",
+          font: null,
+          terminalTheme: "cyberpunk",
+          preview: { bg: "#08111f", fg: "#d8f3ff", accent: "#ff4fd8" }
+        },
+        {
           id: "tui",
           name: "TuiCss",
           era: "DOS",
@@ -13195,18 +13204,18 @@ ${s3.join("\n")}
       alert("Please select or add a project folder first.");
       return;
     }
-    const isWin = navigator.userAgent.includes("Windows");
-    const ext = isWin ? ".bat" : ".sh";
-    let scriptName = `start_${agentId}`;
-    if (skipPermissions) {
-      if (agentId === "claude") scriptName = "start_claude_skip-permissions";
-      if (agentId === "codex") scriptName = "start_codex_bypass";
-      if (agentId === "gemini") scriptName = "start_gemini_yolo";
+    let command = agentId;
+    if (agentId === "claude" && skipPermissions) {
+      command = "claude --dangerously-skip-permissions";
+    } else if (agentId === "codex" && skipPermissions) {
+      command = "codex --dangerously-bypass-approvals-and-sandbox";
+    } else if (agentId === "gemini" && skipPermissions) {
+      command = "gemini --yolo";
     }
-    const command = `${isWin ? "windows\\" : "macos-linux/"}${scriptName}${ext}`;
     void requestNewTerminal(null, {
       cwd: selectedLaunchFolder,
       command,
+      ensureServer: true,
       name: `${agentId.toUpperCase()} - ${selectedLaunchFolder.split(/[\\/]/).pop()}`,
       agentName: agentId
     });

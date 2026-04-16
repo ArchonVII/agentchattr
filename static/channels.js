@@ -9,6 +9,14 @@
 
 const _channelScrollMsg = {};  // channel name -> message ID at top of viewport
 const _ROOM_COLLAPSE_KEY = 'agentchattr-room-collapsed';
+const _projectContext = {
+    cwd: '',
+    repo: '',
+    branch: '',
+    worktree: '',
+    loading: false,
+    loaded: false,
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,6 +55,83 @@ function _getRoomMeta() {
     const channelCount = window.channelList.length;
     const countLabel = channelCount === 1 ? '1 channel' : `${channelCount} channels`;
     return summary ? `${countLabel} · ${summary}` : `${countLabel} · Current project`;
+}
+
+function _getProjectCwd() {
+    if (_projectContext.cwd) return _projectContext.cwd;
+    if (window.Repository && typeof window.Repository.getCurrentPath === 'function') {
+        const repoPath = window.Repository.getCurrentPath();
+        if (repoPath) return repoPath;
+    }
+    return '';
+}
+
+function _getProjectName() {
+    const cwd = _getProjectCwd();
+    if (_projectContext.repo) return _projectContext.repo;
+    if (cwd && typeof getPathLeaf === 'function') return getPathLeaf(cwd);
+    return _getRoomTitle();
+}
+
+function _getProjectMeta() {
+    const taskCount = window.channelList.length;
+    const taskLabel = taskCount === 1 ? '1 task room' : `${taskCount} task rooms`;
+    const parts = [taskLabel];
+    if (_projectContext.branch) parts.push(`branch ${_projectContext.branch}`);
+    return parts.join(' · ');
+}
+
+function _updateSidebarHeading() {
+    const heading = document.querySelector('.room-sidebar-label');
+    const copy = document.querySelector('.room-sidebar-copy');
+    if (heading) heading.textContent = 'Projects';
+    if (copy) {
+        copy.textContent = _projectContext.cwd
+            ? 'Folder-backed projects and task rooms'
+            : 'Project folders and task rooms';
+    }
+}
+
+async function _ensureProjectContext(force = false) {
+    if (_projectContext.loading) return;
+    if (_projectContext.loaded && !force) return;
+
+    _projectContext.loading = true;
+    try {
+        let cwd =
+            (window.Repository && typeof window.Repository.getCurrentPath === 'function'
+                ? window.Repository.getCurrentPath()
+                : '') || '';
+
+        if (!cwd) {
+            const settingsRes = await fetch('/api/settings');
+            if (settingsRes.ok) {
+                const settings = await settingsRes.json();
+                cwd = settings.default_cwd || '.';
+            }
+        }
+
+        _projectContext.cwd = cwd || '.';
+
+        const repoRes = await fetch(`/api/repo/status?path=${encodeURIComponent(_projectContext.cwd)}`);
+        if (repoRes.ok) {
+            const repoData = await repoRes.json();
+            _projectContext.repo = repoData.repo || '';
+            _projectContext.branch = repoData.branch || '';
+            _projectContext.worktree = repoData.worktree || '';
+        } else {
+            _projectContext.repo = '';
+            _projectContext.branch = '';
+            _projectContext.worktree = '';
+        }
+    } catch (err) {
+        console.error('Failed to load project context:', err);
+    } finally {
+        _projectContext.loaded = true;
+        _projectContext.loading = false;
+        _updateSidebarHeading();
+        renderRoomSidebar();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -134,16 +219,23 @@ function renderRoomSidebar() {
     const container = document.getElementById('room-list');
     if (!container) return;
 
+    _updateSidebarHeading();
+    if (!_projectContext.loaded && !_projectContext.loading) {
+        void _ensureProjectContext();
+    }
+
     container.innerHTML = '';
 
     const collapsed = _isRoomCollapsed();
     const room = document.createElement('section');
     room.className = 'room-nav-item' + (collapsed ? '' : ' expanded');
+    room.dataset.projectFolder = _getProjectCwd() || '.';
 
     const toggle = document.createElement('button');
     toggle.className = 'room-nav-toggle';
     toggle.type = 'button';
     toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    toggle.title = _getProjectCwd() || 'Current project folder';
     toggle.onclick = () => {
         _setRoomCollapsed(!collapsed);
         renderRoomSidebar();
@@ -159,13 +251,18 @@ function renderRoomSidebar() {
 
     const label = document.createElement('span');
     label.className = 'room-nav-label';
-    label.textContent = _getRoomTitle();
+    label.textContent = _getProjectName();
     details.appendChild(label);
 
     const meta = document.createElement('span');
     meta.className = 'room-nav-meta';
-    meta.textContent = _getRoomMeta();
+    meta.textContent = _getProjectMeta();
     details.appendChild(meta);
+
+    const path = document.createElement('span');
+    path.className = 'room-nav-path';
+    path.textContent = _getProjectCwd() || '.';
+    details.appendChild(path);
 
     toggle.appendChild(details);
 
@@ -218,7 +315,7 @@ function renderRoomSidebar() {
     addChannel.className = 'room-channel-item room-channel-add';
     addChannel.type = 'button';
     addChannel.onclick = () => showChannelCreateDialog();
-    addChannel.innerHTML = '<span class="room-channel-info"><span class="room-channel-hash">+</span><span class="room-channel-label-text">Add channel</span></span>';
+    addChannel.innerHTML = '<span class="room-channel-info"><span class="room-channel-hash">+</span><span class="room-channel-label-text">Add task room</span></span>';
     channelList.appendChild(addChannel);
 
     room.appendChild(channelList);
@@ -472,6 +569,7 @@ function deleteChannel(name) {
 // ---------------------------------------------------------------------------
 
 function _channelsInit() {
+    void _ensureProjectContext();
     renderChannelTabs();
     filterMessagesByChannel();
 }
@@ -485,6 +583,19 @@ window.switchChannel = switchChannel;
 window.filterMessagesByChannel = filterMessagesByChannel;
 window.renderChannelTabs = renderChannelTabs;
 window.renderRoomSidebar = renderRoomSidebar;
+window.refreshProjectContext = () => _ensureProjectContext(true);
 window.deleteChannel = deleteChannel;
 window.showChannelRenameDialog = showChannelRenameDialog;
 window.Channels = { init: _channelsInit };
+
+window.addEventListener('project-context-changed', (event) => {
+    const detail = event.detail || {};
+    _projectContext.cwd = detail.cwd || _projectContext.cwd;
+    _projectContext.repo = detail.repo || _projectContext.repo;
+    _projectContext.branch = detail.branch || _projectContext.branch;
+    _projectContext.worktree = detail.worktree || _projectContext.worktree;
+    _projectContext.loaded = true;
+    _projectContext.loading = false;
+    _updateSidebarHeading();
+    renderRoomSidebar();
+});

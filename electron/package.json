@@ -25,6 +25,7 @@
     "node-pty": "^1.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "styled-components": "^6.4.0",
     "tuicss": "^2.1.2",
     "xp.css": "^0.2.6"
   },

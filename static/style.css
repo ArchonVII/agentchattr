@@ -880,6 +880,16 @@ header h1 {
   line-height: 1.35;
 }
 
+.room-nav-path {
+  color: var(--text-system);
+  font-size: 10px;
+  line-height: 1.35;
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .room-nav-caret {
   color: var(--text-dim);
   font-size: 14px;
@@ -1935,6 +1945,107 @@ main#timeline {
   color: var(--accent);
 }
 
+/* --- Bridge messages --- */
+
+.bridge-msg {
+  justify-content: center;
+}
+
+.bridge-bubble {
+  width: min(100%, 720px);
+  border-left: 3px solid var(--bridge-accent, var(--border));
+}
+
+.bridge-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
+.bridge-sender {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.bridge-session {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--surface-hover);
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.bridge-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.bridge-header .msg-time {
+  margin-left: auto;
+}
+
+.bridge-text {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: color-mix(in srgb, var(--bg-soft) 84%, transparent);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+}
+
+.bridge-context {
+  margin-top: 6px;
+}
+
+.bridge-context-toggle {
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 2px 0;
+  font-family: inherit;
+}
+
+.bridge-context-toggle:hover {
+  color: var(--accent);
+}
+
+.bridge-context-lines {
+  display: none;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: color-mix(in srgb, var(--bg-subtle) 84%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  margin-top: 4px;
+}
+
+.bridge-context-lines.open {
+  display: block;
+}
+
 /* --- Reply preview bar (above input) --- */
 
 #reply-preview {
@@ -2730,6 +2841,34 @@ main#timeline {
   opacity: 1;
   color: var(--danger);
   background: var(--danger-soft);
+}
+
+.rule-delete-label {
+  font-size: 11px;
+  color: var(--error-color);
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.rule-actions .confirm-yes,
+.rule-actions .confirm-no {
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.rule-actions .confirm-yes {
+  background: var(--error-color);
+  color: #fff;
+  border: none;
+}
+
+.rule-actions .confirm-no {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
 }
 
 .rule-reason {
