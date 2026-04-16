@@ -26,6 +26,7 @@ from agents import AgentTrigger
 from registry import RuntimeRegistry
 from session_store import SessionStore, validate_session_template
 from session_engine import SessionEngine
+from default_ports import WEB_UI_PORT
 
 log = logging.getLogger(__name__)
 
@@ -253,7 +254,7 @@ def _install_security_middleware(token: str, cfg: dict):
     """Add token validation and origin checking middleware to the app."""
     import app as _self
     _self.session_token = token
-    port = cfg.get("server", {}).get("port", 8300)
+    port = cfg.get("server", {}).get("port", WEB_UI_PORT)
     allowed_origins = {
         f"http://127.0.0.1:{port}",
         f"http://localhost:{port}",

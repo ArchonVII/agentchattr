@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 from io import StringIO
+from default_ports import WEB_UI_PORT, MCP_HTTP_PORT, MCP_SSE_PORT
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -54,16 +55,16 @@ def test_render_banner_produces_output():
     test_console, buf = _test_console(80)
     info = {
         "host": "127.0.0.1",
-        "port": 8300,
-        "http_port": 8200,
-        "sse_port": 8201,
+        "port": WEB_UI_PORT,
+        "http_port": MCP_HTTP_PORT,
+        "sse_port": MCP_SSE_PORT,
         "session_token": "abc123",
         "label": "deadbeef - main/JAgentchattr - 2026-04-15",
     }
     render_banner(info, console=test_console)
     output = buf.getvalue()
-    assert "8300" in output
-    assert "8200" in output
+    assert str(WEB_UI_PORT) in output
+    assert str(MCP_HTTP_PORT) in output
 
 
 def test_render_security_warning_produces_output():

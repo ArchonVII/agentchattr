@@ -13,6 +13,7 @@ const {
   initAppTheme,
 } = require("./theme-loader");
 const { getAllAppThemes } = require("./theme-registry");
+const { mountThemeSettingsButton } = require("./theme-settings-panel");
 
 /**
  * Create and mount the theme picker dropdown into the tab bar.
@@ -37,8 +38,8 @@ async function mountThemePicker() {
   select.title = "App theme";
   select.style.cssText = [
     "padding: 2px 8px",
-    "font-size: 11px",
-    "font-family: var(--font-ui)",
+    "font-size: var(--font-size-chrome)",
+    "font-family: var(--font-display)",
     "background: var(--bg-elevated)",
     "color: var(--fg-primary)",
     "border: 1px solid var(--border)",
@@ -75,6 +76,7 @@ async function mountThemePicker() {
   }
 
   picker.appendChild(select);
+  mountThemeSettingsButton(picker);
 
   // Insert after the last tab-item (before window control padding)
   const tabItems = tabBar.querySelectorAll(".tab-item");

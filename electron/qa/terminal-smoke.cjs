@@ -8,11 +8,12 @@ const {
   findElectronExecutable,
   findPythonExecutable,
 } = require("./helpers.cjs");
+const { WEB_UI_BASE_URL, WEB_UI_PORT } = require("../default-ports.js");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const ELECTRON_DIR = path.resolve(__dirname, "..");
-const BASE_URL = process.env.AGENTCHATTR_SMOKE_URL || "http://127.0.0.1:8300";
-const SERVER_PORT = Number(new URL(BASE_URL).port || "8300");
+const BASE_URL = process.env.AGENTCHATTR_SMOKE_URL || WEB_UI_BASE_URL;
+const SERVER_PORT = Number(new URL(BASE_URL).port || String(WEB_UI_PORT));
 const ARTIFACT_DIR = path.join(REPO_ROOT, "data", "qa-artifacts");
 
 function sleep(ms) {
@@ -243,7 +244,7 @@ async function runTerminalSmoke() {
 
     await waitFor(
       async () => !(await isPortOpen(SERVER_PORT)),
-      "Electron shutdown releasing port 8300",
+      `Electron shutdown releasing port ${SERVER_PORT}`,
       20000,
     );
 

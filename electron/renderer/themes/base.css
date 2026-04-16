@@ -36,8 +36,14 @@
 
   /* ── Typography ───────────────────────────────────────────── */
   --font-ui: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-display: var(--font-ui);
+  --font-decorative: var(--font-ui);
   --font-mono: Consolas, "Courier New", monospace;
   --font-size-base: 13px;
+  --font-size-caption: 11px;
+  --font-size-chrome: 12px;
+  --font-size-panel-title: 14px;
+  --font-size-title: 16px;
 
   /* ── Shadows & Chrome ─────────────────────────────────────── */
   --shadow-menu: 0 4px 12px rgba(0, 0, 0, 0.4);

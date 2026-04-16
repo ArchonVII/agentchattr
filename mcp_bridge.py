@@ -1,8 +1,8 @@
 """MCP server for agent chat tools — runs alongside the web server.
 
 Serves two transports for compatibility:
-  - streamable-http on port 8200 (Claude Code, Codex, Qwen)
-  - SSE on port 8201 (Gemini)
+  - streamable-http on the configured MCP HTTP port (Claude Code, Codex, Qwen)
+  - SSE on the configured MCP SSE port (Gemini)
 """
 
 import asyncio
@@ -973,8 +973,8 @@ def _create_server(port: int) -> FastMCP:
     return server
 
 
-mcp_http = _create_server(8200)  # streamable-http for Claude/Codex/Qwen
-mcp_sse = _create_server(8201)   # SSE for Gemini
+mcp_http = _create_server(39778)  # streamable-http for Claude/Codex/Qwen
+mcp_sse = _create_server(39779)   # SSE for Gemini
 
 # Keep backward compat — run.py references mcp_bridge.store
 # (store is set by run.py before starting)

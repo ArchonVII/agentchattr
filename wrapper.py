@@ -25,6 +25,7 @@ import sys
 import threading
 import time
 from pathlib import Path
+from default_ports import WEB_UI_PORT, MCP_HTTP_PORT, MCP_SSE_PORT
 
 ROOT = Path(__file__).parent
 
@@ -171,9 +172,9 @@ def _resolve_mcp_inject(agent: str, agent_cfg: dict) -> dict:
 def _get_server_url(mcp_cfg: dict, transport: str) -> str:
     """Build the MCP server URL for the given transport."""
     if transport == "sse":
-        port = mcp_cfg.get("sse_port", 8201)
+        port = mcp_cfg.get("sse_port", MCP_SSE_PORT)
         return f"http://127.0.0.1:{port}/sse"
-    port = mcp_cfg.get("http_port", 8200)
+    port = mcp_cfg.get("http_port", MCP_HTTP_PORT)
     return f"http://127.0.0.1:{port}/mcp"
 
 
@@ -443,7 +444,7 @@ def _report_rule_sync(server_port: int, agent_name: str, epoch: int, token: str 
 
 
 def _queue_watcher(get_identity_fn, inject_fn, *, is_multi_instance: bool = False, trigger_flag=None,
-                   server_port: int = 8300, agent_name: str = "", get_token_fn=None,
+                   server_port: int = WEB_UI_PORT, agent_name: str = "", get_token_fn=None,
                    refresh_interval: int = 10):
     """Poll queue file and inject an MCP read task when triggered."""
     first_mention = True
@@ -570,7 +571,7 @@ def main():
     command = agent_cfg.get("command", agent)
     data_dir = ROOT / config.get("server", {}).get("data_dir", "./data")
     data_dir.mkdir(parents=True, exist_ok=True)
-    server_port = config.get("server", {}).get("port", 8300)
+    server_port = config.get("server", {}).get("port", WEB_UI_PORT)
     mcp_cfg = config.get("mcp", {})
 
     try:
@@ -603,10 +604,10 @@ def main():
 
         transport = inject_cfg.get("mcp_transport", "http")
         if transport == "sse":
-            upstream_base = f"http://127.0.0.1:{mcp_cfg.get('sse_port', 8201)}"
+            upstream_base = f"http://127.0.0.1:{mcp_cfg.get('sse_port', MCP_SSE_PORT)}"
             proxy_path = "/sse"
         else:
-            upstream_base = f"http://127.0.0.1:{mcp_cfg.get('http_port', 8200)}"
+            upstream_base = f"http://127.0.0.1:{mcp_cfg.get('http_port', MCP_HTTP_PORT)}"
             proxy_path = "/mcp"
 
         proxy = McpIdentityProxy(

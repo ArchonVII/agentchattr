@@ -12,7 +12,7 @@ Supports both transports:
 
 Usage (from wrapper.py):
     proxy = McpIdentityProxy(
-        upstream_base="http://127.0.0.1:8200",
+        upstream_base="http://127.0.0.1:39778",
         upstream_path="/mcp",
         agent_name="claude-prime",
         instance_token="abc123...",
@@ -74,7 +74,7 @@ class McpIdentityProxy:
     """Local HTTP proxy that stamps agent identity on MCP tool calls.
 
     Args:
-        upstream_base: Base URL without path, e.g. "http://127.0.0.1:8200"
+        upstream_base: Base URL without path, e.g. "http://127.0.0.1:39778"
         upstream_path: Path prefix for the transport, e.g. "/mcp" or "/sse"
         agent_name: Current canonical name for this instance
         instance_token: Server-issued token (forwarded as Authorization: Bearer)
@@ -250,7 +250,7 @@ class McpIdentityProxy:
             def _rewrite_sse_endpoint(self, line: bytes) -> bytes:
                 """Rewrite upstream endpoint URLs in SSE data lines.
 
-                FastMCP SSE sends: data: http://127.0.0.1:8201/messages/?session_id=xxx
+                FastMCP SSE sends: data: http://127.0.0.1:39779/messages/?session_id=xxx
                 We rewrite to:     data: http://127.0.0.1:{proxy_port}/messages/?session_id=xxx
                 so the client routes tool call POSTs through our proxy.
                 """

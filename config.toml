@@ -1,5 +1,5 @@
 [server]
-port = 8300
+port = 39777
 host = "127.0.0.1"
 data_dir = "./data"
 
@@ -62,8 +62,8 @@ default = "none"
 max_agent_hops = 4
 
 [mcp]
-http_port = 8200
-sse_port = 8201
+http_port = 39778
+sse_port = 39779
 
 [images]
 upload_dir = "./uploads"

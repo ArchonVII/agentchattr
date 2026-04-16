@@ -1,12 +1,22 @@
 const { execFile } = require("child_process");
 const { promisify } = require("util");
+const {
+  WEB_UI_PORT,
+  MCP_HTTP_PORT,
+  MCP_SSE_PORT,
+  WEB_UI_BASE_URL,
+} = require("./default-ports");
 
 const execFileAsync = promisify(execFile);
 
 const DEFAULT_INTERVAL_MS = 5000;
 const NETSTAT_ARGS = ["-ano"];
-const AGENTS_API_URL = "http://127.0.0.1:8300/api/agents";
-const KNOWN_AGENTCHATTR_PORTS = new Set([8200, 8201, 8300]);
+const AGENTS_API_URL = `${WEB_UI_BASE_URL}/api/agents`;
+const KNOWN_AGENTCHATTR_PORTS = new Set([
+  MCP_HTTP_PORT,
+  MCP_SSE_PORT,
+  WEB_UI_PORT,
+]);
 const MAX_HISTORY_ENTRIES = 100;
 const NETSTAT_BUFFER_BYTES = 10 * 1024 * 1024;
 const TASKLIST_BUFFER_BYTES = 1024 * 1024;

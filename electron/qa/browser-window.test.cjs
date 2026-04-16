@@ -25,7 +25,7 @@ test("normaliseBrowserUrl only accepts http and https urls", () => {
   const { normaliseBrowserUrl } = loadBrowserWindowModule({ BrowserWindow: class {} });
 
   assert.equal(normaliseBrowserUrl("https://example.com"), "https://example.com/");
-  assert.equal(normaliseBrowserUrl("http://localhost:8300/chat"), "http://localhost:8300/chat");
+  assert.equal(normaliseBrowserUrl("http://localhost:39777/chat"), "http://localhost:39777/chat");
   assert.equal(normaliseBrowserUrl("file:///C:/secret.txt"), null);
   assert.equal(normaliseBrowserUrl("javascript:alert(1)"), null);
 });

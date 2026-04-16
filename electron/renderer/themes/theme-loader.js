@@ -12,12 +12,19 @@
  */
 
 const { getAppTheme, getAllAppThemes } = require("./theme-registry");
+const {
+  sanitizeThemeOverrides,
+  clearThemeOverridesFromRoot,
+  applyThemeOverridesToRoot,
+} = require("./theme-overrides");
 
 /** @type {string} Currently active theme id */
 let _currentThemeId = "default";
 
 /** Tracks already-loaded font families to avoid double-loading. */
 const _loadedFonts = new Set();
+let _themeOverridesByTheme = null;
+let _previewOverrides = null;
 
 // ---------------------------------------------------------------------------
 // Font loading
@@ -61,6 +68,63 @@ function _removeAdapter() {
     _adapterLink.remove();
     _adapterLink = null;
   }
+}
+
+async function _loadStoredThemeOverrides() {
+  if (_themeOverridesByTheme) {
+    return _themeOverridesByTheme;
+  }
+
+  let stored = {};
+  if (window.electronAPI?.getPreference) {
+    stored = (await window.electronAPI.getPreference("appThemeOverrides")) || {};
+  } else if (window.require) {
+    try {
+      const { ipcRenderer } = window.require("electron");
+      stored =
+        (await ipcRenderer.invoke("get-preference", "appThemeOverrides")) || {};
+    } catch {
+      stored = {};
+    }
+  }
+
+  _themeOverridesByTheme =
+    stored && typeof stored === "object" ? { ...stored } : {};
+  return _themeOverridesByTheme;
+}
+
+async function _persistStoredThemeOverrides() {
+  if (!_themeOverridesByTheme) return;
+
+  if (window.electronAPI?.setPreference) {
+    await window.electronAPI.setPreference(
+      "appThemeOverrides",
+      _themeOverridesByTheme,
+    );
+  } else if (window.require) {
+    try {
+      const { ipcRenderer } = window.require("electron");
+      await ipcRenderer.invoke(
+        "set-preference",
+        "appThemeOverrides",
+        _themeOverridesByTheme,
+      );
+    } catch {
+      // IPC not available
+    }
+  }
+}
+
+function _getStoredThemeOverrides(themeId) {
+  if (!_themeOverridesByTheme) return {};
+  return sanitizeThemeOverrides(_themeOverridesByTheme[themeId]);
+}
+
+function _applyResolvedThemeOverrides() {
+  const root = document.documentElement;
+  clearThemeOverridesFromRoot(root);
+  applyThemeOverridesToRoot(root, _getStoredThemeOverrides(_currentThemeId));
+  applyThemeOverridesToRoot(root, _previewOverrides);
 }
 
 /**
@@ -118,6 +182,9 @@ async function applyAppTheme(themeId) {
   }
 
   _currentThemeId = theme.id;
+  _previewOverrides = null;
+  await _loadStoredThemeOverrides();
+  _applyResolvedThemeOverrides();
 
   if (typeof window !== "undefined") {
     window.dispatchEvent(
@@ -182,9 +249,58 @@ async function initAppTheme() {
   await applyAppTheme(storedId);
 }
 
+function getThemeOverrides(themeId = _currentThemeId) {
+  return { ..._getStoredThemeOverrides(themeId) };
+}
+
+function previewThemeOverrides(overrides) {
+  _previewOverrides = sanitizeThemeOverrides(overrides);
+  _applyResolvedThemeOverrides();
+}
+
+function discardThemeOverridePreview() {
+  _previewOverrides = null;
+  _applyResolvedThemeOverrides();
+}
+
+async function saveThemeOverrides(themeId = _currentThemeId, overrides = {}) {
+  await _loadStoredThemeOverrides();
+  const sanitized = sanitizeThemeOverrides(overrides);
+
+  if (Object.keys(sanitized).length > 0) {
+    _themeOverridesByTheme[themeId] = sanitized;
+  } else {
+    delete _themeOverridesByTheme[themeId];
+  }
+
+  if (themeId === _currentThemeId) {
+    _previewOverrides = null;
+    _applyResolvedThemeOverrides();
+  }
+
+  await _persistStoredThemeOverrides();
+}
+
+async function resetThemeOverrides(themeId = _currentThemeId) {
+  await _loadStoredThemeOverrides();
+  delete _themeOverridesByTheme[themeId];
+
+  if (themeId === _currentThemeId) {
+    _previewOverrides = null;
+    _applyResolvedThemeOverrides();
+  }
+
+  await _persistStoredThemeOverrides();
+}
+
 module.exports = {
   applyAppTheme,
   getCurrentAppTheme,
   getAllAppThemes,
   initAppTheme,
+  getThemeOverrides,
+  previewThemeOverrides,
+  discardThemeOverridePreview,
+  saveThemeOverrides,
+  resetThemeOverrides,
 };

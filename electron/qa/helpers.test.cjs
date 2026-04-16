@@ -10,6 +10,12 @@ const {
   findElectronExecutable,
   findPythonExecutable,
 } = require("./helpers.cjs");
+const {
+  WEB_UI_PORT,
+  MCP_HTTP_PORT,
+  MCP_SSE_PORT,
+  WEB_UI_BASE_URL,
+} = require("../default-ports.js");
 
 test("buildSmokeAgentDefinition returns a launcher-safe custom agent definition", () => {
   const definition = buildSmokeAgentDefinition({
@@ -59,4 +65,11 @@ test("findElectronExecutable resolves the bundled Windows binary", () => {
   fs.writeFileSync(electronPath, "");
 
   assert.equal(findElectronExecutable(root, "win32"), electronPath);
+});
+
+test("desktop defaults use a fixed high port range", () => {
+  assert.equal(WEB_UI_PORT, 39777);
+  assert.equal(MCP_HTTP_PORT, 39778);
+  assert.equal(MCP_SSE_PORT, 39779);
+  assert.equal(WEB_UI_BASE_URL, "http://127.0.0.1:39777");
 });

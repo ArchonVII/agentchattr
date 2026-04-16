@@ -1,4 +1,4 @@
-"""Entry point — starts MCP server (port 8200) + web UI (port 8300)."""
+"""Entry point — starts MCP server + web UI on the configured local ports."""
 
 import asyncio
 import json
@@ -9,6 +9,7 @@ import threading
 import time
 import logging
 from pathlib import Path
+from default_ports import WEB_UI_PORT, MCP_HTTP_PORT, MCP_SSE_PORT
 
 # Ensure the project directory is on the import path
 ROOT = Path(__file__).parent
@@ -109,13 +110,13 @@ def main():
 
     _app_module.process_manager = ProcessManager(
         data_dir=data_dir,
-        server_port=config.get("server", {}).get("port", 8300),
+        server_port=config.get("server", {}).get("port", WEB_UI_PORT),
         on_log=_on_agent_log,
     )
 
     # Start MCP servers in background threads
-    http_port = config.get("mcp", {}).get("http_port", 8200)
-    sse_port = config.get("mcp", {}).get("sse_port", 8201)
+    http_port = config.get("mcp", {}).get("http_port", MCP_HTTP_PORT)
+    sse_port = config.get("mcp", {}).get("sse_port", MCP_SSE_PORT)
     mcp_bridge.mcp_http.settings.port = http_port
     mcp_bridge.mcp_sse.settings.port = sse_port
 
@@ -160,7 +161,7 @@ def main():
     # Run web server
     import uvicorn
     host = config.get("server", {}).get("host", "127.0.0.1")
-    port = config.get("server", {}).get("port", 8300)
+    port = config.get("server", {}).get("port", WEB_UI_PORT)
 
     # --- Security: warn if binding to a non-localhost address ---
     if host not in ("127.0.0.1", "localhost", "::1"):

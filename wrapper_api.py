@@ -27,6 +27,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from default_ports import WEB_UI_PORT
 
 ROOT = Path(__file__).parent
 
@@ -62,7 +63,7 @@ def main():
 
     agent = args.agent
     agent_cfg = config["agents"][agent]
-    server_port = config.get("server", {}).get("port", 8300)
+    server_port = config.get("server", {}).get("port", WEB_UI_PORT)
     data_dir = ROOT / config.get("server", {}).get("data_dir", "./data")
     data_dir.mkdir(parents=True, exist_ok=True)
 

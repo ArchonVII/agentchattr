@@ -30,9 +30,15 @@
   --border-strong: #4a5a6d;
   --border-grid: #3a4453;
 
-  --font-ui: "Final Fantasy Script Collection - Final Fantasy VII", "Play", sans-serif;
+  --font-ui: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-display: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-decorative: "Final Fantasy Script Collection - Final Fantasy VII", "Segoe UI", sans-serif;
   --font-mono: "Consolas", "Courier New", monospace;
   --font-size-base: 13px;
+  --font-size-caption: 12px;
+  --font-size-chrome: 13px;
+  --font-size-panel-title: 15px;
+  --font-size-title: 18px;
 
   --shadow-menu: 0 4px 0 #000;
   --shadow-float: 4px 4px 0 #000;
@@ -89,6 +95,15 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   font-weight: bold;
+}
+
+[data-theme="psone"] .ports-title,
+[data-theme="psone"] .ports-pane-title,
+[data-theme="psone"] .browser-pane-title,
+[data-theme="psone"] .arsenal-header {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* Special button styles for danger/success */

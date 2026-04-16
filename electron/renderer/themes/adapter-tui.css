@@ -37,8 +37,14 @@
   --border-grid: #ffffff;
 
   --font-ui: "Perfect DOS VGA 437 Win", monospace;
+  --font-display: "Perfect DOS VGA 437 Win", monospace;
+  --font-decorative: "Perfect DOS VGA 437 Win", monospace;
   --font-mono: "Perfect DOS VGA 437 Win", monospace;
   --font-size-base: 14px;
+  --font-size-caption: 13px;
+  --font-size-chrome: 14px;
+  --font-size-panel-title: 16px;
+  --font-size-title: 20px;
 
   --shadow-menu: none;
   --shadow-float: none;
@@ -107,6 +113,14 @@
   background: #aaaaaa;
   color: #000000;
   border-bottom: 2px solid #000000;
+}
+
+[data-theme="tui"] .ports-title,
+[data-theme="tui"] .ports-pane-title,
+[data-theme="tui"] .browser-pane-title,
+[data-theme="tui"] .arsenal-header {
+  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 /* Kill button — red in TUI */

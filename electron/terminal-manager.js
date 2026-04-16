@@ -6,6 +6,7 @@ const path = require("path");
 const { randomUUID } = require("crypto");
 const pty = require("node-pty");
 const { WatcherEngine } = require("./watcher-engine");
+const { WEB_UI_PORT } = require("./default-ports");
 
 // ---------------------------------------------------------------------------
 // Constants (CASK ordering)
@@ -422,7 +423,7 @@ function setup(win) {
  */
 async function postBridgeEvent(event, retryCount = 0) {
   // Source: main.js SERVER_PORT constant — Python backend port.
-  const SERVER_PORT = 8300;
+  const SERVER_PORT = WEB_UI_PORT;
   emitBridgeTrace("bridge:post:start", {
     terminalId: event.terminalId,
     ruleId: event.ruleId,
@@ -485,7 +486,7 @@ async function postBridgeEvent(event, retryCount = 0) {
  * Also pushes snapshot data for each terminal.
  */
 function pushTerminalListToBackend() {
-  const SERVER_PORT = 8300;
+  const SERVER_PORT = WEB_UI_PORT;
   const termList = getBridgeTerminals();
   if (termList.length === 0) return;
 

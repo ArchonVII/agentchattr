@@ -12655,6 +12655,15 @@ ${s3.join("\n")}
           preview: { bg: "#008080", fg: "#000", accent: "#000080" }
         },
         {
+          id: "winxp",
+          name: "Windows XP",
+          era: "2001",
+          adapter: "adapter-xp.css",
+          font: null,
+          terminalTheme: "msdos",
+          preview: { bg: "#3a6ea5", fg: "#0f172a", accent: "#245edb" }
+        },
+        {
           id: "system6",
           name: "System 6",
           era: "1988",
@@ -12662,6 +12671,19 @@ ${s3.join("\n")}
           font: null,
           terminalTheme: "system6",
           preview: { bg: "#fff", fg: "#000", accent: "#000" }
+        },
+        {
+          id: "classic",
+          name: "Classic Mac",
+          era: "1998",
+          adapter: "adapter-classic.css",
+          font: {
+            family: "ChicagoFLF",
+            file: "ChicagoFLF.ttf",
+            format: "truetype"
+          },
+          terminalTheme: "system6",
+          preview: { bg: "#bfbfbf", fg: "#111", accent: "#111" }
         },
         {
           id: "c64",
@@ -12675,6 +12697,46 @@ ${s3.join("\n")}
           },
           terminalTheme: "c64",
           preview: { bg: "#352879", fg: "#6C5EB5", accent: "#6C5EB5" }
+        },
+        {
+          id: "c64css3",
+          name: "C64 CSS3",
+          era: "1982",
+          adapter: "adapter-c64css3.css",
+          font: {
+            family: "C64 User Mono",
+            file: "C64_User_Mono_v1.0-STYLE.woff",
+            format: "woff"
+          },
+          terminalTheme: "c64",
+          preview: { bg: "#20398d", fg: "#6076c5", accent: "#6076c5" }
+        },
+        {
+          id: "psone",
+          name: "PlayStation",
+          era: "1994",
+          adapter: "adapter-psone.css",
+          font: {
+            family: "Final Fantasy Script Collection - Final Fantasy VII",
+            file: "Final_Fantasy_VII.woff",
+            format: "woff"
+          },
+          terminalTheme: "cyberpunk",
+          // Cyberpunk fits the PS1 sci-fi aesthetic best
+          preview: { bg: "#12151a", fg: "#fff", accent: "#5db2ff" }
+        },
+        {
+          id: "tui",
+          name: "TuiCss",
+          era: "DOS",
+          adapter: "adapter-tui.css",
+          font: {
+            family: "Perfect DOS VGA 437 Win",
+            file: "Perfect DOS VGA 437 Win.ttf",
+            format: "truetype"
+          },
+          terminalTheme: "msdos",
+          preview: { bg: "#0000aa", fg: "#fff", accent: "#ffff55" }
         }
       ];
       function getAllAppThemes() {
@@ -12687,13 +12749,90 @@ ${s3.join("\n")}
     }
   });
 
+  // renderer/themes/theme-overrides.js
+  var require_theme_overrides = __commonJS({
+    "renderer/themes/theme-overrides.js"(exports, module) {
+      "use strict";
+      var THEME_OVERRIDE_KEYS = [
+        "--bg-app",
+        "--bg-surface",
+        "--bg-elevated",
+        "--bg-deep",
+        "--bg-sunken",
+        "--fg-primary",
+        "--fg-secondary",
+        "--fg-muted",
+        "--fg-dim",
+        "--fg-faint",
+        "--accent",
+        "--accent-danger",
+        "--accent-success",
+        "--border",
+        "--border-strong",
+        "--border-grid"
+      ];
+      function normalizeOverrideValue(value) {
+        if (typeof value !== "string") return null;
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        return trimmed.startsWith("#") ? trimmed.toLowerCase() : trimmed;
+      }
+      function sanitizeThemeOverrides(overrides) {
+        const next = {};
+        if (!overrides || typeof overrides !== "object") return next;
+        for (const token of THEME_OVERRIDE_KEYS) {
+          const normalized = normalizeOverrideValue(overrides[token]);
+          if (normalized) {
+            next[token] = normalized;
+          }
+        }
+        return next;
+      }
+      function clearThemeOverridesFromRoot(root) {
+        if (!root?.style) return;
+        for (const token of THEME_OVERRIDE_KEYS) {
+          root.style.removeProperty(token);
+        }
+      }
+      function applyThemeOverridesToRoot(root, overrides) {
+        if (!root?.style) return;
+        const sanitized = sanitizeThemeOverrides(overrides);
+        for (const [token, value] of Object.entries(sanitized)) {
+          root.style.setProperty(token, value);
+        }
+      }
+      function buildThemeExport(themeId, overrides) {
+        return {
+          themeId: typeof themeId === "string" && themeId.trim() ? themeId : "default",
+          exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          tokens: THEME_OVERRIDE_KEYS,
+          overrides: sanitizeThemeOverrides(overrides)
+        };
+      }
+      module.exports = {
+        THEME_OVERRIDE_KEYS,
+        sanitizeThemeOverrides,
+        clearThemeOverridesFromRoot,
+        applyThemeOverridesToRoot,
+        buildThemeExport
+      };
+    }
+  });
+
   // renderer/themes/theme-loader.js
   var require_theme_loader = __commonJS({
     "renderer/themes/theme-loader.js"(exports, module) {
       "use strict";
       var { getAppTheme: getAppTheme2, getAllAppThemes } = require_theme_registry();
+      var {
+        sanitizeThemeOverrides,
+        clearThemeOverridesFromRoot,
+        applyThemeOverridesToRoot
+      } = require_theme_overrides();
       var _currentThemeId = "default";
       var _loadedFonts = /* @__PURE__ */ new Set();
+      var _themeOverridesByTheme = null;
+      var _previewOverrides = null;
       async function _loadFont(font) {
         if (!font || !font.file) return;
         if (_loadedFonts.has(font.family)) return;
@@ -12716,6 +12855,53 @@ ${s3.join("\n")}
           _adapterLink.remove();
           _adapterLink = null;
         }
+      }
+      async function _loadStoredThemeOverrides() {
+        if (_themeOverridesByTheme) {
+          return _themeOverridesByTheme;
+        }
+        let stored = {};
+        if (window.electronAPI?.getPreference) {
+          stored = await window.electronAPI.getPreference("appThemeOverrides") || {};
+        } else if (window.require) {
+          try {
+            const { ipcRenderer } = window.require("electron");
+            stored = await ipcRenderer.invoke("get-preference", "appThemeOverrides") || {};
+          } catch {
+            stored = {};
+          }
+        }
+        _themeOverridesByTheme = stored && typeof stored === "object" ? { ...stored } : {};
+        return _themeOverridesByTheme;
+      }
+      async function _persistStoredThemeOverrides() {
+        if (!_themeOverridesByTheme) return;
+        if (window.electronAPI?.setPreference) {
+          await window.electronAPI.setPreference(
+            "appThemeOverrides",
+            _themeOverridesByTheme
+          );
+        } else if (window.require) {
+          try {
+            const { ipcRenderer } = window.require("electron");
+            await ipcRenderer.invoke(
+              "set-preference",
+              "appThemeOverrides",
+              _themeOverridesByTheme
+            );
+          } catch {
+          }
+        }
+      }
+      function _getStoredThemeOverrides(themeId) {
+        if (!_themeOverridesByTheme) return {};
+        return sanitizeThemeOverrides(_themeOverridesByTheme[themeId]);
+      }
+      function _applyResolvedThemeOverrides() {
+        const root = document.documentElement;
+        clearThemeOverridesFromRoot(root);
+        applyThemeOverridesToRoot(root, _getStoredThemeOverrides(_currentThemeId));
+        applyThemeOverridesToRoot(root, _previewOverrides);
       }
       function _loadAdapter(adapterFile) {
         return new Promise((resolve, reject) => {
@@ -12747,6 +12933,9 @@ ${s3.join("\n")}
           await _loadFont(theme.font);
         }
         _currentThemeId = theme.id;
+        _previewOverrides = null;
+        await _loadStoredThemeOverrides();
+        _applyResolvedThemeOverrides();
         if (typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("app-theme-updated", {
@@ -12786,11 +12975,50 @@ ${s3.join("\n")}
         }
         await applyAppTheme(storedId);
       }
+      function getThemeOverrides(themeId = _currentThemeId) {
+        return { ..._getStoredThemeOverrides(themeId) };
+      }
+      function previewThemeOverrides(overrides) {
+        _previewOverrides = sanitizeThemeOverrides(overrides);
+        _applyResolvedThemeOverrides();
+      }
+      function discardThemeOverridePreview() {
+        _previewOverrides = null;
+        _applyResolvedThemeOverrides();
+      }
+      async function saveThemeOverrides(themeId = _currentThemeId, overrides = {}) {
+        await _loadStoredThemeOverrides();
+        const sanitized = sanitizeThemeOverrides(overrides);
+        if (Object.keys(sanitized).length > 0) {
+          _themeOverridesByTheme[themeId] = sanitized;
+        } else {
+          delete _themeOverridesByTheme[themeId];
+        }
+        if (themeId === _currentThemeId) {
+          _previewOverrides = null;
+          _applyResolvedThemeOverrides();
+        }
+        await _persistStoredThemeOverrides();
+      }
+      async function resetThemeOverrides(themeId = _currentThemeId) {
+        await _loadStoredThemeOverrides();
+        delete _themeOverridesByTheme[themeId];
+        if (themeId === _currentThemeId) {
+          _previewOverrides = null;
+          _applyResolvedThemeOverrides();
+        }
+        await _persistStoredThemeOverrides();
+      }
       module.exports = {
         applyAppTheme,
         getCurrentAppTheme: getCurrentAppTheme2,
         getAllAppThemes,
-        initAppTheme
+        initAppTheme,
+        getThemeOverrides,
+        previewThemeOverrides,
+        discardThemeOverridePreview,
+        saveThemeOverrides,
+        resetThemeOverrides
       };
     }
   });

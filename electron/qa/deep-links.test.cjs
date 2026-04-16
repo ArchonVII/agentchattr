@@ -15,7 +15,7 @@ test("extractDeepLinkUrl returns the first deep-link argument", () => {
       "electron.exe",
       ".",
       "agentchattr://channel/reviews",
-      "agentchattr://port/8300",
+      "agentchattr://port/39777",
     ]),
     "agentchattr://channel/reviews",
   );
@@ -30,9 +30,9 @@ test("parseDeepLink recognises channel, agent, and port payloads", () => {
     type: "agent",
     value: "codex",
   });
-  assert.deepEqual(parseDeepLink("agentchattr://port/8300"), {
+  assert.deepEqual(parseDeepLink("agentchattr://port/39777"), {
     type: "port",
-    value: 8300,
+    value: 39777,
   });
 });
 

@@ -30,7 +30,7 @@ const cliTheme =
 
 // Server base URL.
 // Source: run.py default port.
-const SERVER_PORT = process.env.AGENTCHATTR_PORT || 8300;
+const SERVER_PORT = process.env.AGENTCHATTR_PORT || 39777;
 const BASE_URL = `http://127.0.0.1:${SERVER_PORT}`;
 
 // Auto-detect theme from the running server if not specified via CLI/env.

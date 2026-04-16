@@ -6,10 +6,11 @@ const net = require("net");
 const { pathToFileURL } = require("url");
 const { openBrowserWindow } = require("./browser-window");
 const { getAppTheme } = require("./renderer/themes/theme-registry");
+const { WEB_UI_PORT } = require("./default-ports");
 
 // --- Constants (CASK: Constants first) ---
 const REPO_ROOT = path.resolve(__dirname, "..");
-const SERVER_PORT = 8300;
+const SERVER_PORT = WEB_UI_PORT;
 const PYTHON_PATH = path.join(REPO_ROOT, ".venv", "Scripts", "python.exe");
 const RENDERER_ENTRY = path.join(__dirname, "renderer", "index.html");
 const READY_SIGNAL = "Uvicorn running on";
