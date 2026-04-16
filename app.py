@@ -9,6 +9,7 @@ import threading
 import time as _time
 import uuid
 import logging
+import subprocess
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
@@ -2848,6 +2849,96 @@ async def serve_upload(filename: str):
         return FileResponse(filepath)
     return JSONResponse({"error": "not found"}, status_code=404)
 
+
+# --- Repository API ---
+
+@app.get("/api/repo/status")
+async def get_repo_status(path: str):
+    """Return git status and latest commits for a project path."""
+    try:
+        p = Path(path).resolve()
+        if not p.exists():
+            return JSONResponse({"error": "Path does not exist"}, status_code=400)
+        
+        # Check if it's a git repo
+        try:
+            subprocess.check_call(["git", "rev-parse", "--is-inside-work-tree"], cwd=str(p), 
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            return JSONResponse({"error": "Not a git repository"}, status_code=400)
+
+        # Get git status
+        status_raw = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(p), text=True)
+        # Get latest 10 commits
+        commits_raw = subprocess.check_output(["git", "log", "-n", "10", "--pretty=format:%h|%an|%ar|%s"], 
+                                             cwd=str(p), text=True)
+        # Get current branch
+        branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=str(p), text=True).strip()
+        
+        status_list = [line.strip() for line in status_raw.split("\n") if line.strip()]
+        
+        commit_list = []
+        for line in commits_raw.split("\n"):
+            if not line: continue
+            parts = line.split("|", 3)
+            if len(parts) == 4:
+                commit_list.append({
+                    "hash": parts[0],
+                    "author": parts[1],
+                    "date": parts[2],
+                    "subject": parts[3]
+                })
+            
+        return {
+            "branch": branch,
+            "status": status_list,
+            "commits": commit_list
+        }
+    except Exception as e:
+        log.exception("Failed to get repo status")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/api/repo/files")
+async def get_repo_files(path: str):
+    """Return a recursive file tree for a project path."""
+    def build_tree(current_path: Path, base_path: Path):
+        name = current_path.name
+        if not name and current_path == base_path:
+            name = base_path.name or str(base_path)
+            
+        rel_path = str(current_path.relative_to(base_path))
+        if rel_path == ".":
+            rel_path = ""
+
+        node = {
+            "name": name,
+            "path": str(current_path),
+            "rel_path": rel_path,
+            "type": "directory" if current_path.is_dir() else "file"
+        }
+        
+        if current_path.is_dir():
+            children = []
+            try:
+                for item in current_path.iterdir():
+                    # Ignore .git and other hidden dirs by default
+                    if item.name.startswith(".") and item.name not in (".gitignore", ".gemini", ".claude"):
+                        continue
+                    children.append(build_tree(item, base_path))
+            except PermissionError:
+                pass
+            node["children"] = sorted(children, key=lambda x: (x["type"] == "file", x["name"].lower()))
+            
+        return node
+
+    try:
+        base = Path(path).resolve()
+        if not base.exists():
+            return JSONResponse({"error": "Path does not exist"}, status_code=400)
+        return build_tree(base, base)
+    except Exception as e:
+        log.exception("Failed to build file tree")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # --- Agent Launcher API ---
 
