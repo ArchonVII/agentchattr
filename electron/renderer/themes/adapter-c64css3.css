@@ -1,0 +1,98 @@
+/*
+ * adapter-c64css3.css — Pixelambacht C64CSS3 theme adapter.
+ *
+ * Derived from https://github.com/RoelN/c64css3 and tuned to this app shell.
+ */
+
+@font-face {
+  font-family: "C64 User Mono";
+  src: url("../../assets/fonts/C64_User_Mono_v1.0-STYLE.woff") format("woff");
+  font-display: swap;
+}
+
+:root[data-theme="c64css3"] {
+  --bg-app: #333333;
+  --bg-surface: #6076c5;
+  --bg-elevated: #6076c5;
+  --bg-deep: #20398d;
+  --bg-sunken: #20398d;
+
+  --fg-primary: #6076c5;
+  --fg-secondary: #8fa0d8;
+  --fg-muted: #4e66bb;
+  --fg-dim: #3952ab;
+  --fg-faint: #2a4297;
+
+  --accent: #6076c5;
+  --accent-hover-bg: rgba(96, 118, 197, 0.2);
+  --accent-subtle: rgba(96, 118, 197, 0.1);
+  --accent-danger: #c87870;
+  --accent-success: #98ff98;
+
+  --border: #6076c5;
+  --border-strong: #8fa0d8;
+  --border-grid: #6076c5;
+
+  --font-ui: "C64 User Mono", monospace;
+  --font-mono: "C64 User Mono", monospace;
+  --font-size-base: 16px;
+
+  --shadow-menu: none;
+  --shadow-float: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}
+
+[data-theme="c64css3"] .macro-btn,
+[data-theme="c64css3"] .terminal-toolbar-btn,
+[data-theme="c64css3"] .terminal-exited-banner button,
+[data-theme="c64css3"] .browser-pane-button,
+[data-theme="c64css3"] .quick-launch-folder,
+[data-theme="c64css3"] .quick-launch-agent-btn {
+  background: #20398d;
+  color: #6076c5;
+  border: 3px solid #6076c5;
+  border-radius: 0;
+  box-shadow: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+[data-theme="c64css3"] .macro-btn:hover,
+[data-theme="c64css3"] .terminal-toolbar-btn:hover,
+[data-theme="c64css3"] .browser-pane-button:hover:not(:disabled) {
+  background: #6076c5;
+  color: #20398d;
+}
+
+[data-theme="c64css3"] .tab-bar {
+  background: #6076c5;
+  border-bottom: 6px solid #20398d;
+}
+
+[data-theme="c64css3"] .tab-button {
+  color: #20398d;
+  text-transform: uppercase;
+}
+
+[data-theme="c64css3"] .tab-button.active {
+  color: #20398d;
+  border-bottom: 4px solid #20398d;
+}
+
+[data-theme="c64css3"] .ports-table-wrap,
+[data-theme="c64css3"] .ports-empty,
+[data-theme="c64css3"] .ports-notice,
+[data-theme="c64css3"] .browser-pane {
+  border: 6px solid #6076c5;
+  background: #20398d;
+}
+
+[data-theme="c64css3"] .ports-search,
+[data-theme="c64css3"] .ports-filter-select {
+  background: #20398d;
+  color: #6076c5;
+  border: 3px solid #6076c5;
+}

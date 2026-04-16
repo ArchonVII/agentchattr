@@ -1,0 +1,38 @@
+/*
+ * Browser-safe Windows XP theme adapter.
+ */
+
+:root[data-theme="winxp"] {
+  --bg-app: #3a6ea5;
+  --bg-surface: #ece9d8;
+  --bg-elevated: #f1efe2;
+  --bg-deep: #d4d0c8;
+  --bg-sunken: #cfd8e6;
+
+  --fg-primary: #0f172a;
+  --fg-secondary: #334155;
+  --fg-muted: #64748b;
+  --fg-dim: #64748b;
+  --fg-faint: #94a3b8;
+
+  --accent: #245edb;
+  --accent-hover-bg: rgba(36, 94, 219, 0.12);
+  --accent-subtle: rgba(36, 94, 219, 0.08);
+  --accent-danger: #c7362f;
+  --accent-success: #2f8f3d;
+
+  --border: #7f9db9;
+  --border-strong: #245edb;
+  --border-grid: #9db9d8;
+
+  --font-ui: Tahoma, "Segoe UI", sans-serif;
+  --font-mono: "Lucida Console", Consolas, monospace;
+  --font-size-base: 11px;
+
+  --shadow-menu: 1px 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-float: 0 2px 8px rgba(0, 0, 0, 0.24);
+  --radius: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --color-scheme: light;
+}

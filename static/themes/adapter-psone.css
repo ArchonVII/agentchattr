@@ -1,0 +1,38 @@
+/*
+ * Browser-safe PSone theme adapter.
+ */
+
+:root[data-theme="psone"] {
+  --bg-app: #12151a;
+  --bg-surface: #1e232b;
+  --bg-elevated: #282e38;
+  --bg-deep: #0a0d11;
+  --bg-sunken: #050709;
+
+  --fg-primary: #ffffff;
+  --fg-secondary: #c0c0c0;
+  --fg-muted: #808080;
+  --fg-dim: #606060;
+  --fg-faint: #404040;
+
+  --accent: #5db2ff;
+  --accent-hover-bg: rgba(93, 178, 255, 0.15);
+  --accent-subtle: rgba(93, 178, 255, 0.1);
+  --accent-danger: #ff5d5d;
+  --accent-success: #5dff9e;
+
+  --border: #3a4453;
+  --border-strong: #4a5a6d;
+  --border-grid: #3a4453;
+
+  --font-ui: "Play", "Segoe UI", sans-serif;
+  --font-mono: "Consolas", "Courier New", monospace;
+  --font-size-base: 13px;
+
+  --shadow-menu: 0 4px 0 #000;
+  --shadow-float: 4px 4px 0 #000;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}

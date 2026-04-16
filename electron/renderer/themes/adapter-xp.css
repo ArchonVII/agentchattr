@@ -1,0 +1,106 @@
+/*
+ * adapter-xp.css — Windows XP Luna theme adapter.
+ *
+ * Imports XP.css and maps its blue-glass controls onto the app shell.
+ * Source: https://github.com/botoxparty/XP.css / npm xp.css
+ */
+
+@import "../../node_modules/xp.css/dist/XP.css";
+
+:root[data-theme="winxp"] {
+  --bg-app: #3a6ea5;
+  --bg-surface: #ece9d8;
+  --bg-elevated: #f1efe2;
+  --bg-deep: #d4d0c8;
+  --bg-sunken: #cfd8e6;
+
+  --fg-primary: #0f172a;
+  --fg-secondary: #334155;
+  --fg-muted: #64748b;
+  --fg-dim: #64748b;
+  --fg-faint: #94a3b8;
+
+  --accent: #245edb;
+  --accent-hover-bg: rgba(36, 94, 219, 0.12);
+  --accent-subtle: rgba(36, 94, 219, 0.08);
+  --accent-danger: #c7362f;
+  --accent-success: #2f8f3d;
+
+  --border: #7f9db9;
+  --border-strong: #245edb;
+  --border-grid: #9db9d8;
+
+  --font-ui: Tahoma, "Segoe UI", sans-serif;
+  --font-mono: "Lucida Console", Consolas, monospace;
+  --font-size-base: 11px;
+
+  --shadow-menu: 1px 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-float: 0 2px 8px rgba(0, 0, 0, 0.24);
+  --radius: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --color-scheme: light;
+}
+
+[data-theme="winxp"] .macro-btn,
+[data-theme="winxp"] .terminal-toolbar-btn,
+[data-theme="winxp"] .terminal-exited-banner button,
+[data-theme="winxp"] .browser-pane-button,
+[data-theme="winxp"] .quick-launch-folder,
+[data-theme="winxp"] .quick-launch-agent-btn {
+  background: linear-gradient(180deg, #fffdfa 0%, #e7f1fb 52%, #d7e6f7 100%);
+  color: #103b6d;
+  border: 1px solid #245edb;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    1px 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="winxp"] .macro-btn:hover,
+[data-theme="winxp"] .terminal-toolbar-btn:hover,
+[data-theme="winxp"] .browser-pane-button:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fff7db 0%, #ffe8a3 55%, #f8d75d 100%);
+  border-color: #c28311;
+  color: #6b3e00;
+}
+
+[data-theme="winxp"] .macro-btn:active,
+[data-theme="winxp"] .terminal-toolbar-btn:active,
+[data-theme="winxp"] .browser-pane-button:active:not(:disabled) {
+  background: linear-gradient(180deg, #d7e6f7 0%, #e7f1fb 100%);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.24);
+}
+
+[data-theme="winxp"] .tab-bar {
+  background: linear-gradient(180deg, #3f7bd6 0%, #245edb 55%, #1941a5 100%);
+  border-bottom: 1px solid #0b2f73;
+}
+
+[data-theme="winxp"] .tab-button {
+  color: #eaf2ff;
+}
+
+[data-theme="winxp"] .tab-button.active {
+  color: #fff;
+  border-bottom-color: #ffd35d;
+}
+
+[data-theme="winxp"] .ports-table-wrap,
+[data-theme="winxp"] .ports-search,
+[data-theme="winxp"] .ports-filter-select,
+[data-theme="winxp"] .browser-pane {
+  background: #f7f4ea;
+  border: 1px solid #7f9db9;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="winxp"] .kill-button {
+  color: #8a120d;
+  border-color: #b53b35;
+}
+
+[data-theme="winxp"] .browse-button {
+  color: #146628;
+  border-color: #4c9f61;
+}

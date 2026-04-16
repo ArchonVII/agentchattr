@@ -86,8 +86,13 @@ const RICH_BOX = {
   default: "ROUNDED",
   nes: "HEAVY",
   win98: "DOUBLE",
+  winxp: "ROUNDED",
   system6: "SQUARE",
+  classic: "SQUARE",
   c64: "HEAVY",
+  c64css3: "HEAVY",
+  psone: "HEAVY",
+  tui: "SQUARE",
 };
 
 // Ink border style per theme.
@@ -96,8 +101,13 @@ const INK_BORDER = {
   default: "round",
   nes: "bold",
   win98: "doubleSingle",
+  winxp: "round",
   system6: "single",
+  classic: "single",
   c64: "bold",
+  c64css3: "bold",
+  psone: "bold",
+  tui: "single",
 };
 
 // ---------------------------------------------------------------------------
@@ -148,7 +158,35 @@ const ERA_META = {
     errorIcon: "stop",
     focusIndicator: "underline",
   },
+  winxp: {
+    bannerFont: "banner3-D",
+    glyphSet: "unicode",
+    effects: {
+      bg_glow: null,
+      scanline_opacity: 0.0,
+      flicker_intensity: 0.0,
+      baud_rate: 0,
+      chromatic_aberration: 0,
+    },
+    loaderStyle: "dots",
+    errorIcon: "stop",
+    focusIndicator: "underline",
+  },
   system6: {
+    bannerFont: "mini",
+    glyphSet: "ascii",
+    effects: {
+      bg_glow: null,
+      scanline_opacity: 0.0,
+      flicker_intensity: 0.0,
+      baud_rate: 0,
+      chromatic_aberration: 0,
+    },
+    loaderStyle: "classic",
+    errorIcon: "bomb",
+    focusIndicator: "reverse_video",
+  },
+  classic: {
     bannerFont: "mini",
     glyphSet: "ascii",
     effects: {
@@ -169,6 +207,48 @@ const ERA_META = {
       bg_glow: "rgba(108,94,181,0.4)",
       scanline_opacity: 0.08,
       flicker_intensity: 0.02,
+      baud_rate: 0,
+      chromatic_aberration: 0,
+    },
+    loaderStyle: "classic",
+    errorIcon: "stop",
+    focusIndicator: "reverse_video",
+  },
+  c64css3: {
+    bannerFont: "block",
+    glyphSet: "petscii",
+    effects: {
+      bg_glow: "rgba(96,118,197,0.35)",
+      scanline_opacity: 0.08,
+      flicker_intensity: 0.02,
+      baud_rate: 0,
+      chromatic_aberration: 0,
+    },
+    loaderStyle: "classic",
+    errorIcon: "stop",
+    focusIndicator: "reverse_video",
+  },
+  psone: {
+    bannerFont: "speed",
+    glyphSet: "ascii",
+    effects: {
+      bg_glow: "rgba(93,178,255,0.3)",
+      scanline_opacity: 0.05,
+      flicker_intensity: 0.01,
+      baud_rate: 0,
+      chromatic_aberration: 0,
+    },
+    loaderStyle: "classic",
+    errorIcon: "stop",
+    focusIndicator: "reverse_video",
+  },
+  tui: {
+    bannerFont: "banner3",
+    glyphSet: "ascii",
+    effects: {
+      bg_glow: null,
+      scanline_opacity: 0.1,
+      flicker_intensity: 0.0,
       baud_rate: 0,
       chromatic_aberration: 0,
     },

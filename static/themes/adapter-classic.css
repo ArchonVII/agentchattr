@@ -1,0 +1,44 @@
+/*
+ * Browser-safe Classic Mac theme adapter.
+ */
+
+@font-face {
+  font-family: "ChicagoFLF";
+  src: url("/static/themes/ChicagoFLF.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root[data-theme="classic"] {
+  --bg-app: #bfbfbf;
+  --bg-surface: #dddddd;
+  --bg-elevated: #dedede;
+  --bg-deep: #c9c9c9;
+  --bg-sunken: #b6b6b6;
+
+  --fg-primary: #111;
+  --fg-secondary: #2f2f2f;
+  --fg-muted: #4b4b4b;
+  --fg-dim: #6b6b6b;
+  --fg-faint: #8b8b8b;
+
+  --accent: #111;
+  --accent-hover-bg: rgba(17, 17, 17, 0.08);
+  --accent-subtle: rgba(17, 17, 17, 0.05);
+  --accent-danger: #111;
+  --accent-success: #111;
+
+  --border: #111;
+  --border-strong: #111;
+  --border-grid: #777;
+
+  --font-ui: "ChicagoFLF", Geneva, "Times New Roman", serif;
+  --font-mono: Monaco, "Courier New", monospace;
+  --font-size-base: 12px;
+
+  --shadow-menu: 1px 2px #111;
+  --shadow-float: 1px 2px #111;
+  --radius: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --color-scheme: light;
+}

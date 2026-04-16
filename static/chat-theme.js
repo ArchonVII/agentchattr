@@ -5,8 +5,12 @@ const VALID_CHAT_THEMES = new Set([
   "default",
   "nes",
   "win98",
+  "winxp",
   "system6",
+  "classic",
   "c64",
+  "c64css3",
+  "psone",
 ]);
 
 const CHAT_THEME_TOKEN_MAP = {

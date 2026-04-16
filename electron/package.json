@@ -24,7 +24,9 @@
     "nes.css": "^2.2.1",
     "node-pty": "^1.1.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tuicss": "^2.1.2",
+    "xp.css": "^0.2.6"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",

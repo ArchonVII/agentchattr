@@ -1,0 +1,131 @@
+/*
+ * adapter-classic.css — Classic Mac OS 8/9 theme adapter.
+ *
+ * Derived from the classic.css project and tuned to this app shell.
+ * Source inspiration: https://github.com/npjg/classic.css
+ */
+
+@font-face {
+  font-family: "ChicagoFLF";
+  src: url("../../assets/fonts/ChicagoFLF.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root[data-theme="classic"] {
+  --bg-app: #bfbfbf;
+  --bg-surface: #dddddd;
+  --bg-elevated: #dedede;
+  --bg-deep: #c9c9c9;
+  --bg-sunken: #b6b6b6;
+
+  --fg-primary: #111;
+  --fg-secondary: #2f2f2f;
+  --fg-muted: #4b4b4b;
+  --fg-dim: #6b6b6b;
+  --fg-faint: #8b8b8b;
+
+  --accent: #111;
+  --accent-hover-bg: rgba(17, 17, 17, 0.08);
+  --accent-subtle: rgba(17, 17, 17, 0.05);
+  --accent-danger: #111;
+  --accent-success: #111;
+
+  --border: #111;
+  --border-strong: #111;
+  --border-grid: #777;
+
+  --font-ui: "ChicagoFLF", Geneva, "Times New Roman", serif;
+  --font-mono: Monaco, "Courier New", monospace;
+  --font-size-base: 12px;
+
+  --shadow-menu: 1px 2px #111;
+  --shadow-float: 1px 2px #111;
+  --radius: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --color-scheme: light;
+}
+
+[data-theme="classic"] .macro-btn,
+[data-theme="classic"] .terminal-toolbar-btn,
+[data-theme="classic"] .terminal-exited-banner button,
+[data-theme="classic"] .browser-pane-button,
+[data-theme="classic"] .quick-launch-folder,
+[data-theme="classic"] .quick-launch-agent-btn {
+  background: #dedede;
+  color: #111;
+  border: 1px solid #111;
+  border-radius: 3px;
+  box-shadow:
+    inset -1px -1px 0 0 #777,
+    inset -2px -2px 0 0 #aaa,
+    inset 1px 1px 0 0 #ddd,
+    inset 2px 2px 0 0 #fff;
+}
+
+[data-theme="classic"] .macro-btn:hover,
+[data-theme="classic"] .terminal-toolbar-btn:hover,
+[data-theme="classic"] .browser-pane-button:hover:not(:disabled) {
+  box-shadow:
+    inset -1px -1px 0 0 #777,
+    inset -2px -2px 0 0 #aaa,
+    inset 1px 1px 0 0 #ddd,
+    inset 2px 2px 0 0 #fff,
+    0 0 0 1px #aaa,
+    0 0 0 2px #ddd,
+    0 0 0 3px #000;
+}
+
+[data-theme="classic"] .macro-btn:active,
+[data-theme="classic"] .terminal-toolbar-btn:active,
+[data-theme="classic"] .browser-pane-button:active:not(:disabled) {
+  color: #fff;
+  background: #666;
+  box-shadow:
+    0 0 0 1px #aaa,
+    0 0 0 2px #ddd,
+    0 0 0 3px #000,
+    inset -1px -1px 0 0 #888,
+    inset -2px -2px 0 0 #777,
+    inset 1px 1px 0 0 #444,
+    inset 2px 2px 0 0 #555;
+}
+
+[data-theme="classic"] .tab-bar {
+  background: #f1f1f1;
+  border-bottom: 1px solid #111;
+  box-shadow:
+    inset 1px 1px 0 0 #fff,
+    inset -1px -1px 0 0 #999;
+}
+
+[data-theme="classic"] .tab-button {
+  color: #111;
+}
+
+[data-theme="classic"] .tab-button.active {
+  color: #111;
+  border-bottom-color: #111;
+}
+
+[data-theme="classic"] .ports-table-wrap,
+[data-theme="classic"] .ports-empty,
+[data-theme="classic"] .ports-notice,
+[data-theme="classic"] .browser-pane {
+  border: 1px solid #111;
+  background: #ddd;
+  box-shadow:
+    1px 2px #111,
+    inset 1px 1px 0 0 #fff,
+    inset -1px -1px 0 0 #999;
+}
+
+[data-theme="classic"] .ports-search,
+[data-theme="classic"] .ports-filter-select {
+  background: #fff;
+  color: #111;
+  border: 1px solid #111;
+  box-shadow:
+    inset -1px -1px 0 0 #999,
+    inset 1px 1px 0 0 #fff;
+}

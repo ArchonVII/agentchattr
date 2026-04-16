@@ -19,9 +19,19 @@ console.assert(snapshot.generated, "missing generated timestamp");
 console.assert(snapshot.themes, "missing themes object");
 
 const ids = Object.keys(snapshot.themes);
-console.assert(ids.length >= 5, `expected >=5 themes, got ${ids.length}`);
+console.assert(ids.length >= 9, `expected >=9 themes, got ${ids.length}`);
 
-for (const id of ["default", "nes", "win98", "system6", "c64"]) {
+for (const id of [
+  "default",
+  "nes",
+  "win98",
+  "winxp",
+  "system6",
+  "classic",
+  "c64",
+  "c64css3",
+  "psone",
+]) {
   const t = snapshot.themes[id];
   console.assert(t, `missing theme: ${id}`);
   // Core palettes

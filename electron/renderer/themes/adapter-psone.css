@@ -1,0 +1,113 @@
+/*
+ * adapter-psone.css — PSone.css (90s PlayStation) theme adapter.
+ *
+ * Imports PSone.css and maps its retro console aesthetic onto the app's DOM.
+ * Source: https://github.com/micah5/PSone.css
+ */
+
+@import "./PSone.min.css";
+
+/* ── Variable overrides ──────────────────────────────────────────────── */
+
+:root[data-theme="psone"] {
+  --bg-app: #12151a; /* deep charcoal — source: PS1 BIOS background */
+  --bg-surface: #1e232b;
+  --bg-elevated: #282e38;
+  --bg-deep: #0a0d11;
+  --bg-sunken: #050709;
+
+  --fg-primary: #ffffff;
+  --fg-secondary: #c0c0c0;
+  --fg-muted: #808080;
+  --fg-dim: #606060;
+  --fg-faint: #404040;
+
+  --accent: #5db2ff; /* sky blue — source: PS1 boot logo text */
+  --accent-hover-bg: rgba(93, 178, 255, 0.15);
+  --accent-subtle: rgba(93, 178, 255, 0.1);
+  --accent-danger: #ff5d5d; /* controller 'O' red */
+  --accent-success: #5dff9e; /* controller 'Triangle' green */
+
+  --border: #3a4453;
+  --border-strong: #4a5a6d;
+  --border-grid: #3a4453;
+
+  --font-ui: "Final Fantasy Script Collection - Final Fantasy VII", "Play", sans-serif;
+  --font-mono: "Consolas", "Courier New", monospace;
+  --font-size-base: 13px;
+
+  --shadow-menu: 0 4px 0 #000;
+  --shadow-float: 4px 4px 0 #000;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}
+
+/* ── Component overrides ─────────────────────────────────────────────── */
+
+/* PSone-style borders on all buttons — source: PSone.css btn pattern */
+[data-theme="psone"] .macro-btn,
+[data-theme="psone"] .terminal-toolbar-btn,
+[data-theme="psone"] .terminal-exited-banner button,
+[data-theme="psone"] .browser-pane-button,
+[data-theme="psone"] .quick-launch-folder,
+[data-theme="psone"] .quick-launch-agent-btn {
+  border: 2px solid #fff;
+  background: transparent;
+  color: #fff;
+  border-radius: 0;
+  position: relative;
+  transition: all 0.1s ease;
+}
+
+[data-theme="psone"] .macro-btn:hover,
+[data-theme="psone"] .terminal-toolbar-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+}
+
+/* Container-style borders on panels — source: PSone.css container pattern */
+[data-theme="psone"] .ports-table-wrap,
+[data-theme="psone"] .ports-empty,
+[data-theme="psone"] .ports-notice {
+  border: 2px solid #fff;
+  padding: 1rem;
+  background: var(--bg-surface);
+}
+
+/* Tab bar underlines — sharp PS1 style */
+[data-theme="psone"] .tab-button.active {
+  border-bottom: 3px solid var(--accent);
+}
+
+[data-theme="psone"] .terminal-tab.active {
+  border-bottom: 3px solid var(--accent);
+}
+
+/* Table headers — uppercase BIOS look */
+[data-theme="psone"] .ports-table th {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+/* Special button styles for danger/success */
+[data-theme="psone"] .kill-button {
+  border-color: var(--accent-danger) !important;
+  color: var(--accent-danger) !important;
+}
+[data-theme="psone"] .kill-button:hover {
+  background: var(--accent-danger) !important;
+  color: #000 !important;
+}
+
+[data-theme="psone"] .browse-button {
+  border-color: var(--accent-success) !important;
+  color: var(--accent-success) !important;
+}
+[data-theme="psone"] .browse-button:hover {
+  background: var(--accent-success) !important;
+  color: #000 !important;
+}

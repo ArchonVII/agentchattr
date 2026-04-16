@@ -1,0 +1,132 @@
+/*
+ * adapter-tui.css — TuiCss (Classic DOS/Turbo Vision) theme adapter.
+ *
+ * Imports TuiCss and maps its Norton Commander / BIOS aesthetic onto the app's DOM.
+ * Source: https://github.com/vinibiavatti1/TuiCss
+ */
+
+@import "../../node_modules/tuicss/dist/tuicss.min.css";
+
+@font-face {
+  font-family: "Perfect DOS VGA 437 Win";
+  src: url("../../assets/fonts/Perfect DOS VGA 437 Win.ttf") format("truetype");
+  font-display: swap;
+}
+
+/* ── Variable overrides ──────────────────────────────────────────────── */
+
+:root[data-theme="tui"] {
+  --bg-app: #0000aa; /* classic blue background */
+  --bg-surface: #0000aa;
+  --bg-elevated: #aaaaaa;
+  --bg-deep: #000080;
+  --bg-sunken: #000055;
+
+  --fg-primary: #ffffff;
+  --fg-secondary: #aaaaaa;
+  --fg-muted: #555555;
+  --fg-dim: #555555;
+  --fg-faint: #0000aa;
+
+  --accent: #ffff55; /* bright yellow for active/highlight */
+  --accent-hover-bg: rgba(255, 255, 85, 0.2);
+  --accent-subtle: rgba(255, 255, 85, 0.1);
+  --accent-danger: #ff5555;
+  --accent-success: #55ff55;
+
+  --border: #ffffff;
+  --border-strong: #ffff55;
+  --border-grid: #ffffff;
+
+  --font-ui: "Perfect DOS VGA 437 Win", monospace;
+  --font-mono: "Perfect DOS VGA 437 Win", monospace;
+  --font-size-base: 14px;
+
+  --shadow-menu: none;
+  --shadow-float: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}
+
+/* ── Component overrides ─────────────────────────────────────────────── */
+
+/* TUI-style double borders on buttons — source: TuiCss tui-button class */
+[data-theme="tui"] .macro-btn,
+[data-theme="tui"] .terminal-toolbar-btn,
+[data-theme="tui"] .terminal-exited-banner button,
+[data-theme="tui"] .browser-pane-button,
+[data-theme="tui"] .quick-launch-folder,
+[data-theme="tui"] .quick-launch-agent-btn {
+  background: #aaaaaa;
+  color: #000000;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px 0px #000000;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+[data-theme="tui"] .macro-btn:hover,
+[data-theme="tui"] .terminal-toolbar-btn:hover {
+  background: #ffffff;
+  box-shadow: 1px 1px 0px 0px #000000;
+  transform: translate(1px, 1px);
+}
+
+[data-theme="tui"] .macro-btn:active,
+[data-theme="tui"] .terminal-toolbar-btn:active {
+  box-shadow: none;
+  transform: translate(2px, 2px);
+}
+
+/* Tab bar — light grey with black text like a menu bar */
+[data-theme="tui"] .tab-bar {
+  background: #aaaaaa;
+  border-bottom: 2px solid #000000;
+}
+
+[data-theme="tui"] .tab-button {
+  color: #000000;
+}
+
+[data-theme="tui"] .tab-button.active {
+  background: #0000aa;
+  color: #ffffff;
+  border-bottom-color: #ffff55;
+}
+
+/* Windows / Containers — TuiCss tui-window class */
+[data-theme="tui"] .ports-table-wrap,
+[data-theme="tui"] .ports-empty,
+[data-theme="tui"] .ports-notice {
+  background: #0000aa;
+  border: 2px solid #ffffff;
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+
+[data-theme="tui"] .ports-table th {
+  background: #aaaaaa;
+  color: #000000;
+  border-bottom: 2px solid #000000;
+}
+
+/* Kill button — red in TUI */
+[data-theme="tui"] .kill-button {
+  background: #aa0000 !important;
+  color: #ffffff !important;
+}
+
+/* Browse button — green in TUI */
+[data-theme="tui"] .browse-button {
+  background: #00aa00 !important;
+  color: #ffffff !important;
+}
+
+/* Input fields — sunken look */
+[data-theme="tui"] input,
+[data-theme="tui"] select {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}

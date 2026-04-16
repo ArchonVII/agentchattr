@@ -1,0 +1,44 @@
+/*
+ * Browser-safe C64CSS3 theme adapter.
+ */
+
+@font-face {
+  font-family: "C64 User Mono";
+  src: url("/static/themes/C64_User_Mono_v1.0-STYLE.woff") format("woff");
+  font-display: swap;
+}
+
+:root[data-theme="c64css3"] {
+  --bg-app: #333333;
+  --bg-surface: #6076c5;
+  --bg-elevated: #6076c5;
+  --bg-deep: #20398d;
+  --bg-sunken: #20398d;
+
+  --fg-primary: #6076c5;
+  --fg-secondary: #8fa0d8;
+  --fg-muted: #4e66bb;
+  --fg-dim: #3952ab;
+  --fg-faint: #2a4297;
+
+  --accent: #6076c5;
+  --accent-hover-bg: rgba(96, 118, 197, 0.2);
+  --accent-subtle: rgba(96, 118, 197, 0.1);
+  --accent-danger: #c87870;
+  --accent-success: #98ff98;
+
+  --border: #6076c5;
+  --border-strong: #8fa0d8;
+  --border-grid: #6076c5;
+
+  --font-ui: "C64 User Mono", monospace;
+  --font-mono: "C64 User Mono", monospace;
+  --font-size-base: 16px;
+
+  --shadow-menu: none;
+  --shadow-float: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-scheme: dark;
+}

@@ -50,6 +50,15 @@ const APP_THEMES = [
     preview: { bg: "#008080", fg: "#000", accent: "#000080" },
   },
   {
+    id: "winxp",
+    name: "Windows XP",
+    era: "2001",
+    adapter: "adapter-xp.css",
+    font: null,
+    terminalTheme: "msdos",
+    preview: { bg: "#3a6ea5", fg: "#0f172a", accent: "#245edb" },
+  },
+  {
     id: "system6",
     name: "System 6",
     era: "1988",
@@ -57,6 +66,19 @@ const APP_THEMES = [
     font: null,
     terminalTheme: "system6",
     preview: { bg: "#fff", fg: "#000", accent: "#000" },
+  },
+  {
+    id: "classic",
+    name: "Classic Mac",
+    era: "1998",
+    adapter: "adapter-classic.css",
+    font: {
+      family: "ChicagoFLF",
+      file: "ChicagoFLF.ttf",
+      format: "truetype",
+    },
+    terminalTheme: "system6",
+    preview: { bg: "#bfbfbf", fg: "#111", accent: "#111" },
   },
   {
     id: "c64",
@@ -70,6 +92,45 @@ const APP_THEMES = [
     },
     terminalTheme: "c64",
     preview: { bg: "#352879", fg: "#6C5EB5", accent: "#6C5EB5" },
+  },
+  {
+    id: "c64css3",
+    name: "C64 CSS3",
+    era: "1982",
+    adapter: "adapter-c64css3.css",
+    font: {
+      family: "C64 User Mono",
+      file: "C64_User_Mono_v1.0-STYLE.woff",
+      format: "woff",
+    },
+    terminalTheme: "c64",
+    preview: { bg: "#20398d", fg: "#6076c5", accent: "#6076c5" },
+  },
+  {
+    id: "psone",
+    name: "PlayStation",
+    era: "1994",
+    adapter: "adapter-psone.css",
+    font: {
+      family: "Final Fantasy Script Collection - Final Fantasy VII",
+      file: "Final_Fantasy_VII.woff",
+      format: "woff",
+    },
+    terminalTheme: "cyberpunk", // Cyberpunk fits the PS1 sci-fi aesthetic best
+    preview: { bg: "#12151a", fg: "#fff", accent: "#5db2ff" },
+  },
+  {
+    id: "tui",
+    name: "TuiCss",
+    era: "DOS",
+    adapter: "adapter-tui.css",
+    font: {
+      family: "Perfect DOS VGA 437 Win",
+      file: "Perfect DOS VGA 437 Win.ttf",
+      format: "truetype",
+    },
+    terminalTheme: "msdos",
+    preview: { bg: "#0000aa", fg: "#fff", accent: "#ffff55" },
   },
 ];
 
