@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import re as _re
 import shlex
 import sys
@@ -2025,13 +2026,40 @@ async def demote_rule_proposal(msg_id: int):
     })
     if updated:
         payload = json.dumps({"type": "edit", "message": updated})
-        dead = set()
-        for client in list(ws_clients):
-            try:
-                await client.send_text(payload)
-            except Exception:
-                dead.add(client)
-        ws_clients.difference_update(dead)
+        await _broadcast(payload)
+    return updated or {"ok": True}
+
+
+@app.post("/api/messages/{msg_id}/dispute_screenshot")
+async def dispute_screenshot(msg_id: int):
+    """Dispute the interpretation of a screenshot verification card."""
+    msg = store.get_by_id(msg_id)
+    if not msg:
+        return JSONResponse({"error": "message not found"}, status_code=404)
+    if msg.get("type") != "screenshot_verification":
+        return JSONResponse({"error": "not a screenshot verification message"}, status_code=400)
+    
+    meta = msg.get("metadata") or {}
+    if meta.get("disputed"):
+        return JSONResponse({"error": "already disputed"}, status_code=400)
+    
+    meta["disputed"] = True
+    meta["status"] = "disputed"
+    
+    updated = store.update_message(msg_id, {"metadata": meta})
+    if updated:
+        # Broadcast the update
+        await _broadcast(json.dumps({"type": "edit", "message": updated}))
+        
+        # Post a message from user to agent
+        sender = msg.get("sender", "")
+        channel = msg.get("channel", "general")
+        username = room_settings.get("username", "user")
+        caption = msg.get("text", "")
+        
+        reply_text = f"@{sender} I dispute your interpretation of this screenshot: \"{caption}\". Please re-examine."
+        store.add(username, reply_text, reply_to=msg_id, channel=channel)
+        
     return updated or {"ok": True}
 
 
@@ -3002,6 +3030,97 @@ async def remove_agent_definition(name: str):
         if registry:
             registry.remove_base(name)
     return JSONResponse({"ok": True})
+
+
+@app.get("/api/agents")
+async def get_agents_list():
+    """List all registered agent instances (for TUI/Electron compatibility)."""
+    if not registry:
+        return JSONResponse({})
+    return JSONResponse(registry.get_agent_config())
+
+
+# Global registries
+active_ports: dict[int, dict] = {}  # port_num -> {sender, purpose, duration, address, msg_id}
+
+
+@app.get("/api/ports")
+async def list_ports():
+    """List all announced active ports."""
+    return JSONResponse({"ports": list(active_ports.values())})
+
+
+@app.post("/api/kill_port")
+async def kill_port(body: dict):
+    """Attempt to kill the process listening on a specific port (Windows)."""
+    port = body.get("port")
+    if not port:
+        return JSONResponse({"error": "port required"}, status_code=400)
+    
+    try:
+        port_num = int(port)
+    except ValueError:
+        return JSONResponse({"error": "invalid port"}, status_code=400)
+
+    if sys.platform != "win32":
+        return JSONResponse({"error": "kill_port only implemented for Windows"}, status_code=501)
+
+    try:
+        # Find PID using netstat
+        cmd = f'netstat -ano | findstr LISTENING | findstr :{port_num}'
+        proc = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        lines = proc.stdout.strip().split("\n")
+        
+        pids = set()
+        for line in lines:
+            parts = line.strip().split()
+            if len(parts) >= 5:
+                # The last part is the PID
+                pids.add(parts[-1])
+        
+        if not pids:
+            # If not found via netstat, maybe it was already closed or never opened
+            # but still remove from our registry if it exists
+            if port_num in active_ports:
+                msg_id = active_ports[port_num].get("msg_id")
+                del active_ports[port_num]
+                if msg_id:
+                    # Mark the card as closed
+                    msg = store.get_by_id(msg_id)
+                    if msg:
+                        meta = msg.get("metadata", {})
+                        meta["status"] = "closed"
+                        updated = store.update_message(msg_id, {"metadata": meta})
+                        if updated:
+                            await _broadcast(json.dumps({"type": "edit", "message": updated}))
+            return JSONResponse({"ok": True, "info": "no process found, cleaned up registry"})
+        
+        killed = []
+        for pid in pids:
+            # Skip killing the current server or MCP ports if by accident
+            if int(pid) == os.getpid():
+                continue
+            subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True)
+            killed.append(pid)
+            
+        # Clean up registry even if we didn't kill anything (e.g. if we skipped current pid but found it)
+        if pids:
+            if port_num in active_ports:
+                msg_id = active_ports[port_num].get("msg_id")
+                del active_ports[port_num]
+                if msg_id:
+                    # Mark the card as closed
+                    msg = store.get_by_id(msg_id)
+                    if msg:
+                        meta = msg.get("metadata", {})
+                        meta["status"] = "closed"
+                        updated = store.update_message(msg_id, {"metadata": meta})
+                        if updated:
+                            await _broadcast(json.dumps({"type": "edit", "message": updated}))
+
+        return JSONResponse({"ok": True, "killed_pids": killed})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.get("/api/agents/managed")
