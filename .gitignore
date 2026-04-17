@@ -27,6 +27,8 @@ agents_lineup.svg
 docs/*
 !docs/superpowers/
 docs/superpowers/*
+!docs/superpowers/plans/
+!docs/superpowers/plans/**
 !docs/superpowers/qa/
 !docs/superpowers/qa/**
 !docs/superpowers/specs/
