@@ -1,8 +1,18 @@
 # Project Status — agentchattr
 
-Last updated: 2026-04-14 by Manager
+Last updated: 2026-04-17 by Codex
 
 ## Active Workstreams
+
+### Web UI Decomposition Planning
+
+- **Status:** Active
+- **Owner:** Unassigned
+- **Plan:** `docs/superpowers/plans/2026-04-17-web-ui-decomposition-plan.md`
+- **Progress:** Audit completed for the browser app. `static/chat.js` remains the dominant maintenance hotspot, while `core.js`, `store.js`, `chat-theme.js`, and `repository.js` are suitable to keep as raw JS.
+- **Blocked by:** Nothing
+- **Next:** Land the app-shell boundary and remove the first tranche of inline handlers before extracting timeline/composer logic.
+- **Notes:** Goal is controlled decomposition, not a full rewrite. Component adoption is deferred until after module/state boundaries are stable.
 
 ### Desktop Shell QA & Signoff
 
