@@ -29,6 +29,7 @@ from registry import RuntimeRegistry
 from session_store import SessionStore, validate_session_template
 from session_engine import SessionEngine
 from default_ports import WEB_UI_PORT
+from image_path_resolver import resolve_image_references
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +53,8 @@ build_info: dict = {}
 
 # --- Security: session token (set by configure()) ---
 session_token: str = ""
+_security_allowed_origins: set[str] = set()
+_security_middleware_installed = False
 
 # --- Security: per-IP rate limiter for agent registration ---
 _REGISTER_RATE_LIMIT = 10       # max registrations per window
@@ -252,71 +255,74 @@ def _resolve_authenticated_agent(request: Request) -> dict | None:
 _PUBLIC_PREFIXES = ("/", "/static/")
 
 
+class SecurityMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+
+        # Static assets, index page, and uploaded images are public.
+        # The index page injects the token client-side via same-origin script.
+        # Uploads use random filenames and have path-traversal protection.
+        if path == "/" or path.startswith(("/static/", "/uploads/", "/api/roles")):
+            return await call_next(request)
+
+        # Agent registration/heartbeat: loopback only (no remote agent minting).
+        if path.startswith(("/api/register", "/api/deregister/", "/api/heartbeat/", "/api/bridge/")):
+            client_ip = request.client.host if request.client else ""
+            if client_ip not in ("127.0.0.1", "::1", "localhost"):
+                return JSONResponse(
+                    {"error": f"forbidden: local control endpoints are restricted to local loopback. Source {client_ip} is not allowed."},
+                    status_code=403,
+                )
+            return await call_next(request)
+
+        # --- Origin check (blocks cross-origin / DNS-rebinding attacks) ---
+        origin = request.headers.get("origin")
+        if origin and origin not in _security_allowed_origins:
+            return JSONResponse(
+                {"error": "forbidden: origin not allowed"},
+                status_code=403,
+            )
+
+        # --- Token check ---
+        # Allow registered agents to authenticate via Bearer token
+        # for /api/messages and /api/send (no browser session needed).
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.lower().startswith("bearer ") and (path in ("/api/messages", "/api/send") or path.startswith("/api/rules/")):
+            bearer = auth_header[7:].strip()
+            if registry and registry.resolve_token(bearer):
+                return await call_next(request)
+
+        # Check session token from (in priority order):
+        #   1. HttpOnly cookie (browser — preferred, not readable by JS)
+        #   2. X-Session-Token header (programmatic clients)
+        #   3. ?token= query param (legacy fallback)
+        req_token = (
+            request.cookies.get("session")
+            or request.headers.get("x-session-token")
+            or request.query_params.get("token")
+        )
+        if req_token != session_token:
+            return JSONResponse(
+                {"error": "forbidden: invalid or missing session token"},
+                status_code=403,
+            )
+
+        return await call_next(request)
+
+
 def _install_security_middleware(token: str, cfg: dict):
-    """Add token validation and origin checking middleware to the app."""
-    import app as _self
-    _self.session_token = token
+    """Update security state and install token validation middleware once."""
+    global session_token, _security_allowed_origins, _security_middleware_installed
+
+    session_token = token
     port = cfg.get("server", {}).get("port", WEB_UI_PORT)
-    allowed_origins = {
+    _security_allowed_origins = {
         f"http://127.0.0.1:{port}",
         f"http://localhost:{port}",
     }
-
-    class SecurityMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request: Request, call_next):
-            path = request.url.path
-
-            # Static assets, index page, and uploaded images are public.
-            # The index page injects the token client-side via same-origin script.
-            # Uploads use random filenames and have path-traversal protection.
-            if path == "/" or path.startswith(("/static/", "/uploads/", "/api/roles")):
-                return await call_next(request)
-
-            # Agent registration/heartbeat: loopback only (no remote agent minting).
-            if path.startswith(("/api/register", "/api/deregister/", "/api/heartbeat/", "/api/bridge/")):
-                client_ip = request.client.host if request.client else ""
-                if client_ip not in ("127.0.0.1", "::1", "localhost"):
-                    return JSONResponse(
-                        {"error": f"forbidden: local control endpoints are restricted to local loopback. Source {client_ip} is not allowed."},
-                        status_code=403,
-                    )
-                return await call_next(request)
-
-            # --- Origin check (blocks cross-origin / DNS-rebinding attacks) ---
-            origin = request.headers.get("origin")
-            if origin and origin not in allowed_origins:
-                return JSONResponse(
-                    {"error": "forbidden: origin not allowed"},
-                    status_code=403,
-                )
-
-            # --- Token check ---
-            # Allow registered agents to authenticate via Bearer token
-            # for /api/messages and /api/send (no browser session needed).
-            auth_header = request.headers.get("authorization", "")
-            if auth_header.lower().startswith("bearer ") and (path in ("/api/messages", "/api/send") or path.startswith("/api/rules/")):
-                bearer = auth_header[7:].strip()
-                if _self.registry and _self.registry.resolve_token(bearer):
-                    return await call_next(request)
-
-            # Check session token from (in priority order):
-            #   1. HttpOnly cookie (browser — preferred, not readable by JS)
-            #   2. X-Session-Token header (programmatic clients)
-            #   3. ?token= query param (legacy fallback)
-            req_token = (
-                request.cookies.get("session")
-                or request.headers.get("x-session-token")
-                or request.query_params.get("token")
-            )
-            if req_token != _self.session_token:
-                return JSONResponse(
-                    {"error": "forbidden: invalid or missing session token"},
-                    status_code=403,
-                )
-
-            return await call_next(request)
-
-    app.add_middleware(SecurityMiddleware)
+    if not _security_middleware_installed:
+        app.add_middleware(SecurityMiddleware)
+        _security_middleware_installed = True
 
 
 def configure(cfg: dict, session_token: str = ""):
@@ -336,8 +342,7 @@ def configure(cfg: dict, session_token: str = ""):
 
     store = MessageStore(str(log_path))
     # Initialize store upload dir from config
-    raw_upload_dir = cfg.get("images", {}).get("upload_dir", "./uploads")
-    store.upload_dir = Path(raw_upload_dir)
+    store.upload_dir = _get_upload_dir()
     
     # Rules store — migrates from legacy decisions.json automatically
     rules_path = Path(data_dir) / "rules.json"
@@ -1532,7 +1537,7 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB default
 
 @app.post("/api/upload")
 async def upload_image(file: UploadFile = File(...)):
-    upload_dir = Path(config.get("images", {}).get("upload_dir", "./uploads"))
+    upload_dir = _get_upload_dir()
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     ext = Path(file.filename).suffix or ".png"
@@ -1552,6 +1557,21 @@ async def upload_image(file: UploadFile = File(...)):
         "name": file.filename,
         "url": f"/uploads/{filename}",
     })
+
+
+@app.post("/api/image-previews/resolve")
+async def resolve_image_previews(request: Request):
+    body = await request.json()
+    refs = body.get("refs", [])
+    if not isinstance(refs, list):
+        return JSONResponse({"error": "refs must be a list"}, status_code=400)
+
+    results = resolve_image_references(
+        refs,
+        upload_dir=_get_upload_dir(),
+        project_root=Path(__file__).parent,
+    )
+    return JSONResponse({"results": results})
 
 
 # --- Export / Import ---
@@ -2788,6 +2808,11 @@ def _detect_install_kind() -> str:
             return "fork"
     except Exception:
         pass
+
+
+def _get_upload_dir() -> Path:
+    raw_dir = config.get("images", {}).get("upload_dir", "./uploads")
+    return Path(raw_dir)
     return "unknown"
 
 
@@ -2869,7 +2894,7 @@ async def version_check():
 
 @app.get("/uploads/{filename}")
 async def serve_upload(filename: str):
-    upload_dir = Path(config.get("images", {}).get("upload_dir", "./uploads"))
+    upload_dir = _get_upload_dir()
     filepath = (upload_dir / filename).resolve()
     if not filepath.is_relative_to(upload_dir.resolve()):
         return JSONResponse({"error": "invalid path"}, status_code=400)

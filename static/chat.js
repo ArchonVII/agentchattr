@@ -32,6 +32,7 @@ let schedulesList = []; // array of schedule objects from server
 let runtimeUsersByChannel = new Map(); // channel -> Map<senderKey, entry>
 let dismissedRosterEntries = new Set(); // transient dismissals for runtime roster cards
 const repoStatusCache = new Map(); // cwd -> { branch, repo, worktree, pending }
+const inlineImagePreviewCache = new Map(); // raw image path ref -> resolved preview or null
 
 const ROOM_SIDEBAR_COLLAPSE_KEY = "agentchattr-room-sidebar-collapsed";
 const PRESENCE_SIDEBAR_COLLAPSE_KEY = "agentchattr-presence-sidebar-collapsed";
@@ -570,22 +571,57 @@ async function detectPlatform() {
   }
 }
 
+const IMAGE_PATH_SUFFIX_RE = /\.(?:png|jpe?g|gif|webp|bmp|svg)(?::\d+)?$/i;
+
+function stripPathLineSuffix(pathValue) {
+  return String(pathValue || "").replace(/(?<=\.[A-Za-z0-9]{1,10}):\d+$/i, "");
+}
+
+function isImagePath(pathValue) {
+  return IMAGE_PATH_SUFFIX_RE.test(String(pathValue || ""));
+}
+
+function buildOpenPathOnclick(pathValue) {
+  const escaped = String(pathValue || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'");
+  return `openPath('${escaped}'); return false;`;
+}
+
+function escapeHtmlAttr(text) {
+  return String(text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function buildFileLinkHtml(match) {
+  const cleanPath = stripPathLineSuffix(match);
+  const imageAttrs = isImagePath(cleanPath)
+    ? ` image-file-link" data-image-path="${escapeHtmlAttr(cleanPath)}"`
+    : `"`;
+  return `<a class="file-link${imageAttrs} href="#" onclick="${buildOpenPathOnclick(cleanPath)}" title="Open in file manager">${match}</a>`;
+}
+
 function linkifyPaths(html) {
   // Windows paths: E:\foo\bar or E:/foo/bar
-  html = html.replace(/(?<!["=\/])([A-Z]):[\\\/][\w\-.\\ \/]+/g, (match) => {
-    const escaped = match.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    return `<a class="file-link" href="#" onclick="openPath('${escaped}'); return false;" title="Open in file manager">${match}</a>`;
-  });
+  html = html.replace(
+    /(?<!["=\/])([A-Z]:[\\\/][\w .@\-\\\/]+\.[A-Za-z0-9]{1,10}(?::\d+)?)/g,
+    (match) => buildFileLinkHtml(match),
+  );
   // Unix paths: /Users/..., /home/..., /tmp/..., /opt/..., /var/..., /etc/...
   if (serverPlatform !== "win32") {
     html = html.replace(
-      /(?<!["=\w])(\/(?:Users|home|tmp|opt|var|etc|usr)\/[\w\-.\/ ]+)/g,
-      (match) => {
-        const escaped = match.replace(/'/g, "\\'");
-        return `<a class="file-link" href="#" onclick="openPath('${escaped}'); return false;" title="Open in file manager">${match}</a>`;
-      },
+      /(?<!["=\w])(\/(?:Users|home|tmp|opt|var|etc|usr)\/[\w .@\-\/]+\.[A-Za-z0-9]{1,10}(?::\d+)?)/g,
+      (match) => buildFileLinkHtml(match),
     );
   }
+  // Relative image paths: Screenshots/foo.png, static/logo.svg, uploads/bar.webp
+  html = html.replace(
+    /(?<!["=\/A-Za-z0-9_-])((?:[\w.@-]+[\\/])+[\w .@-]+\.(?:png|jpe?g|gif|webp|bmp|svg)(?::\d+)?)/gi,
+    (match) => buildFileLinkHtml(match),
+  );
   return html;
 }
 
@@ -600,6 +636,119 @@ async function openPath(path) {
     });
   } catch (err) {
     console.error("Failed to open path:", err);
+  }
+}
+
+async function resolveInlineImagePreviews(refs) {
+  const resolved = new Map();
+  const pending = [];
+
+  for (const ref of refs) {
+    if (inlineImagePreviewCache.has(ref)) {
+      const cached = inlineImagePreviewCache.get(ref);
+      if (cached) resolved.set(ref, cached);
+      continue;
+    }
+    pending.push(ref);
+  }
+
+  if (pending.length > 0) {
+    try {
+      const resp = await fetch("/api/image-previews/resolve", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refs: pending }),
+      });
+      if (resp.ok) {
+        const body = await resp.json();
+        const byCandidate = new Map(
+          (body.results || []).map((item) => [item.candidate, item]),
+        );
+        for (const ref of pending) {
+          const hit = byCandidate.get(ref) || null;
+          inlineImagePreviewCache.set(ref, hit);
+          if (hit) resolved.set(ref, hit);
+        }
+      } else {
+        for (const ref of pending) inlineImagePreviewCache.set(ref, null);
+      }
+    } catch (err) {
+      console.warn("Failed to resolve inline image previews:", err);
+      for (const ref of pending) inlineImagePreviewCache.set(ref, null);
+    }
+  }
+
+  return resolved;
+}
+
+async function hydrateInlineImagePreviews(messageEl) {
+  if (!messageEl) return;
+  if (messageEl.querySelector(".msg-attachments")) return;
+
+  const links = [
+    ...messageEl.querySelectorAll(".image-file-link[data-image-path]"),
+  ];
+  if (links.length === 0) return;
+
+  const refs = [
+    ...new Set(
+      links
+        .map((link) => link.dataset.imagePath || "")
+        .filter((ref) => ref.length > 0),
+    ),
+  ];
+  if (refs.length === 0) return;
+
+  const resolvedByRef = await resolveInlineImagePreviews(refs);
+  if (resolvedByRef.size === 0) return;
+
+  for (const link of links) {
+    const preview = resolvedByRef.get(link.dataset.imagePath || "");
+    if (preview?.source_path) {
+      link.setAttribute("onclick", buildOpenPathOnclick(preview.source_path));
+    }
+  }
+
+  const previewHost =
+    messageEl.querySelector(".msg-text") ||
+    messageEl.querySelector(".bridge-text");
+  if (!previewHost) return;
+
+  let container = messageEl.querySelector(".msg-inline-previews");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "msg-inline-previews";
+    previewHost.after(container);
+  }
+  container.innerHTML = "";
+
+  const seenUrls = new Set();
+  for (const preview of resolvedByRef.values()) {
+    if (!preview?.url || seenUrls.has(preview.url)) continue;
+    seenUrls.add(preview.url);
+
+    const card = document.createElement("div");
+    card.className = "msg-inline-preview-card";
+
+    const img = document.createElement("img");
+    img.src = preview.url;
+    img.alt = preview.name || "image preview";
+    img.addEventListener("click", () => openImageModal(preview.url));
+    card.appendChild(img);
+
+    const caption = document.createElement("a");
+    caption.className = "msg-inline-preview-name";
+    caption.href = "#";
+    caption.textContent = preview.name || "Open image";
+    caption.addEventListener("click", (event) => {
+      event.preventDefault();
+      openPath(preview.source_path || preview.name || "");
+    });
+    card.appendChild(caption);
+
+    container.appendChild(card);
   }
 }
 
@@ -1180,6 +1329,7 @@ function appendMessage(msg) {
   }
 
   container.appendChild(el);
+  void hydrateInlineImagePreviews(el);
 
   if (soundEnabled) {
     trackRuntimeUser(msg.sender, msgChannel, msg.type || "chat");
@@ -4058,7 +4208,7 @@ let modalIndex = 0; // current image index
 
 function getAllChatImages() {
   const imgs = document.querySelectorAll(
-    ".msg-attachments img, .job-msg-attachments img, .verification-image",
+    ".msg-attachments img, .msg-inline-previews img, .job-msg-attachments img, .verification-image",
   );
   return [...imgs].map((img) => img.src);
 }
@@ -5381,6 +5531,7 @@ const BRIDGE_CATEGORY_COLOURS = {
   completion: "#4ade80",
   file_reference: "#60a5fa",
   progress: "#fbbf24",
+  question: "#f59e0b",
   snapshot: "#c084fc",
   system: "#888",
 };
@@ -5511,6 +5662,7 @@ function initBridgeMessageRenderer() {
           <div id="${contextId}" class="bridge-context-lines">${escapeHtml(contextLines.join("\n"))}</div>
         </div>`
         : "";
+    const bridgeTextHtml = linkifyPaths(linkifyUrls(escapeHtml(msg.text)));
 
     el.innerHTML = `
       <div class="chat-bubble bridge-bubble" style="--bubble-color: ${senderColor}">
@@ -5520,7 +5672,7 @@ function initBridgeMessageRenderer() {
           ${showCategory ? `<span class="bridge-badge" style="background: ${colour}22; color: ${colour}">${escapeHtml(category)}</span>` : ""}
           <span class="msg-time">${msg.time || ""}</span>
         </div>
-        <div class="bridge-text">${escapeHtml(msg.text)}</div>
+        <div class="bridge-text">${bridgeTextHtml}</div>
         ${contextHtml}
       </div>
     `;

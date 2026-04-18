@@ -73,6 +73,22 @@
       "priority": 3
     },
     {
+      "id": "builtin-agent-question",
+      "name": "Agent follow-up question",
+      "category": "question",
+      "pattern": "(what should i do next|what next|need input|need your input|should i|want me to|any preference|\\?)$",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-agent-finished",
+      "name": "Agent finished phrasing",
+      "category": "completion",
+      "pattern": "\\b(i('| a)?m done|done with|finished with|task complete|all set)\\b",
+      "enabled": true,
+      "priority": 2
+    },
+    {
       "id": "builtin-tests-passed",
       "name": "Tests passed",
       "category": "completion",
