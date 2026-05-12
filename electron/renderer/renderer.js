@@ -24,6 +24,7 @@ const CHANNEL_SYNC_MAX_ATTEMPTS = 40;
 const elements = {
   tabButtons: Array.from(document.querySelectorAll(".tab-button")),
   popOutButtons: Array.from(document.querySelectorAll(".pop-out-button")),
+  watcherButton: document.getElementById("watcher-rules-button"),
   chatShell: document.getElementById("chat-shell"),
   chatWebview: document.getElementById("chat-webview"),
   browserPane: document.getElementById("browser-pane"),
@@ -838,6 +839,13 @@ function bindEvents() {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       window.electronAPI?.requestPopOut?.(button.dataset.popout);
+    });
+  }
+
+  if (elements.watcherButton) {
+    elements.watcherButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      window.bridgeUI?.toggleSettings();
     });
   }
 

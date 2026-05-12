@@ -61,11 +61,11 @@
 
 The Watcher Settings panel (`bridge.bundle.js:21851`) already works. Just make the trigger easy to find from the chat surface.
 
-- [ ] Audit current placement of the gear button (`terminals.bundle.js:13643` / `terminals.js:751`) and the `bridge:toggle-settings` event.
-- [ ] Add a visible "Watcher rules" entry to the chat header / settings menu in the Electron shell.
-- [ ] Dispatch `bridge:toggle-settings` from the new entry point.
-- [ ] Verify the gear in the terminal pane still works (don't remove, just duplicate access).
-- [ ] Smoke test: click new entry, panel opens; toggle a rule off; relaunch; toggle persisted.
+- [x] Audit current placement of the gear button (`terminals.bundle.js:13643` / `terminals.js:751`) and the `bridge:toggle-settings` event.
+- [x] Add a visible "Watcher rules" entry to the chat header / settings menu in the Electron shell.
+- [x] Dispatch `bridge:toggle-settings` from the new entry point.
+- [x] Verify the gear in the terminal pane still works (don't remove, just duplicate access).
+- [ ] Smoke test: click new entry, panel opens; toggle a rule off; relaunch; toggle persisted. _(manual — relaunch desktop and confirm)_
 
 **Exit criteria:** A user who has never opened the terminal pane can find and use the watcher settings.
 
