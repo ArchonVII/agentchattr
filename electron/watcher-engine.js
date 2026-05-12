@@ -360,6 +360,9 @@ class WatcherEngine {
         ruleId: rule.id,
         category: rule.category,
         matchedText: line,
+        // First capture group, if the pattern defines one (used by
+        // image_reference / markdown_reference rules to surface the file path).
+        captured: match.length > 1 ? match[1] : null,
         contextLines: ctxBuf.last(5),
         timestamp: now,
       };
