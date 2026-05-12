@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Markdown viewer</title>
+    <link rel="stylesheet" href="/static/themes/base.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg-app, #1a1a2e);
+        color: var(--fg-primary, #e0e0e0);
+        font-family: var(--font-ui, system-ui, sans-serif);
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        background: var(--bg-deep, #171726);
+        border-bottom: 1px solid var(--border, #2a2a3a);
+      }
+
+      header .title {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--font-mono, monospace);
+        font-size: 14px;
+        color: var(--fg-secondary, #aaaab8);
+      }
+
+      main {
+        padding: 20px 28px 60px;
+        max-width: 900px;
+        margin: 0 auto;
+        line-height: 1.55;
+      }
+
+      main h1,
+      main h2,
+      main h3 {
+        color: var(--fg-primary);
+      }
+      main h1 {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.3em;
+      }
+      main h2 {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.2em;
+      }
+
+      main code {
+        background: var(--bg-elevated, #2a2a3a);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-family: var(--font-mono, monospace);
+        font-size: 0.9em;
+      }
+      main pre {
+        background: var(--bg-elevated, #2a2a3a);
+        padding: 12px 14px;
+        border-radius: 6px;
+        overflow-x: auto;
+      }
+      main pre code {
+        background: transparent;
+        padding: 0;
+      }
+      main blockquote {
+        margin: 0 0 1em 0;
+        padding: 0 1em;
+        border-left: 3px solid var(--accent, #da7756);
+        color: var(--fg-secondary);
+      }
+      main a {
+        color: var(--accent, #da7756);
+      }
+      main table {
+        border-collapse: collapse;
+      }
+      main th,
+      main td {
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+      }
+      main img {
+        max-width: 100%;
+      }
+
+      .error {
+        margin: 40px auto;
+        max-width: 600px;
+        padding: 20px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--accent-danger, #ff6b6b);
+        border-radius: 6px;
+        color: var(--accent-danger, #ff6b6b);
+        font-family: var(--font-mono, monospace);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="title" id="md-title">Loading…</span>
+    </header>
+    <main id="md-body">
+      <p style="color: var(--fg-muted)">Fetching markdown…</p>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/md-viewer.js"></script>
+  </body>
+</html>

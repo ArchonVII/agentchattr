@@ -1563,6 +1563,65 @@ async def upload_image(file: UploadFile = File(...)):
     })
 
 
+@app.get("/api/file/markdown")
+async def read_markdown_file(path: str):
+    """Return the raw contents of a .md file inside the project tree.
+
+    Used by the Electron markdown popup viewer. Enforces:
+      - File extension must be .md (case-insensitive)
+      - Resolved absolute path must live inside REPO_ROOT
+      - File must exist and be a regular file
+      - Size cap to keep the response bounded
+
+    Auth is handled by the security middleware (session token required).
+    """
+    MAX_BYTES = 2 * 1024 * 1024  # 2 MB — generous for plan/spec/readme files
+
+    if not path:
+        return JSONResponse({"error": "path required"}, status_code=400)
+
+    if not path.lower().endswith(".md"):
+        return JSONResponse({"error": "only .md files are readable here"}, status_code=400)
+
+    repo_root = Path(__file__).parent.resolve()
+    try:
+        candidate = Path(path).expanduser().resolve()
+    except (OSError, RuntimeError):
+        return JSONResponse({"error": "invalid path"}, status_code=400)
+
+    try:
+        candidate.relative_to(repo_root)
+    except ValueError:
+        return JSONResponse({"error": "path is outside the project"}, status_code=403)
+
+    if not candidate.is_file():
+        return JSONResponse({"error": "file not found"}, status_code=404)
+
+    try:
+        size = candidate.stat().st_size
+    except OSError:
+        return JSONResponse({"error": "could not stat file"}, status_code=500)
+    if size > MAX_BYTES:
+        return JSONResponse(
+            {"error": f"file too large (max {MAX_BYTES // 1024 // 1024}MB)"},
+            status_code=413,
+        )
+
+    try:
+        content = candidate.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return JSONResponse({"error": "file is not valid UTF-8"}, status_code=415)
+    except OSError as exc:
+        return JSONResponse({"error": f"read failed: {exc}"}, status_code=500)
+
+    return JSONResponse({
+        "path": str(candidate),
+        "name": candidate.name,
+        "content": content,
+        "size": size,
+    })
+
+
 @app.post("/api/image-previews/resolve")
 async def resolve_image_previews(request: Request):
     body = await request.json()
