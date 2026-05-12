@@ -266,7 +266,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Agent registration/heartbeat: loopback only (no remote agent minting).
-        if path.startswith(("/api/register", "/api/deregister/", "/api/heartbeat/", "/api/bridge/")):
+        # GET /api/agents (read-only agent config listing) is also loopback-allowed
+        # so the Electron port scanner can tag ports without a session token.
+        if path.startswith(("/api/register", "/api/deregister/", "/api/heartbeat/", "/api/bridge/")) or (
+            path == "/api/agents" and request.method == "GET"
+        ):
             client_ip = request.client.host if request.client else ""
             if client_ip not in ("127.0.0.1", "::1", "localhost"):
                 return JSONResponse(

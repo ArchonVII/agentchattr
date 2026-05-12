@@ -223,11 +223,14 @@ function deriveWindowTitle(commandLine, processName) {
 async function scanTerminalProcesses() {
   // Build the shell name filter.  Include wt.exe so we can identify
   // which shell PIDs are children of Windows Terminal tabs.
+  // PowerShell escape: the whole psCommand is wrapped in single quotes when
+  // passed to -Command, so embed inner single quotes as '' so the WMI -Filter
+  // receives Name LIKE 'pwsh.exe' rather than terminating the outer string.
   const shellNames = Array.from(SHELL_EXECUTABLES.keys())
-    .map((n) => `Name LIKE '${n}.exe'`)
+    .map((n) => `Name LIKE ''${n}.exe''`)
     .join(" OR ");
 
-  const filter = `${shellNames} OR Name LIKE 'WindowsTerminal.exe' OR Name LIKE 'git-bash.exe'`;
+  const filter = `${shellNames} OR Name LIKE ''WindowsTerminal.exe'' OR Name LIKE ''git-bash.exe''`;
 
   // Output one quoted-CSV line per process: "PID","Name","CommandLine","ParentProcessId","CreationDate"
   const psCommand =
