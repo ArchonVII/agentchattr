@@ -47,6 +47,34 @@ def build_startup_info() -> dict:
     }
 
 
+def _archive_message_log(config: dict) -> None:
+    """Rotate the chat log on startup so the UI opens to an empty room.
+
+    Matches app.configure() log path resolution: prefers agentchattr_log.jsonl,
+    falls back to legacy room_log.jsonl. Whichever file currently exists and
+    is non-empty is renamed to <stem>.<YYYY-MM-DD-HHMM>.jsonl. The active log
+    path is then absent, so MessageStore initialises empty on configure().
+    """
+    data_dir = Path(config.get("server", {}).get("data_dir", "./data"))
+    if not data_dir.is_absolute():
+        data_dir = ROOT / data_dir
+
+    for name in ("agentchattr_log.jsonl", "room_log.jsonl"):
+        log_path = data_dir / name
+        if log_path.exists() and log_path.stat().st_size > 0:
+            stamp = time.strftime("%Y-%m-%d-%H%M")
+            archive_path = log_path.with_name(f"{log_path.stem}.{stamp}.jsonl")
+            # If a collision exists (relaunched within the same minute), suffix.
+            counter = 1
+            while archive_path.exists():
+                archive_path = log_path.with_name(f"{log_path.stem}.{stamp}-{counter}.jsonl")
+                counter += 1
+            log_path.rename(archive_path)
+            logging.getLogger(__name__).info(
+                "Archived previous chat log: %s -> %s", log_path.name, archive_path.name
+            )
+
+
 def main():
     from rich.logging import RichHandler
     from theme_console import console as rich_console
@@ -70,6 +98,10 @@ def main():
         sys.exit(1)
 
     config = load_config(ROOT)
+
+    # Archive any existing message log so the chat starts fresh each launch.
+    # The archived file is preserved on disk so history can be inspected later.
+    _archive_message_log(config)
 
     # --- Security: generate a random session token (in-memory only) ---
     session_token = secrets.token_hex(32)
