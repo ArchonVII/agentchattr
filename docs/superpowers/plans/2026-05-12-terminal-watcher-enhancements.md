@@ -83,16 +83,13 @@ The Watcher Settings panel (`bridge.bundle.js:21851`) already works. Just make t
 
 The chat already inlines images when a path appears in a message. We just need the watcher to _put the path into a chat message_, and the resolver to confirm the file exists.
 
-- [ ] Add `builtin-image-path` rule to `default-watcher-rules.json`:
-  - `category: "image_reference"`, `priority: 2`
-  - Pattern: `((?:[A-Za-z]:)?[\\/\\\\][\w.\-\\/\\\\@]+\.(?:png|jpe?g|gif|webp|bmp|svg|ico))` (case-insensitive)
-  - Also accept paths starting with `./`, `../`, or bare `name.png` if the terminal cwd resolves them
-- [ ] Update `watcher-engine.js` to expose the first capture group as `match.captured` on the event, in addition to firing on the whole line.
-- [ ] Update `terminal-manager.js` watcher-match callback to include `image_path` in the bridge POST payload when category is `image_reference`.
-- [ ] Confirm `/api/image-previews/resolve` only returns a preview when the resolved path exists on disk and lives inside the repo root or a configured allowed dir (path-traversal guard).
-- [ ] Verify clicking the inline preview opens the full image (existing behavior, just confirm).
-- [ ] Test: `echo C:/AI/JAgentchattr/electron/assets/icon.svg` in the embedded terminal → chat shows the path with an inline preview thumbnail. Click → opens full size.
-- [ ] Test: `echo /tmp/nonexistent.png` → no preview rendered, raw text only.
+- [x] Add `builtin-image-path` rule to `default-watcher-rules.json`. Pattern: `((?:[A-Za-z]:)?(?:[/\\][\w.\-]+)+\.(?:png|jpe?g|gif|webp|bmp|svg|ico))` — absolute or relative paths with at least one separator. Bare `foo.png` is intentionally excluded.
+- [x] Update `watcher-engine.js` to expose the first capture group as `event.captured`.
+- [x] Add backfill on rule-load so users with an existing `data/watcher-rules.json` automatically pick up new builtin rules.
+- [x] Update server `bridge_event` handler to forward `captured` into chat-message metadata.
+- [x] Extend the chat-side image-path regex (`static/chat.js`) to also match Windows drive prefixes like `C:/...`. The existing `/api/image-previews/resolve` resolver already validates file existence and enforces a `_safe_join` path-traversal guard against project_root/upload_dir/screenshots/home — no resolver changes needed.
+- [ ] Manual test: `echo C:/AI/JAgentchattr/electron/assets/icon.svg` in the embedded terminal → chat shows path with inline preview thumbnail; click → opens full size. _(verify after relaunch)_
+- [ ] Manual test: `echo /tmp/nonexistent.png` → no preview rendered. _(verify after relaunch)_
 
 **Exit criteria:** Any image path emitted to the pty surfaces in chat with a clickable, expandable preview.
 

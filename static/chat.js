@@ -87,11 +87,13 @@ window.dismissRosterEntry = dismissRosterEntry;
 
 function getPathLeaf(pathValue) {
   if (!pathValue) return "";
-  return String(pathValue)
-    .replace(/[\\/]+$/, "")
-    .split(/[\\/]/)
-    .filter(Boolean)
-    .pop() || String(pathValue);
+  return (
+    String(pathValue)
+      .replace(/[\\/]+$/, "")
+      .split(/[\\/]/)
+      .filter(Boolean)
+      .pop() || String(pathValue)
+  );
 }
 
 function getRepoStatusSummary(cwd) {
@@ -617,9 +619,11 @@ function linkifyPaths(html) {
       (match) => buildFileLinkHtml(match),
     );
   }
-  // Relative image paths: Screenshots/foo.png, static/logo.svg, uploads/bar.webp
+  // Image paths: Screenshots/foo.png, static/logo.svg, uploads/bar.webp, plus
+  // absolute Windows paths like C:/AI/foo.png so watcher messages from the
+  // terminal bridge surface with previews too.
   html = html.replace(
-    /(?<!["=\/A-Za-z0-9_-])((?:[\w.@-]+[\\/])+[\w .@-]+\.(?:png|jpe?g|gif|webp|bmp|svg)(?::\d+)?)/gi,
+    /(?<!["=\/A-Za-z0-9_-])((?:[A-Za-z]:[\\/])?(?:[\w.@-]+[\\/])+[\w .@-]+\.(?:png|jpe?g|gif|webp|bmp|svg)(?::\d+)?)/gi,
     (match) => buildFileLinkHtml(match),
   );
   return html;
@@ -1833,7 +1837,9 @@ function getChannelRosterEntries(channel = activeChannel) {
     });
   }
 
-  const activePorts = Array.isArray(window._activePorts) ? window._activePorts : [];
+  const activePorts = Array.isArray(window._activePorts)
+    ? window._activePorts
+    : [];
   for (const port of activePorts) {
     const portKey = `port:${port.port}`;
     participants.set(portKey, {
@@ -1851,7 +1857,7 @@ function getChannelRosterEntries(channel = activeChannel) {
       meta: port.address || "",
       port: port.port,
       msg_id: port.msg_id,
-      sender: port.sender
+      sender: port.sender,
     });
   }
 
@@ -5539,26 +5545,26 @@ const BRIDGE_CATEGORY_COLOURS = {
 function initBridgeMessageRenderer() {
   // Register via the extensible renderer hook
   if (!window._messageRenderers) window._messageRenderers = {};
-  
+
   window._messageRenderers["screenshot_verification"] = function (el, msg) {
     el.classList.add("screenshot-verification-msg");
     const meta = msg.metadata || {};
     const disputed = meta.disputed || false;
     const senderColor = getColor(msg.sender);
-    
+
     const card = document.createElement("div");
     card.className = "verification-card";
-    
+
     const header = document.createElement("div");
     header.className = "verification-header";
     header.innerHTML = `<span class="verification-pill">Visual Verification</span>`;
     card.appendChild(header);
-    
+
     const caption = document.createElement("div");
     caption.className = "verification-caption";
     caption.textContent = msg.text;
     card.appendChild(caption);
-    
+
     if (msg.attachments && msg.attachments.length > 0) {
       const img = document.createElement("img");
       img.src = msg.attachments[0].url;
@@ -5566,10 +5572,10 @@ function initBridgeMessageRenderer() {
       img.onclick = () => openImageModal(img.src);
       card.appendChild(img);
     }
-    
+
     const actions = document.createElement("div");
     actions.className = "verification-actions";
-    
+
     if (disputed) {
       const badge = document.createElement("span");
       badge.className = "verification-status-disputed";
@@ -5582,9 +5588,9 @@ function initBridgeMessageRenderer() {
       disputeBtn.onclick = () => disputeScreenshot(msg.id);
       actions.appendChild(disputeBtn);
     }
-    
+
     card.appendChild(actions);
-    
+
     // Inject the card into the bubble or replace text content
     el.innerHTML = `
       <div class="chat-bubble other" style="--bubble-color: ${senderColor}">
@@ -5604,10 +5610,10 @@ function initBridgeMessageRenderer() {
     const status = meta.status || "active";
     const isActive = status === "active";
     const senderColor = getColor(msg.sender);
-    
+
     const card = document.createElement("div");
     card.className = `port-card ${isActive ? "" : "port-closed"}`;
-    
+
     card.innerHTML = `
       <div class="port-header">
         <span class="port-pill">Port Active</span>
@@ -5618,13 +5624,14 @@ function initBridgeMessageRenderer() {
         <div class="port-duration"><strong>Needed for:</strong> ${escapeHtml(meta.duration || "")}</div>
       </div>
       <div class="port-actions">
-        ${isActive ? 
-          `<button class="btn-kill-port" onclick="killPort(${meta.port}, ${msg.id})">Kill Port</button>` : 
-          `<span class="port-status-closed">Closed</span>`
+        ${
+          isActive
+            ? `<button class="btn-kill-port" onclick="killPort(${meta.port}, ${msg.id})">Kill Port</button>`
+            : `<span class="port-status-closed">Closed</span>`
         }
       </div>
     `;
-    
+
     el.innerHTML = `
       <div class="chat-bubble other" style="--bubble-color: ${senderColor}">
         <div class="bubble-header">
@@ -5645,8 +5652,7 @@ function initBridgeMessageRenderer() {
     const contextLines = meta.context_lines || [];
     const senderColor = getColor(msg.sender);
     const showSession =
-      sessionName &&
-      sessionName.toLowerCase() !== msg.sender.toLowerCase();
+      sessionName && sessionName.toLowerCase() !== msg.sender.toLowerCase();
     const showCategory = category && category !== "system";
 
     el.classList.add("bridge-msg");
@@ -5703,7 +5709,7 @@ function initTerminalPresencePolling() {
       // Poll terminals
       const resT = await fetch("/api/bridge/terminals");
       if (resT.ok) {
-        const terminals = await resT.ok ? await resT.json() : [];
+        const terminals = (await resT.ok) ? await resT.json() : [];
         if (Array.isArray(terminals)) {
           window._terminalData = terminals;
         }

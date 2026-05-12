@@ -167,6 +167,14 @@
       "pattern": "BRIDGE_TEST",
       "enabled": true,
       "priority": 1
+    },
+    {
+      "id": "builtin-image-path",
+      "name": "Image file path",
+      "category": "image_reference",
+      "pattern": "((?:[A-Za-z]:)?(?:[/\\\\][\\w.\\-]+)+\\.(?:png|jpe?g|gif|webp|bmp|svg|ico))",
+      "enabled": true,
+      "priority": 2
     }
   ]
 }

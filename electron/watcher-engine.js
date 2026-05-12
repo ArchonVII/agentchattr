@@ -267,6 +267,29 @@ class WatcherEngine {
       console.warn("WatcherEngine: failed to load rules:", err.message);
       this._rules = [];
     }
+
+    // Backfill: if a builtin-* rule has been added to defaults since the user's
+    // runtime file was first seeded, append it so new captures (e.g. image and
+    // markdown paths) light up without requiring users to delete their file.
+    try {
+      const defaultsPath = path.join(__dirname, "default-watcher-rules.json");
+      const defaults =
+        JSON.parse(fs.readFileSync(defaultsPath, "utf8")).rules || [];
+      const knownIds = new Set(this._rules.map((r) => r.id));
+      const added = defaults.filter(
+        (r) => r.id?.startsWith("builtin-") && !knownIds.has(r.id),
+      );
+      if (added.length > 0) {
+        this._rules.push(...added);
+        this._persistRules();
+      }
+    } catch (err) {
+      console.warn(
+        "WatcherEngine: failed to backfill default rules:",
+        err.message,
+      );
+    }
+
     this._compileRules();
   }
 

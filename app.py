@@ -1735,6 +1735,12 @@ async def bridge_event(request: Request):
         "source": "watcher",
     }
 
+    # Forward the watcher's captured group (e.g. the image/markdown path) so
+    # chat-side decorators can attach previews without re-parsing the text.
+    captured = body.get("captured")
+    if captured:
+        metadata["captured"] = captured
+
     # store.add broadcasts via _on_store_message automatically
     msg = store.add(
         sender=sender,
