@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openBrowserUrl(url) {
     return ipcRenderer.invoke("open-browser-url", url);
   },
+  openMarkdownViewer(filePath) {
+    return ipcRenderer.invoke("open-markdown-viewer", filePath);
+  },
   killProcess(pid) {
     return ipcRenderer.invoke("kill-process", pid);
   },

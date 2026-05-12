@@ -92,6 +92,12 @@ function registerIpcHandlers() {
     return openBrowserWindow(url, mainWindow);
   });
 
+  ipcMain.handle("open-markdown-viewer", async (_event, filePath) => {
+    const { openMarkdownViewer } = require("./md-viewer-window");
+    const win = openMarkdownViewer(filePath);
+    return win ? { opened: true } : { opened: false };
+  });
+
   // H-1 fix: Do NOT register get-preference, set-preference, or show-open-dialog here.
   // Those are handled by preferences.js and dialogs.js respectively.
 

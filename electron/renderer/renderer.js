@@ -639,6 +639,18 @@ async function handleDesktopCommand(payload) {
     return;
   }
 
+  if (
+    payload?.command === "open_markdown" &&
+    typeof payload.path === "string"
+  ) {
+    try {
+      await window.electronAPI?.openMarkdownViewer?.(payload.path);
+    } catch (error) {
+      console.error("Unable to open markdown viewer:", error);
+    }
+    return;
+  }
+
   if (payload?.command === "terminal_kill") {
     activateTab("chat");
 
