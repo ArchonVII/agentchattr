@@ -1334,6 +1334,7 @@ function appendMessage(msg) {
 
   container.appendChild(el);
   void hydrateInlineImagePreviews(el);
+  window.MdPreview?.hydrate?.(el, msg);
 
   if (soundEnabled) {
     trackRuntimeUser(msg.sender, msgChannel, msg.type || "chat");

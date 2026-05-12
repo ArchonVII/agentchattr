@@ -95,7 +95,7 @@ The chat already inlines images when a path appears in a message. We just need t
 
 ---
 
-## Phase 3 — Markdown File Watcher + Viewer
+## Phase 3 — Markdown File Watcher + Viewer ✅ landed 2026-05-12
 
 **Files:**
 
