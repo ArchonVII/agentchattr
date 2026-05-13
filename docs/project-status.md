@@ -6,13 +6,13 @@ Last updated: 2026-05-12 by Manager
 
 ### Terminal Watcher Enhancements
 
-- **Status:** Planned
-- **Owner:** Unassigned
+- **Status:** Landed (manual smoke pending)
+- **Owner:** —
 - **Plan:** `docs/superpowers/plans/2026-05-12-terminal-watcher-enhancements.md`
-- **Progress:** 0/3 phases complete. Discovery done — existing Watcher Settings panel (`bridge.bundle.js:21851`) already provides per-rule toggles; image inline-preview pipeline (`static/chat.js:35,657-733`) already renders from chat text.
+- **Progress:** All 3 phases coded and pushed (`6261610`, `e3abbf0`, `08640b5`). Backend, IPC chain, and chat decorator all wired. 53/53 electron tests + 9/9 affected Python tests green.
 - **Blocked by:** Nothing
-- **Next:** Phase 1 — surface the existing watcher gear button on the chat header so users can find it without opening the terminal pane.
-- **Notes:** Three phases — (1) settings discoverability, (2) image-path watcher rule + tightened resolver, (3) markdown watcher rule + popup BrowserWindow viewer + path-traversal-guarded `/api/file/markdown` endpoint. Decisions locked 2026-05-12.
+- **Next:** Manual relaunch test — verify Watcher button opens the panel, echoing an image path renders a thumbnail, and `wrote ./foo.md` shows an "Open in viewer" button that pops a themed BrowserWindow.
+- **Notes:** Plan can be archived to `docs/archive/shipped/` once manual smoke confirms behavior.
 
 ### Web UI Decomposition
 
