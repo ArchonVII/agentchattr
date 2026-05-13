@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-05-12
+
+### Added
+
+- Terminal Watcher Enhancements (`docs/superpowers/plans/2026-05-12-terminal-watcher-enhancements.md`):
+  - Watcher Settings button on the shell tab bar — opens the existing per-rule toggle panel without needing to find the terminal pane.
+  - `builtin-image-path` watcher rule — any image path emitted to the pty (absolute Windows/POSIX or dot-relative, must contain a separator) surfaces in chat with an inline thumbnail via the existing image-preview pipeline.
+  - `builtin-markdown-mention` watcher rule — terminal lines that present or create a `.md` file (phrasing like "wrote", "created", "saved to", "see", "refer to") generate a chat message with an "Open in viewer" button that pops up a themed Electron BrowserWindow rendering the file.
+- `GET /api/file/markdown` endpoint — path-traversal-guarded reader inside REPO_ROOT, 2 MB cap, session-token auth. Backs the markdown popup viewer.
+- `static/md-viewer.html` + `static/md-viewer.js` — standalone themed markdown viewer page served from the local server, used by the popup window.
+- `launch-desktop.cmd` + a `agentchattr.lnk` desktop shortcut helper — reproducible Windows launcher that runs `npm start` (esbuild prestart rebuilds bundles, then Electron launches Python).
+
+### Changed
+
+- Chat log auto-archives on every `python run.py` boot. Previous `data/agentchattr_log.jsonl` becomes `data/agentchattr_log.<YYYY-MM-DD-HHMM>.jsonl` so the UI opens to an empty room; history stays inspectable on disk.
+- Inline image-path regex in `static/chat.js` now matches absolute Windows drive prefixes (`C:/foo.png`), so watcher messages from the terminal bridge surface previews on the Windows desktop.
+- Watcher engine loader backfills any new `builtin-*` rule from defaults into the user's `data/watcher-rules.json` on startup — users with an existing runtime file automatically pick up new rules.
+- Bridge event handler forwards the watcher's captured group into chat-message metadata as `captured`, so decorators can use the structured path instead of re-parsing the message text.
+
+### Fixed
+
+- `terminal-scanner` PowerShell `Get-CimInstance` filter was parsing as bareword args because inner single quotes terminated the outer single-quoted command. Escaped inner quotes as `''` so the WMI filter is built correctly.
+- Port scanner's `fetchRegisteredAgents()` returned HTTP 403 every 5 s because the Electron main process has no session cookie. `GET /api/agents` is now loopback-allowed alongside the other local-control endpoints (register/heartbeat/bridge).
+
 ## 2026-04-15
 
 ### Fixed
